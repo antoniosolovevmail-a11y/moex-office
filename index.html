@@ -5,47 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>БКС — Торговый офис агентов MOEX</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
-:root {
-  --bg:     #0a0e1a;
-  --bg2:    #111827;
-  --bg3:    #1a2235;
-  --border: rgba(255,255,255,.07);
-  --text:   #e8eaf6;
-  --muted:  #6b7280;
-  --green:  #00d97e;
-  --red:    #ff4d6d;
-  --amber:  #fbbf24;
-  --blue:   #60a5fa;
-  --purple: #a78bfa;
-  --font:   'Space Mono', monospace;
-  --display:'Unbounded', sans-serif;
-}
+:root{--bg:#0a0e1a;--bg2:#111827;--bg3:#1a2235;--bg4:#0d1424;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--text:#e8eaf6;--muted:#6b7280;--green:#00d97e;--red:#ff4d6d;--amber:#fbbf24;--blue:#60a5fa;--purple:#a78bfa;--cyan:#22d3ee;--font:'Space Mono',monospace;--display:'Unbounded',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,217,126,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,126,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-
-/* ── UTILS ── */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,217,126,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,126,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
 .z1{position:relative;z-index:1}
 .hidden{display:none!important}
-.container{max-width:1100px;margin:0 auto;padding:0 1rem}
+.container{max-width:1400px;margin:0 auto;padding:0 1rem}
 .flex{display:flex;align-items:center}
-.gap8{gap:8px} .gap12{gap:12px} .gap16{gap:16px}
-.mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px}
-.green{color:var(--green)} .red{color:var(--red)} .amber{color:var(--amber)} .muted{color:var(--muted)}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}.muted{color:var(--muted)}.blue{color:var(--blue)}.purple{color:var(--purple)}
 
-/* ── AUTH SCREEN ── */
+/* AUTH */
 #auth-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}
-.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;position:relative}
+.auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px}
 .auth-logo{font-family:var(--display);font-size:16px;font-weight:800;color:var(--green);letter-spacing:.1em;margin-bottom:4px}
 .auth-logo span{color:var(--text)}
-.auth-title{font-size:18px;font-weight:700;margin:1.5rem 0 .5rem}
-.auth-sub{font-size:12px;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
 .auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .auth-tab{flex:1;padding:8px;text-align:center;font-size:12px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--font);transition:all .2s}
 .auth-tab.active{background:var(--green);color:#0a0e1a;font-weight:700}
@@ -58,143 +38,204 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn-primary:hover{opacity:.85}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .auth-error{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-bottom:12px}
-.auth-divider{text-align:center;font-size:11px;color:var(--muted);margin:1rem 0;position:relative}
-.auth-divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)}
-.auth-divider span{background:var(--bg2);padding:0 10px;position:relative}
 
-/* ── HEADER ── */
-.header{border-bottom:1px solid var(--border);padding:.75rem 0;position:sticky;top:0;background:rgba(10,14,26,.95);backdrop-filter:blur(12px);z-index:100}
-.header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.logo{font-family:var(--display);font-size:13px;font-weight:800;color:var(--green);letter-spacing:.1em}
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding:.6rem 0;position:sticky;top:0;background:rgba(10,14,26,.97);backdrop-filter:blur(16px);z-index:200}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.logo{font-family:var(--display);font-size:12px;font-weight:800;color:var(--green);letter-spacing:.1em;white-space:nowrap}
 .logo span{color:var(--text)}
-.header-right{display:flex;align-items:center;gap:1rem}
-.user-chip{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;font-size:11px}
-.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:#0a0e1a;font-weight:700}
-.nav-tabs{display:flex;gap:4px}
-.nav-tab{padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--font);transition:all .2s}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--font);transition:all .2s;white-space:nowrap}
 .nav-tab.active{background:var(--bg3);color:var(--text)}
+.header-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.user-chip{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;font-size:11px}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:#0a0e1a;font-weight:700;flex-shrink:0}
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dot-green{background:var(--green);animation:pulse 2s infinite}
+.dot-red{background:var(--red)}
 .dot-amber{background:var(--amber);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── TICKER ── */
-.ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:7px 0;overflow:hidden}
-.ticker-inner{display:inline-flex;gap:2.5rem;animation:scroll 35s linear infinite;white-space:nowrap}
-@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.ticker-item{font-size:12px;display:flex;align-items:center;gap:6px}
-
-/* ── METRICS ── */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:1.25rem 0 1rem}
-.metric-card{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--ac,var(--green));border-radius:8px;padding:1rem 1.25rem}
-.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.metric-value{font-family:var(--display);font-size:20px;font-weight:800}
-
-/* ── FLOOR ── */
-.floor{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-.floor-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
-.floor-title{font-family:var(--display);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
-.desks{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
-.desk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 4px;border-radius:8px;border:1px solid transparent;transition:all .2s;position:relative}
-.desk:hover{background:var(--bg3);border-color:var(--border)}
-.desk:hover .tooltip{opacity:1}
-.tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:160px;white-space:normal;text-align:center;line-height:1.4}
-.walk-scene{position:relative;height:22px;overflow:hidden;margin-bottom:.5rem}
-.walker{position:absolute;bottom:0;font-size:15px;animation:walk 12s linear infinite}
-@keyframes walk{0%{left:-30px}100%{left:110%}}
-
-/* ── CIO OFFICE ── */
-.cio-floor{background:linear-gradient(135deg,rgba(124,58,237,.08) 0%,var(--bg2) 100%);border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:1.5rem;margin-bottom:1rem;display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap}
-.cio-person{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
-.cio-badge{font-family:var(--display);font-size:9px;background:rgba(124,58,237,.15);color:var(--purple);padding:3px 10px;border-radius:20px}
-.cio-controls{flex:1;min-width:240px}
-.select{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:var(--font);font-size:12px;cursor:pointer;outline:none}
+/* BTN AUDIT */
+.btn-audit{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(251,191,36,.05));border:1px solid rgba(251,191,36,.4);color:var(--amber);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:700;transition:all .2s;white-space:nowrap}
+.btn-audit:hover{background:rgba(251,191,36,.2)}
 .btn-green{background:var(--green);color:#0a0e1a;border:none;padding:6px 14px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:var(--font);transition:opacity .2s}
 .btn-green:hover{opacity:.85}
 .btn-green:disabled{opacity:.5;cursor:not-allowed}
-.cio-result{background:#0a0e1a;border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:10px;font-size:11px;line-height:1.7;color:#d1d5db;white-space:pre-wrap}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer;transition:all .2s}
+.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.btn-danger{background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25);color:var(--red);padding:4px 10px;border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer}
 
-/* ── TWO COL ── */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
-.card-title{font-family:var(--display);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
-.signal-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+/* TICKER */
+.ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:6px 0;overflow:hidden}
+.ticker-inner{display:inline-flex;gap:2rem;animation:scroll 40s linear infinite;white-space:nowrap}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{font-size:11px;display:flex;align-items:center;gap:6px}
+
+/* METRICS BAR */
+.metrics-bar{display:flex;gap:8px;padding:.75rem 0 .5rem;overflow-x:auto}
+.metric-pill{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .875rem;white-space:nowrap;flex-shrink:0}
+.metric-pill-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.metric-pill-value{font-family:var(--display);font-size:15px;font-weight:800;margin-top:2px}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:10px;padding-bottom:2rem}
+.left-col{display:flex;flex-direction:column;gap:8px}
+.right-col{display:flex;flex-direction:column;gap:8px;min-width:0}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.75rem}
+.card-title{font-family:var(--display);font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+
+/* CHART */
+.chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.chart-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.chart-sym-info{display:flex;align-items:baseline;gap:8px}
+.chart-sym{font-family:var(--display);font-size:14px;font-weight:800}
+.chart-price{font-family:var(--display);font-size:18px;font-weight:800}
+.chart-chg{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px}
+.chart-chg.pos{background:rgba(0,217,126,.15);color:var(--green)}
+.chart-chg.neg{background:rgba(255,77,109,.15);color:var(--red)}
+.chart-controls{display:flex;gap:4px;align-items:center}
+.tf-btn{padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--font);transition:all .2s}
+.tf-btn.active{background:var(--green);color:#0a0e1a;border-color:var(--green);font-weight:700}
+#chart-container{height:340px}
+.chart-signals-bar{display:flex;gap:6px;padding:.5rem 1rem;border-top:1px solid var(--border);background:var(--bg4);flex-wrap:wrap}
+.signal-badge{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px}
+.signal-badge.buy{background:rgba(0,217,126,.15);color:var(--green);border:1px solid rgba(0,217,126,.3)}
+.signal-badge.sell{background:rgba(255,77,109,.15);color:var(--red);border:1px solid rgba(255,77,109,.3)}
+.signal-badge.neutral{background:rgba(107,114,128,.15);color:var(--muted);border:1px solid rgba(107,114,128,.3)}
+
+/* STOCKS TABLE */
+.stocks-table{width:100%;border-collapse:collapse;font-size:11px}
+.stocks-table th{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-weight:400}
+.stocks-table th:first-child{text-align:left}
+.stocks-table td{padding:5px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer}
+.stocks-table td:first-child{text-align:left}
+.stocks-table tr:hover td{background:var(--bg3)}
+.stocks-table tr.active-row td{background:rgba(0,217,126,.06)}
+.sym-cell{display:flex;flex-direction:column;gap:1px}
+.sym-ticker{font-weight:700;font-size:12px}
+.sym-name{font-size:9px;color:var(--muted)}
+.sector-badge{font-size:8px;padding:1px 5px;border-radius:3px;display:inline-block;margin-top:1px}
+.btn-analytics{padding:2px 6px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--blue);border-radius:4px;font-size:9px;cursor:pointer;font-family:var(--font)}
+.btn-analytics:hover{background:rgba(96,165,250,.2)}
+
+/* FLOOR / AGENTS */
+.floor-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.875rem}
+.floor-label{font-family:var(--display);font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.625rem;display:flex;align-items:center;justify-content:space-between}
+.desks{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.desk{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 2px;border-radius:6px;border:1px solid transparent;transition:all .2s;position:relative}
+.desk:hover{background:var(--bg3);border-color:var(--border)}
+.desk:hover .tooltip{opacity:1;pointer-events:none}
+.tooltip{position:absolute;bottom:calc(100%+6px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:9px;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:150px;white-space:normal;text-align:center;line-height:1.4;width:max-content}
+.desk-name{font-size:9px;font-weight:700;text-align:center;color:var(--text);line-height:1.2}
+.desk-role{font-size:8px;color:var(--muted);text-align:center}
+.desk-status{font-size:8px;padding:1px 5px;border-radius:10px;display:flex;align-items:center;gap:2px}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* AGENT LOG */
+.agent-log{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.agent-log::-webkit-scrollbar{width:3px}
+.agent-log::-webkit-scrollbar-track{background:var(--bg3)}
+.agent-log::-webkit-scrollbar-thumb{background:var(--border2)}
+.log-item{font-size:10px;padding:4px 8px;border-radius:4px;border-left:2px solid var(--border);color:#d1d5db;line-height:1.4}
+.log-item.trade{border-left-color:var(--green)}
+.log-item.loss{border-left-color:var(--red)}
+.log-item.info{border-left-color:var(--blue)}
+.log-item.audit{border-left-color:var(--amber)}
+.log-time{color:var(--muted);font-size:9px}
+
+/* CIO */
+.cio-card{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(109,40,217,.05));border:1px solid rgba(124,58,237,.35);border-radius:10px;padding:1rem}
+.cio-result{background:#060b14;border:1px solid var(--border);border-radius:6px;padding:.75rem;margin-top:.75rem;font-size:11px;line-height:1.8;color:#d1d5db;white-space:pre-wrap;max-height:180px;overflow-y:auto}
+.select{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer;outline:none}
+
+/* SIGNAL ROWS */
+.signal-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .signal-row:last-child{border-bottom:none}
-.tag{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.tag{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700}
 .tag-long{background:rgba(0,217,126,.15);color:var(--green)}
 .tag-short{background:rgba(255,77,109,.15);color:var(--red)}
-.prices-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
-.price-cell{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .2s}
-.price-cell:hover{border-color:rgba(0,217,126,.4)}
 
-/* ── ЛИЧНЫЙ КАБИНЕТ ── */
-.cabinet{display:none}
-.cabinet.active{display:block}
-.cab-grid{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start}
-.cab-sidebar{display:flex;flex-direction:column;gap:10px}
-.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;text-align:center}
-.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;font-family:var(--display);font-weight:800;color:#0a0e1a}
-.profile-name{font-size:14px;font-weight:700;margin-bottom:4px}
-.profile-email{font-size:11px;color:var(--muted)}
-.profile-since{font-size:10px;color:var(--muted);margin-top:6px}
-.stat-mini{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
-.stat-mini-label{font-size:11px;color:var(--muted)}
-.stat-mini-val{font-size:16px;font-weight:700;font-family:var(--display)}
-.cab-main{display:flex;flex-direction:column;gap:12px}
-.trade-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
-.trade-sym{font-weight:700;font-size:14px;width:55px}
-.trade-info{flex:1;font-size:11px;color:var(--muted);line-height:1.5}
-.trade-pnl{font-weight:700;font-size:14px;text-align:right}
-.open-trade-form{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
-.form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:6px;font-family:var(--font);font-size:12px;cursor:pointer;transition:all .2s}
-.btn-outline:hover{border-color:var(--green);color:var(--green)}
-.btn-danger{background:rgba(255,77,109,.15);border:1px solid rgba(255,77,109,.3);color:var(--red);padding:6px 10px;border-radius:6px;font-family:var(--font);font-size:11px;cursor:pointer}
-.tab-nav{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem}
-.tab-btn{flex:1;padding:8px;text-align:center;font-size:11px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--font);transition:all .2s}
+/* ANALYTICS MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2)}
+.modal-body{padding:1.5rem}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.analytics-section{margin-bottom:1.25rem}
+.analytics-section-title{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.625rem;padding-bottom:.375rem;border-bottom:1px solid var(--border);font-family:var(--display)}
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.analytics-row{background:var(--bg3);border-radius:6px;padding:.625rem .75rem;display:flex;justify-content:space-between;align-items:flex-start}
+.analytics-key{font-size:10px;font-weight:700;color:var(--text)}
+.analytics-desc{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3}
+.analytics-val{font-family:var(--display);font-size:14px;font-weight:800;text-align:right;white-space:nowrap;margin-left:8px}
+.analytics-norm{font-size:8px;color:var(--muted);text-align:right;margin-top:1px}
+
+/* AUDIT MODAL */
+.audit-item{display:flex;align-items:flex-start;gap:8px;padding:.625rem .75rem;border-radius:6px;margin-bottom:6px}
+.audit-ok{background:rgba(0,217,126,.08);border:1px solid rgba(0,217,126,.2)}
+.audit-warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2)}
+.audit-err{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2)}
+.audit-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.audit-text{font-size:11px;line-height:1.5}
+
+/* CABINET */
+.cab-grid{display:grid;grid-template-columns:220px 1fr;gap:12px}
+.cab-sidebar{display:flex;flex-direction:column;gap:8px}
+.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 10px;font-family:var(--display);font-weight:800;color:#0a0e1a}
+.stat-mini{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.625rem .875rem;display:flex;justify-content:space-between;align-items:center}
+.stat-mini-label{font-size:10px;color:var(--muted)}
+.stat-mini-val{font-size:15px;font-weight:700;font-family:var(--display)}
+.cab-main{display:flex;flex-direction:column;gap:10px}
+.tab-nav{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:.875rem}
+.tab-btn{flex:1;padding:7px;text-align:center;font-size:11px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--font);transition:all .2s}
 .tab-btn.active{background:var(--bg3);color:var(--text);font-weight:700}
-.empty-state{text-align:center;padding:2rem;color:var(--muted);font-size:12px}
-.settings-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.trade-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.trade-sym{font-weight:700;font-size:13px;width:52px}
+.trade-info{flex:1;font-size:10px;color:var(--muted);line-height:1.5}
+.trade-pnl{font-weight:700;font-size:13px;text-align:right;min-width:52px}
+.empty-state{text-align:center;padding:1.5rem;color:var(--muted);font-size:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
 .settings-row:last-child{border-bottom:none}
 .settings-label{font-size:12px}
 .settings-desc{font-size:10px;color:var(--muted);margin-top:2px}
-.toggle{width:36px;height:20px;background:var(--border);border-radius:20px;position:relative;cursor:pointer;transition:background .2s}
+.toggle{width:34px;height:18px;background:var(--border);border-radius:18px;position:relative;cursor:pointer;transition:background .2s}
 .toggle.on{background:var(--green)}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:white;transition:transform .2s}
 .toggle.on::after{transform:translateX(16px)}
 
-/* ── FOOTER ── */
-.footer{border-top:1px solid var(--border);padding:1rem 0;text-align:center;font-size:10px;color:var(--muted);margin-top:1rem}
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:.875rem 0;text-align:center;font-size:10px;color:var(--muted);margin-top:1rem}
 
-/* ── RESPONSIVE ── */
-@media(max-width:640px){
-  .metrics{grid-template-columns:repeat(2,1fr)}
-  .two-col{grid-template-columns:1fr}
-  .cio-floor{flex-direction:column}
+/* RESPONSIVE */
+@media(max-width:900px){
+  .main-grid{grid-template-columns:1fr}
   .cab-grid{grid-template-columns:1fr}
+  .left-col{order:2}
+}
+@media(max-width:640px){
+  .metrics-bar{gap:6px}
   .form-row{grid-template-columns:1fr 1fr}
 }
-@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
-     AUTH SCREEN
-══════════════════════════════════════════════ -->
+<!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">БКС <span>Trading</span></div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:1.5rem">Торговый офис агентов MOEX</div>
-
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
       <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
     </div>
-
     <div id="auth-error" class="auth-error hidden"></div>
-
-    <!-- LOGIN -->
     <div id="form-login">
       <div class="form-group">
         <label class="form-label">Email</label>
@@ -205,14 +246,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         <input type="password" id="login-pass" class="form-input" placeholder="••••••••"/>
       </div>
       <button class="btn-primary" onclick="doLogin()">Войти</button>
-      <div style="text-align:center;margin-top:12px">
-        <span style="font-size:11px;color:var(--muted);cursor:pointer" onclick="doResetPassword()">
-          Забыли пароль?
-        </span>
-      </div>
     </div>
-
-    <!-- REGISTER -->
     <div id="form-register" class="hidden">
       <div class="form-group">
         <label class="form-label">Имя</label>
@@ -232,17 +266,13 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
       <button class="btn-primary" onclick="doRegister()">Создать аккаунт</button>
     </div>
-
-    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:1.5rem;line-height:1.5">
-      Регистрируясь, вы соглашаетесь с условиями использования.<br>
-      Данные хранятся в зашифрованном виде.
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:1.25rem;line-height:1.5">
+      Данные хранятся в зашифрованном виде
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MAIN APP
-══════════════════════════════════════════════ -->
+<!-- MAIN APP -->
 <div id="app" class="hidden z1">
 
   <!-- HEADER -->
@@ -255,10 +285,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <button class="nav-tab" onclick="showPage('cabinet')">Личный кабинет</button>
         </div>
         <div class="header-right">
-          <div class="flex gap8" style="font-size:11px;color:var(--muted)">
+          <div class="flex gap8" style="font-size:10px;color:var(--muted)">
             <div class="dot dot-green"></div>
             <span id="market-status-txt">Загрузка...</span>
           </div>
+          <button class="btn-audit" onclick="runAudit()">⚡ Собрать проблемы — Аудит</button>
           <div class="user-chip" onclick="showUserMenu()">
             <div class="user-avatar" id="user-avatar">?</div>
             <span id="user-name-chip">Пользователь</span>
@@ -270,334 +301,358 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
   <!-- TICKER -->
   <div class="ticker-wrap">
-    <div class="ticker-inner" id="ticker"></div>
+    <div class="ticker-inner" id="ticker"><span style="color:var(--muted);font-size:11px">Загрузка котировок...</span></div>
   </div>
 
-  <!-- ══ PAGE: OFFICE ══ -->
-  <div id="page-office" class="container" style="padding-top:1rem;padding-bottom:2rem">
+  <!-- PAGE OFFICE -->
+  <div id="page-office" class="container" style="padding-top:.875rem">
 
-    <!-- Metrics -->
-    <div class="metrics">
-      <div class="metric-card" style="--ac:var(--blue)">
-        <div class="metric-label">IMOEX</div>
-        <div class="metric-value blue" id="m-imoex">—</div>
-      </div>
-      <div class="metric-card" style="--ac:var(--green)">
-        <div class="metric-label">USD/RUB</div>
-        <div class="metric-value green" id="m-usd">—</div>
-      </div>
-      <div class="metric-card" style="--ac:var(--purple)">
-        <div class="metric-label">Акций в базе</div>
-        <div class="metric-value" style="color:var(--purple)" id="m-stocks">21</div>
-      </div>
-      <div class="metric-card" style="--ac:var(--amber)">
-        <div class="metric-label">Обновлено</div>
-        <div class="metric-value amber" id="m-updated" style="font-size:14px">—</div>
-      </div>
+    <!-- METRICS BAR -->
+    <div class="metrics-bar">
+      <div class="metric-pill"><div class="metric-pill-label">IMOEX</div><div class="metric-pill-value blue" id="m-imoex">—</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">USD/RUB</div><div class="metric-pill-value green" id="m-usd">—</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">BRENT</div><div class="metric-pill-value amber" id="m-brent">—</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">Акций</div><div class="metric-pill-value" style="color:var(--purple)" id="m-stocks">50</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">Сигналов</div><div class="metric-pill-value green" id="m-signals">0</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">Агент-сделок</div><div class="metric-pill-value amber" id="m-agent-trades">0</div></div>
+      <div class="metric-pill"><div class="metric-pill-label">Обновлено</div><div class="metric-pill-value amber" id="m-updated" style="font-size:13px">—</div></div>
     </div>
 
-    <!-- Floor 1 -->
-    <div class="floor">
-      <div class="floor-header">
-        <div class="floor-title">Отдел новостей и анализа</div>
-        <span class="muted" style="font-size:10px">6 сотрудников</span>
-      </div>
-      <div class="walk-scene">
-        <span class="walker">🚶</span>
-        <span class="walker" style="animation-delay:-5s;animation-duration:16s">🚶‍♀️</span>
-      </div>
-      <div class="desks" id="desks-floor1"></div>
-    </div>
+    <div class="main-grid">
 
-    <!-- Floor 2 -->
-    <div class="floor">
-      <div class="floor-header">
-        <div class="floor-title">Отдел рыночных данных</div>
-        <span class="muted" style="font-size:10px">7 сотрудников</span>
-      </div>
-      <div class="desks" id="desks-floor2"></div>
-    </div>
+      <!-- LEFT COL -->
+      <div class="left-col">
 
-    <!-- CIO -->
-    <div class="cio-floor">
-      <div class="cio-person">
-        <svg width="52" height="70" viewBox="0 0 52 70">
-          <circle cx="26" cy="12" r="10" fill="#7c3aed" opacity=".9"/>
-          <text x="26" y="17" text-anchor="middle" font-size="12">👔</text>
-          <rect x="10" y="24" width="32" height="20" rx="6" fill="#6d28d9"/>
-          <text x="26" y="38" text-anchor="middle" font-size="9" fill="white" font-weight="bold">CIO</text>
-          <rect x="12" y="44" width="10" height="16" rx="4" fill="#5b21b6"/>
-          <rect x="30" y="44" width="10" height="16" rx="4" fill="#5b21b6"/>
-        </svg>
-        <div class="cio-badge">Агент 6 — Директор</div>
-        <div style="font-size:9px;color:var(--amber);margin-top:4px" id="cio-status-txt">Готов к анализу</div>
-      </div>
-      <div class="cio-controls">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Запросить решение CIO:</div>
-        <div class="flex gap8" style="flex-wrap:wrap;margin-bottom:10px">
-          <select id="cio-sym" class="select">
-            <option value="SBER">SBER — Сбербанк</option>
-            <option value="LKOH">LKOH — Лукойл</option>
-            <option value="GAZP">GAZP — Газпром</option>
-            <option value="YNDX">YNDX — Яндекс</option>
-            <option value="GMKN">GMKN — Норникель</option>
-            <option value="ROSN">ROSN — Роснефть</option>
-            <option value="NVTK">NVTK — Новатэк</option>
-            <option value="ALRS">ALRS — Алроса</option>
-            <option value="PLZL">PLZL — Полюс</option>
-            <option value="VTBR">VTBR — ВТБ</option>
-          </select>
-          <button class="btn-green" onclick="runCIO()" id="cio-btn">Анализировать</button>
-          <button class="btn-outline" onclick="openTradeFromCIO()" id="btn-open-trade" style="display:none">+ Открыть сделку</button>
+        <!-- AGENTS FLOOR 1 -->
+        <div class="floor-card">
+          <div class="floor-label">
+            <span>Отдел анализа</span>
+            <span style="font-size:9px;color:var(--green)" id="f1-status">● Активен</span>
+          </div>
+          <div class="desks" id="desks-floor1"></div>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">
-          Groq ключ: <input id="groq-key-input" type="password" placeholder="gsk_..." 
-            class="form-input" style="display:inline-block;width:200px;padding:4px 8px;font-size:11px"
-            oninput="saveGroqKey(this.value)"/>
-          <span style="font-size:10px;color:var(--muted)">(<a href="https://console.groq.com" target="_blank" style="color:var(--blue)">получить бесплатно</a>)</span>
+
+        <!-- AGENTS FLOOR 2 -->
+        <div class="floor-card">
+          <div class="floor-label">
+            <span>Отдел данных</span>
+            <span style="font-size:9px;color:var(--green)" id="f2-status">● Активен</span>
+          </div>
+          <div class="desks" id="desks-floor2"></div>
         </div>
-        <div id="cio-result" class="cio-result hidden"></div>
-      </div>
-    </div>
 
-    <!-- Signals + News -->
-    <div class="two-col">
-      <div class="card">
-        <div class="card-title"><span class="dot dot-green" style="width:6px;height:6px"></span>Сигналы агентов</div>
-        <div id="signals-list"><div class="empty-state">Загрузка сигналов...</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">📰 Новости рынка</div>
-        <div id="news-list"><div class="empty-state">Загрузка новостей...</div></div>
-      </div>
-    </div>
+        <!-- AGENT LOG -->
+        <div class="card-sm">
+          <div class="card-title">📋 Лог агентов</div>
+          <div class="agent-log" id="agent-log">
+            <div class="log-item info"><span class="log-time">--:--</span> Система запускается...</div>
+          </div>
+        </div>
 
-    <!-- Prices -->
-    <div class="card" style="margin-bottom:1rem">
-      <div class="card-title">💹 Все акции</div>
-      <div class="prices-grid" id="prices-grid"><div class="empty-state">Загрузка цен...</div></div>
-    </div>
+        <!-- CIO -->
+        <div class="cio-card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+            <svg width="36" height="48" viewBox="0 0 36 48">
+              <circle cx="18" cy="9" r="8" fill="#7c3aed" opacity=".9"/>
+              <text x="18" y="13.5" text-anchor="middle" font-size="10">👔</text>
+              <rect x="7" y="18" width="22" height="14" rx="5" fill="#6d28d9"/>
+              <text x="18" y="28" text-anchor="middle" font-size="8" fill="white" font-weight="bold">CIO</text>
+              <rect x="9" y="32" width="7" height="11" rx="3" fill="#5b21b6"/>
+              <rect x="20" y="32" width="7" height="11" rx="3" fill="#5b21b6"/>
+            </svg>
+            <div>
+              <div style="font-family:var(--display);font-size:9px;background:rgba(124,58,237,.15);color:var(--purple);padding:2px 8px;border-radius:20px;display:inline-block">Агент 6 — Директор</div>
+              <div style="font-size:9px;color:var(--amber);margin-top:4px" id="cio-status-txt">Готов к анализу</div>
+            </div>
+          </div>
+          <div class="flex gap8" style="flex-wrap:wrap;margin-bottom:8px">
+            <select id="cio-sym" class="select" style="flex:1;min-width:120px"></select>
+            <button class="btn-green" onclick="runCIO()" id="cio-btn">Анализ</button>
+            <button class="btn-outline" onclick="openTradeFromCIO()" id="btn-open-trade" style="display:none;font-size:11px">+ Сделка</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">
+            Groq API: <input id="groq-key-input" type="password" placeholder="gsk_..."
+              class="form-input" style="display:inline-block;width:160px;padding:4px 8px;font-size:11px;vertical-align:middle"
+              oninput="saveGroqKey(this.value)"/>
+          </div>
+          <div id="cio-result" class="cio-result hidden"></div>
+        </div>
 
+        <!-- SIGNALS -->
+        <div class="card-sm">
+          <div class="card-title"><span class="dot dot-green"></span>Сигналы (AI)</div>
+          <div id="signals-list"><div class="empty-state" style="padding:1rem">Загрузка...</div></div>
+        </div>
+
+      </div><!-- /left-col -->
+
+      <!-- RIGHT COL -->
+      <div class="right-col">
+
+        <!-- CHART -->
+        <div class="chart-wrap">
+          <div class="chart-header">
+            <div class="chart-sym-info">
+              <div class="chart-sym" id="ch-sym">SBER</div>
+              <div class="chart-price" id="ch-price">—</div>
+              <div class="chart-chg" id="ch-chg">—</div>
+            </div>
+            <div class="chart-controls">
+              <div style="display:flex;gap:2px">
+                <button class="tf-btn" onclick="changeTF(10)" data-tf="10">10М</button>
+                <button class="tf-btn active" onclick="changeTF(60)" data-tf="60">1Ч</button>
+                <button class="tf-btn" onclick="changeTF(24)" data-tf="24">1Д</button>
+                <button class="tf-btn" onclick="changeTF(7)" data-tf="7">Н</button>
+              </div>
+              <select id="chart-sym-sel" class="select" style="font-size:11px" onchange="switchChartSym(this.value)"></select>
+            </div>
+          </div>
+          <div id="chart-container"></div>
+          <div class="chart-signals-bar" id="chart-signals-bar">
+            <span style="font-size:10px;color:var(--muted)">Загрузка сигналов...</span>
+          </div>
+        </div>
+
+        <!-- STOCKS TABLE -->
+        <div class="card" style="padding:.75rem">
+          <div class="card-title" style="margin-bottom:.5rem">
+            💹 Все акции MOEX
+            <input id="stock-search" class="form-input" placeholder="Поиск..." style="width:120px;padding:3px 8px;font-size:11px;margin-left:auto"/>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stocks-table">
+              <thead>
+                <tr>
+                  <th>Акция</th>
+                  <th>Цена ₽</th>
+                  <th>Изм %</th>
+                  <th>Макс</th>
+                  <th>Мин</th>
+                  <th>Объём</th>
+                  <th>Действие</th>
+                </tr>
+              </thead>
+              <tbody id="stocks-tbody">
+                <tr><td colspan="7" class="empty-state">Загрузка цен...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NEWS -->
+        <div class="card-sm">
+          <div class="card-title">📰 Новости рынка</div>
+          <div id="news-list"><div class="empty-state" style="padding:.75rem">Загрузка новостей...</div></div>
+        </div>
+
+      </div><!-- /right-col -->
+    </div>
   </div><!-- /page-office -->
 
-  <!-- ══ PAGE: CABINET ══ -->
-  <div id="page-cabinet" class="container hidden" style="padding-top:1rem;padding-bottom:2rem">
+  <!-- PAGE CABINET -->
+  <div id="page-cabinet" class="container hidden" style="padding-top:.875rem;padding-bottom:2rem">
     <div class="cab-grid">
-
-      <!-- Sidebar -->
       <div class="cab-sidebar">
         <div class="profile-card">
           <div class="profile-avatar" id="cab-avatar">А</div>
-          <div class="profile-name" id="cab-name">Пользователь</div>
-          <div class="profile-email" id="cab-email">email@example.com</div>
-          <div class="profile-since" id="cab-since">Участник с ...</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:3px" id="cab-name">Пользователь</div>
+          <div style="font-size:11px;color:var(--muted)" id="cab-email">email</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="cab-since"></div>
         </div>
-        <div class="stat-mini">
-          <div>
-            <div class="stat-mini-label">Сделок</div>
-          </div>
-          <div class="stat-mini-val" id="stat-trades">0</div>
-        </div>
-        <div class="stat-mini">
-          <div>
-            <div class="stat-mini-label">Win rate</div>
-          </div>
-          <div class="stat-mini-val green" id="stat-wr">—</div>
-        </div>
-        <div class="stat-mini">
-          <div>
-            <div class="stat-mini-label">Средний P&L</div>
-          </div>
-          <div class="stat-mini-val" id="stat-pnl">—</div>
-        </div>
-        <button class="btn-outline" onclick="doLogout()" style="width:100%;margin-top:4px">
-          Выйти из аккаунта
-        </button>
+        <div class="stat-mini"><div class="stat-mini-label">Сделок</div><div class="stat-mini-val" id="stat-trades">0</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Win Rate</div><div class="stat-mini-val green" id="stat-wr">—</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Ср. P&L</div><div class="stat-mini-val" id="stat-pnl">—</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Агент-сделок</div><div class="stat-mini-val amber" id="stat-agent-trades">0</div></div>
+        <button class="btn-outline" onclick="doLogout()" style="width:100%">Выйти</button>
       </div>
-
-      <!-- Main -->
       <div class="cab-main">
         <div class="tab-nav">
-          <button class="tab-btn active" onclick="switchCabTab('trades')">Мои сделки</button>
-          <button class="tab-btn" onclick="switchCabTab('open')">Открыть сделку</button>
+          <button class="tab-btn active" onclick="switchCabTab('trades')">Сделки</button>
+          <button class="tab-btn" onclick="switchCabTab('open')">Открыть</button>
+          <button class="tab-btn" onclick="switchCabTab('agent')">Агент-лог</button>
           <button class="tab-btn" onclick="switchCabTab('settings')">Настройки</button>
         </div>
-
-        <!-- TRADES TAB -->
         <div id="cab-trades">
-          <div class="card">
-            <div class="card-title">Открытые сделки</div>
-            <div id="open-trades-list"><div class="empty-state">Нет открытых сделок</div></div>
-          </div>
-          <div class="card mt12">
-            <div class="card-title">История сделок</div>
-            <div id="closed-trades-list"><div class="empty-state">История пуста</div></div>
-          </div>
+          <div class="card"><div class="card-title">Открытые сделки</div><div id="open-trades-list"><div class="empty-state">Нет открытых сделок</div></div></div>
+          <div class="card mt8"><div class="card-title">История сделок</div><div id="closed-trades-list"><div class="empty-state">История пуста</div></div></div>
         </div>
-
-        <!-- OPEN TRADE TAB -->
         <div id="cab-open" class="hidden">
           <div class="card">
-            <div class="card-title">Открыть новую сделку</div>
+            <div class="card-title">Открыть сделку</div>
             <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr auto">
-              <div>
-                <label class="form-label">Акция</label>
-                <select id="ot-sym" class="select" style="width:100%">
-                  <option>SBER</option><option>LKOH</option><option>GAZP</option>
-                  <option>YNDX</option><option>GMKN</option><option>ROSN</option>
-                  <option>NVTK</option><option>ALRS</option><option>PLZL</option>
-                  <option>VTBR</option><option>TCSG</option><option>NLMK</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Направление</label>
-                <select id="ot-dir" class="select" style="width:100%">
-                  <option value="LONG">LONG</option>
-                  <option value="SHORT">SHORT</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Цена входа ₽</label>
-                <input type="number" id="ot-entry" class="form-input" placeholder="0.00" step="0.01"/>
-              </div>
-              <div>
-                <label class="form-label">Объём ₽</label>
-                <input type="number" id="ot-volume" class="form-input" placeholder="10000"/>
-              </div>
+              <div><label class="form-label">Акция</label><select id="ot-sym" class="select" style="width:100%"></select></div>
+              <div><label class="form-label">Направление</label><select id="ot-dir" class="select" style="width:100%"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
+              <div><label class="form-label">Вход ₽</label><input type="number" id="ot-entry" class="form-input" placeholder="0.00" step="0.01"/></div>
+              <div><label class="form-label">Объём ₽</label><input type="number" id="ot-volume" class="form-input" placeholder="10000"/></div>
             </div>
             <div class="form-row mt8" style="grid-template-columns:1fr 1fr 1fr">
-              <div>
-                <label class="form-label">Стоп ₽</label>
-                <input type="number" id="ot-stop" class="form-input" placeholder="0.00" step="0.01"/>
-              </div>
-              <div>
-                <label class="form-label">Цель 1 ₽</label>
-                <input type="number" id="ot-tgt1" class="form-input" placeholder="0.00" step="0.01"/>
-              </div>
-              <div>
-                <label class="form-label">Цель 2 ₽</label>
-                <input type="number" id="ot-tgt2" class="form-input" placeholder="0.00" step="0.01"/>
-              </div>
+              <div><label class="form-label">Стоп ₽</label><input type="number" id="ot-stop" class="form-input" placeholder="0.00" step="0.01"/></div>
+              <div><label class="form-label">Цель 1 ₽</label><input type="number" id="ot-tgt1" class="form-input" placeholder="0.00" step="0.01"/></div>
+              <div><label class="form-label">Цель 2 ₽</label><input type="number" id="ot-tgt2" class="form-input" placeholder="0.00" step="0.01"/></div>
             </div>
-            <div class="mt12 flex gap8">
-              <button class="btn-green" onclick="openTrade()">Открыть сделку</button>
-              <button class="btn-outline" onclick="fillFromCIO()">Заполнить из CIO</button>
-            </div>
+            <div class="mt8 flex gap8"><button class="btn-green" onclick="openTrade()">Открыть сделку</button><button class="btn-outline" onclick="fillFromCIO()">Из CIO</button></div>
           </div>
         </div>
-
-        <!-- SETTINGS TAB -->
+        <div id="cab-agent" class="hidden">
+          <div class="card">
+            <div class="card-title">Автономные сделки агентов</div>
+            <div id="agent-trades-list"><div class="empty-state">Агенты ещё не открывали сделок</div></div>
+          </div>
+        </div>
         <div id="cab-settings" class="hidden">
           <div class="card">
             <div class="card-title">Настройки аккаунта</div>
             <div class="settings-row">
-              <div>
-                <div class="settings-label">Уведомления на email</div>
-                <div class="settings-desc">Получать сигналы CIO на почту</div>
-              </div>
-              <div class="toggle" id="toggle-email" onclick="toggleSetting('email_notify')"></div>
+              <div><div class="settings-label">Groq API ключ</div><div class="settings-desc">Для CIO и авто-анализа агентов</div></div>
+              <input type="password" id="settings-groq" class="form-input" style="width:180px" placeholder="gsk_..." onblur="saveGroqKey(this.value)"/>
             </div>
             <div class="settings-row">
-              <div>
-                <div class="settings-label">Риск на сделку</div>
-                <div class="settings-desc">Максимальный риск от депозита</div>
-              </div>
+              <div><div class="settings-label">Автономные агенты</div><div class="settings-desc">Агенты сами открывают сделки</div></div>
+              <div class="toggle" id="toggle-agents" onclick="toggleAgents()"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Риск на сделку</div><div class="settings-desc">% от депозита</div></div>
               <select class="select" id="risk-select" onchange="saveRisk(this.value)">
-                <option value="1">1%</option>
-                <option value="2" selected>2%</option>
-                <option value="3">3%</option>
-                <option value="5">5%</option>
+                <option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option>
               </select>
             </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Любимые акции</div>
-                <div class="settings-desc">Показывать в первую очередь</div>
-              </div>
-              <input type="text" id="fav-stocks" class="form-input" style="width:160px"
-                placeholder="SBER,LKOH,GAZP" onblur="saveFavStocks(this.value)"/>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Groq API ключ</div>
-                <div class="settings-desc">Для CIO анализа</div>
-              </div>
-              <input type="password" id="settings-groq" class="form-input" style="width:160px"
-                placeholder="gsk_..." onblur="saveGroqKey(this.value)"/>
-            </div>
-            <div class="mt12">
-              <button class="btn-primary" onclick="saveSettings()" style="width:auto;padding:8px 20px">
-                Сохранить
-              </button>
-            </div>
+            <div class="mt8"><button class="btn-primary" onclick="saveSettings()" style="width:auto;padding:8px 20px">Сохранить</button></div>
           </div>
-
-          <div class="card mt12">
+          <div class="card mt8">
             <div class="card-title" style="color:var(--red)">Опасная зона</div>
             <div class="settings-row">
-              <div>
-                <div class="settings-label">Удалить все сделки</div>
-                <div class="settings-desc">Очистить историю безвозвратно</div>
-              </div>
+              <div><div class="settings-label">Удалить все сделки</div><div class="settings-desc">Очистить историю безвозвратно</div></div>
               <button class="btn-danger" onclick="clearAllTrades()">Удалить</button>
             </div>
           </div>
         </div>
-
-      </div><!-- /cab-main -->
-    </div><!-- /cab-grid -->
+      </div>
+    </div>
   </div><!-- /page-cabinet -->
 
-  <footer class="footer">
-    <div class="container">
-      БКС Торговый офис агентов MOEX — данные с MOEX ISS API. Не является инвест. рекомендацией.
-    </div>
-  </footer>
-
+  <footer class="footer"><div class="container">БКС Торговый офис агентов MOEX — данные с MOEX ISS API. Не является инвест. рекомендацией.</div></footer>
 </div><!-- /app -->
 
+<!-- ANALYTICS MODAL -->
+<div id="analytics-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-family:var(--display);font-size:13px;font-weight:800" id="am-title">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px" id="am-sector">—</div>
+      </div>
+      <button class="modal-close" onclick="closeAnalytics()">✕</button>
+    </div>
+    <div class="modal-body" id="am-body">Загрузка...</div>
+  </div>
+</div>
+
+<!-- AUDIT MODAL -->
+<div id="audit-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-family:var(--display);font-size:13px;font-weight:800">⚡ Аудит системы</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px" id="audit-time">—</div>
+      </div>
+      <button class="modal-close" onclick="closeAudit()">✕</button>
+    </div>
+    <div class="modal-body" id="audit-body">Сбор данных...</div>
+  </div>
+</div>
+
 <script>
-// ══════════════════════════════════════════════
-// FIREBASE CONFIG — замените на ваши данные!
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyCY6nDYPfZDjlJwjZVk5eoV5g0sjdBVX5w",
   authDomain: "moex-trading-office.firebaseapp.com",
   projectId: "moex-trading-office",
   storageBucket: "moex-trading-office.firebasestorage.app",
   messagingSenderId: "619234474602",
-  appId: "1:619234474602:web:518cf927df3b9f459ca813",
-  measurementId: "G-WRPL2G0PC7"
+  appId: "1:619234474602:web:518cf927df3b9f459ca813"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-// Простая авторизация через Firestore (без Firebase Auth)
 let currentUser = null;
 let userProfile = {};
 let lastCioData = null;
+let agentsEnabled = false;
+let agentTradeCount = 0;
+let agentTrades = [];
 
-// ══════════════════════════════════════════════
-// ПРОСТАЯ АВТОРИЗАЦИЯ (без Firebase Auth)
-// Хранит сессию в localStorage
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// STOCKS — 50 акций MOEX
+// ═══════════════════════════════════════════════════════
+const STOCKS = {
+  SBER: {name:'Сбербанк',sector:'Финансы',pe:4.8,pb:0.9,roe:22,div:11.2,desc:'Крупнейший банк России'},
+  VTBR: {name:'ВТБ',sector:'Финансы',pe:3.2,pb:0.5,roe:18,div:5.1,desc:'Второй по активам банк'},
+  TCSG: {name:'Т-Банк',sector:'Финансы',pe:12.1,pb:3.2,roe:28,div:0,desc:'Цифровой банк Тинькофф'},
+  BSPB: {name:'Банк СПБ',sector:'Финансы',pe:3.5,pb:0.7,roe:21,div:6.4,desc:'Региональный банк СПБ'},
+  MOEX: {name:'МосБиржа',sector:'Финансы',pe:9.4,pb:3.1,roe:33,div:8.5,desc:'Московская биржа'},
+  RENI: {name:'Ренессанс Страх.',sector:'Финансы',pe:5.2,pb:1.1,roe:24,div:7.8,desc:'Страховая компания'},
+  SPBE: {name:'СПБ Биржа',sector:'Финансы',pe:null,pb:0.8,roe:-5,div:0,desc:'Биржа иностранных акций'},
+  LKOH: {name:'Лукойл',sector:'Нефть/Газ',pe:5.8,pb:1.2,roe:21,div:14.5,desc:'Крупнейшая частная нефтяная компания'},
+  GAZP: {name:'Газпром',sector:'Нефть/Газ',pe:3.1,pb:0.3,roe:8,div:6.8,desc:'Крупнейший производитель газа'},
+  ROSN: {name:'Роснефть',sector:'Нефть/Газ',pe:5.4,pb:0.9,roe:17,div:8.2,desc:'Государственная нефтяная компания'},
+  NVTK: {name:'Новатэк',sector:'Нефть/Газ',pe:8.2,pb:1.8,roe:22,div:5.3,desc:'Крупнейший независимый газодобытчик'},
+  SNGS: {name:'Сургутнефтегаз',sector:'Нефть/Газ',pe:2.1,pb:0.4,roe:18,div:22.4,desc:'Нефтедобытчик с валютными резервами'},
+  TATN: {name:'Татнефть',sector:'Нефть/Газ',pe:6.2,pb:1.4,roe:24,div:12.8,desc:'Татарская нефтяная компания'},
+  BANE: {name:'Башнефть',sector:'Нефть/Газ',pe:4.1,pb:0.6,roe:15,div:9.2,desc:'Башкирская нефтяная компания'},
+  GMKN: {name:'Норникель',sector:'Металлы',pe:7.4,pb:4.2,roe:57,div:5.8,desc:'Крупнейший производитель никеля и палладия'},
+  ALRS: {name:'Алроса',sector:'Металлы',pe:6.8,pb:1.1,roe:17,div:4.2,desc:'Мировой лидер по добыче алмазов'},
+  PLZL: {name:'Полюс',sector:'Металлы',pe:9.1,pb:3.5,roe:39,div:3.4,desc:'Крупнейший золотодобытчик России'},
+  NLMK: {name:'НЛМК',sector:'Металлы',pe:5.2,pb:1.3,roe:25,div:8.9,desc:'Крупнейший сталепроизводитель'},
+  CHMF: {name:'Северсталь',sector:'Металлы',pe:5.8,pb:2.1,roe:36,div:11.4,desc:'Вертикально интегрированная сталь'},
+  MAGN: {name:'ММК',sector:'Металлы',pe:4.9,pb:0.9,roe:19,div:7.6,desc:'Магнитогорский металлургический комбинат'},
+  RUAL: {name:'Русал',sector:'Металлы',pe:null,pb:0.4,roe:-2,div:0,desc:'Крупнейший производитель алюминия'},
+  PHOR: {name:'ФосАгро',sector:'Химия',pe:7.3,pb:3.8,roe:52,div:12.1,desc:'Производитель фосфорных удобрений'},
+  SELG: {name:'Селигдар',sector:'Металлы',pe:14.2,pb:2.1,roe:15,div:3.8,desc:'Золото и олово'},
+  YNDX: {name:'Яндекс',sector:'Технологии',pe:22.4,pb:4.8,roe:22,div:0,desc:'Ведущая IT-компания России'},
+  OZON: {name:'Ozon',sector:'Технологии',pe:null,pb:null,roe:-15,div:0,desc:'Крупнейший маркетплейс'},
+  VKCO: {name:'VK',sector:'Технологии',pe:null,pb:1.2,roe:-8,div:0,desc:'Социальная сеть и медиа'},
+  HEAD: {name:'HeadHunter',sector:'Технологии',pe:18.5,pb:9.2,roe:51,div:6.8,desc:'Крупнейший HR-маркетплейс'},
+  ASTR: {name:'Астра',sector:'Технологии',pe:28.1,pb:6.4,roe:23,div:2.1,desc:'Российская ОС и ПО'},
+  POSI: {name:'Позитив',sector:'Технологии',pe:24.2,pb:7.1,roe:29,div:4.5,desc:'Кибербезопасность'},
+  MGNT: {name:'Магнит',sector:'Ритейл',pe:8.4,pb:2.1,roe:25,div:7.8,desc:'Крупнейшая розничная сеть'},
+  FIVE: {name:'X5 Group',sector:'Ритейл',pe:7.2,pb:2.8,roe:39,div:14.2,desc:'Пятёрочка, Перекрёсток, Чижик'},
+  MVID: {name:'М.Видео',sector:'Ритейл',pe:null,pb:0.6,roe:-12,div:0,desc:'Электроника и бытовая техника'},
+  MTSS: {name:'МТС',sector:'Телеком',pe:6.8,pb:null,roe:null,div:17.4,desc:'Крупнейший мобильный оператор'},
+  RTKM: {name:'Ростелеком',sector:'Телеком',pe:9.4,pb:1.2,roe:13,div:8.2,desc:'Государственный телеком'},
+  HYDR: {name:'РусГидро',sector:'Энергетика',pe:5.1,pb:0.5,roe:10,div:6.8,desc:'Гидроэнергетика России'},
+  FEES: {name:'ФСК-Россети',sector:'Энергетика',pe:3.8,pb:0.3,roe:8,div:5.4,desc:'Магистральные электросети'},
+  IRAO: {name:'Интер РАО',sector:'Энергетика',pe:4.2,pb:0.5,roe:13,div:5.8,desc:'Электроэнергетика и экспорт'},
+  UPRO: {name:'Юнипро',sector:'Энергетика',pe:8.9,pb:1.1,roe:12,div:12.1,desc:'Тепловая генерация'},
+  OGKB: {name:'ОГК-2',sector:'Энергетика',pe:3.9,pb:0.4,roe:11,div:7.2,desc:'Тепловая генерация Газпром'},
+  AFLT: {name:'Аэрофлот',sector:'Транспорт',pe:null,pb:1.8,roe:-5,div:0,desc:'Национальный авиаперевозчик'},
+  FLOT: {name:'Совкомфлот',sector:'Транспорт',pe:4.1,pb:0.8,roe:20,div:9.4,desc:'Танкерный флот'},
+  GLTR: {name:'Globaltrans',sector:'Транспорт',pe:5.4,pb:1.4,roe:26,div:0,desc:'Железнодорожные перевозки'},
+  LSRG: {name:'ЛСР',sector:'Недвижимость',pe:7.8,pb:1.1,roe:14,div:8.4,desc:'Строительство и девелопмент'},
+  PIKK: {name:'ПИК',sector:'Недвижимость',pe:null,pb:1.5,roe:-3,div:0,desc:'Крупнейший застройщик'},
+  SMLT: {name:'Самолёт',sector:'Недвижимость',pe:null,pb:2.8,roe:-8,div:0,desc:'Девелопер Московского региона'},
+  ETLN: {name:'Эталон',sector:'Недвижимость',pe:null,pb:0.7,roe:-4,div:0,desc:'Строительство в СПб и Москве'},
+  BELU: {name:'Белуга',sector:'Потребительский',pe:12.4,pb:3.2,roe:26,div:5.8,desc:'Производитель алкоголя'},
+  AQUA: {name:'Инарктика',sector:'Потребительский',pe:8.2,pb:2.4,roe:29,div:8.1,desc:'Лососевая аквакультура'},
+  ABIO: {name:'Артген биотех',sector:'Медицина',pe:null,pb:3.1,roe:null,div:0,desc:'Биотехнологии'},
+  MDMG: {name:'MD Medical',sector:'Медицина',pe:14.8,pb:3.4,roe:23,div:5.2,desc:'Сеть медицинских клиник'},
+};
 
-// Проверяем сохранённую сессию
+const SYMS = Object.keys(STOCKS);
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
 (async function checkSession() {
-  const savedUser = localStorage.getItem('moex_user');
-  if (savedUser) {
+  const saved = localStorage.getItem('moex_user');
+  if (saved) {
     try {
-      const u = JSON.parse(savedUser);
-      // Проверяем что пользователь есть в Firestore
+      const u = JSON.parse(saved);
       const doc = await db.collection('users').doc(u.id).get();
       if (doc.exists) {
         currentUser = { uid: u.id, email: u.email, displayName: u.name };
         userProfile = doc.data();
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        initApp();
-        updateUserUI();
-        loadTrades();
+        showApp();
         return;
       }
     } catch(e) { console.error(e); }
@@ -605,525 +660,580 @@ let lastCioData = null;
   document.getElementById('auth-screen').classList.remove('hidden');
 })();
 
-function switchAuthTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register'));
-  });
-  document.getElementById('form-login').classList.toggle('hidden', tab!=='login');
-  document.getElementById('form-register').classList.toggle('hidden', tab!=='register');
-  hideAuthError();
-}
-
-function showAuthError(msg) {
-  const el = document.getElementById('auth-error');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-}
-function hideAuthError() { document.getElementById('auth-error').classList.add('hidden'); }
-
-function hashPassword(pass) {
-  // Простое хеширование для хранения в Firestore
-  let hash = 0;
-  for (let i = 0; i < pass.length; i++) {
-    hash = ((hash << 5) - hash) + pass.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36) + pass.length.toString(36);
-}
-
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('login-pass').value;
-  if (!email || !pass) return showAuthError('Заполните все поля');
-  try {
-    // Ищем пользователя по email в Firestore
-    const snap = await db.collection('users').where('email','==',email).limit(1).get();
-    if (snap.empty) return showAuthError('Пользователь не найден');
-    const doc  = snap.docs[0];
-    const data = doc.data();
-    if (data.passHash !== hashPassword(pass)) return showAuthError('Неверный пароль');
-    // Сохраняем сессию
-    currentUser  = { uid: doc.id, email, displayName: data.name };
-    userProfile  = data;
-    localStorage.setItem('moex_user', JSON.stringify({id:doc.id, email, name:data.name}));
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    updateUserUI();
-    loadTrades();
-    initApp();
-  } catch(e) {
-    showAuthError('Ошибка: ' + e.message);
-  }
-}
-
-async function doRegister() {
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('reg-pass').value;
-  const pass2 = document.getElementById('reg-pass2').value;
-  if (!name || !email || !pass) return showAuthError('Заполните все поля');
-  if (pass !== pass2) return showAuthError('Пароли не совпадают');
-  if (pass.length < 6) return showAuthError('Пароль минимум 6 символов');
-  if (!email.includes('@')) return showAuthError('Неверный формат email');
-  try {
-    // Проверяем что email не занят
-    const existing = await db.collection('users').where('email','==',email).limit(1).get();
-    if (!existing.empty) return showAuthError('Email уже используется');
-    // Создаём пользователя в Firestore
-    const uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-    await db.collection('users').doc(uid).set({
-      name, email,
-      passHash: hashPassword(pass),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      settings: { email_notify: false, risk: 2, fav_stocks: 'SBER,LKOH,GAZP' },
-      stats: { trades: 0, wins: 0, total_pnl: 0 },
-    });
-    // Автологин
-    currentUser = { uid, email, displayName: name };
-    userProfile = { name, email, settings:{}, stats:{} };
-    localStorage.setItem('moex_user', JSON.stringify({id:uid, email, name}));
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    updateUserUI();
-    initApp();
-  } catch(e) {
-    showAuthError('Ошибка: ' + e.message);
-  }
-}
-
-async function doResetPassword() {
-  showAuthError('Для сброса пароля обратитесь к администратору');
-}
-
-function doLogout() {
-  if (confirm('Выйти из аккаунта?')) {
-    localStorage.removeItem('moex_user');
-    currentUser = null;
-    userProfile = {};
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
-  }
-}
-
-// ══════════════════════════════════════════════
-// USER PROFILE
-// ══════════════════════════════════════════════
-async function loadUserProfile() {
-  if (!currentUser) return;
-  try {
-    const doc = await db.collection('users').doc(currentUser.uid).get();
-    userProfile = doc.exists ? doc.data() : {};
-  } catch(e) { console.error(e); }
+function showApp() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
   updateUserUI();
-  loadSettings();
   loadTrades();
 }
 
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('form-login').classList.toggle('hidden',tab!=='login');
+  document.getElementById('form-register').classList.toggle('hidden',tab!=='register');
+  hideAuthError();
+}
+function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.classList.remove('hidden')}
+function hideAuthError(){document.getElementById('auth-error').classList.add('hidden')}
+function hashPass(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0}return Math.abs(h).toString(36)+p.length.toString(36)}
+
+async function doLogin() {
+  const email=document.getElementById('login-email').value.trim().toLowerCase();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass) return showAuthError('Заполните все поля');
+  try {
+    const snap=await db.collection('users').where('email','==',email).limit(1).get();
+    if(snap.empty) return showAuthError('Пользователь не найден');
+    const doc=snap.docs[0];const data=doc.data();
+    if(data.passHash!==hashPass(pass)) return showAuthError('Неверный пароль');
+    currentUser={uid:doc.id,email,displayName:data.name};
+    userProfile=data;
+    localStorage.setItem('moex_user',JSON.stringify({id:doc.id,email,name:data.name}));
+    showApp();
+  } catch(e){showAuthError('Ошибка: '+e.message)}
+}
+
+async function doRegister() {
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  if(!name||!email||!pass) return showAuthError('Заполните все поля');
+  if(pass!==pass2) return showAuthError('Пароли не совпадают');
+  if(pass.length<6) return showAuthError('Пароль минимум 6 символов');
+  try {
+    const ex=await db.collection('users').where('email','==',email).limit(1).get();
+    if(!ex.empty) return showAuthError('Email уже используется');
+    const uid='u_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    await db.collection('users').doc(uid).set({
+      name,email,passHash:hashPass(pass),
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      settings:{email_notify:false,risk:2,agents_enabled:false},
+      stats:{trades:0,wins:0,total_pnl:0,agent_trades:0}
+    });
+    currentUser={uid,email,displayName:name};
+    userProfile={name,email,settings:{},stats:{}};
+    localStorage.setItem('moex_user',JSON.stringify({id:uid,email,name}));
+    showApp();
+  } catch(e){showAuthError('Ошибка: '+e.message)}
+}
+
+function doLogout() {
+  if(confirm('Выйти из аккаунта?')){
+    localStorage.removeItem('moex_user');
+    currentUser=null;userProfile={};
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    stopAgents();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// USER UI
+// ═══════════════════════════════════════════════════════
 function updateUserUI() {
-  const name  = currentUser.displayName || userProfile.name || 'Пользователь';
-  const email = currentUser.email || '';
-  const initials = name.slice(0,2).toUpperCase();
-  document.getElementById('user-avatar').textContent = initials.slice(0,1);
-  document.getElementById('user-name-chip').textContent = name.split(' ')[0];
-  document.getElementById('cab-avatar').textContent = initials;
-  document.getElementById('cab-name').textContent = name;
-  document.getElementById('cab-email').textContent = email;
-  const since = currentUser.metadata?.creationTime
-    ? new Date(currentUser.metadata.creationTime).toLocaleDateString('ru',{month:'long',year:'numeric'})
-    : '';
-  document.getElementById('cab-since').textContent = since ? 'Участник с ' + since : '';
-
-  // Stats
-  const s = userProfile.stats || {};
-  document.getElementById('stat-trades').textContent = s.trades || 0;
-  const wr = s.trades > 0 ? Math.round(s.wins/s.trades*100) : null;
-  const el = document.getElementById('stat-wr');
-  el.textContent = wr !== null ? wr + '%' : '—';
-  el.style.color = wr >= 50 ? 'var(--green)' : wr !== null ? 'var(--red)' : 'var(--text)';
-  const avgPnl = s.trades > 0 ? (s.total_pnl/s.trades).toFixed(2) : null;
-  const pnlEl = document.getElementById('stat-pnl');
-  pnlEl.textContent = avgPnl !== null ? (avgPnl >= 0 ? '+' : '') + avgPnl + '%' : '—';
-  pnlEl.style.color = avgPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const name=currentUser?.displayName||userProfile?.name||'Пользователь';
+  const email=currentUser?.email||'';
+  const init=name.slice(0,1).toUpperCase();
+  document.getElementById('user-avatar').textContent=init;
+  document.getElementById('user-name-chip').textContent=name.split(' ')[0];
+  document.getElementById('cab-avatar').textContent=init;
+  document.getElementById('cab-name').textContent=name;
+  document.getElementById('cab-email').textContent=email;
+  const s=userProfile?.stats||{};
+  document.getElementById('stat-trades').textContent=s.trades||0;
+  document.getElementById('stat-agent-trades').textContent=s.agent_trades||0;
+  document.getElementById('m-agent-trades').textContent=agentTradeCount;
+  const wr=s.trades>0?Math.round(s.wins/s.trades*100):null;
+  const wrEl=document.getElementById('stat-wr');
+  wrEl.textContent=wr!==null?wr+'%':'—';
+  wrEl.style.color=wr>=50?'var(--green)':wr!==null?'var(--red)':'var(--text)';
+  const avgPnl=s.trades>0?(s.total_pnl/s.trades).toFixed(2):null;
+  const pnlEl=document.getElementById('stat-pnl');
+  pnlEl.textContent=avgPnl!==null?(avgPnl>=0?'+':'')+avgPnl+'%':'—';
+  pnlEl.style.color=avgPnl>=0?'var(--green)':'var(--red)';
+  // Settings
+  const k=localStorage.getItem('groq_key')||'';
+  if(k){document.getElementById('groq-key-input').value=k;document.getElementById('settings-groq').value=k;}
+  agentsEnabled=userProfile?.settings?.agents_enabled||false;
+  document.getElementById('toggle-agents').classList.toggle('on',agentsEnabled);
 }
 
-function loadSettings() {
-  const s = userProfile.settings || {};
-  const groqKey = localStorage.getItem('groq_key') || '';
-  if (groqKey) {
-    document.getElementById('groq-key-input').value = groqKey;
-    document.getElementById('settings-groq').value = groqKey;
-  }
-  const toggle = document.getElementById('toggle-email');
-  toggle.classList.toggle('on', !!s.email_notify);
-  const riskSel = document.getElementById('risk-select');
-  if (s.risk) riskSel.value = s.risk;
-  const favEl = document.getElementById('fav-stocks');
-  if (s.fav_stocks) favEl.value = s.fav_stocks;
+function showUserMenu(){if(confirm('Выйти из аккаунта?'))doLogout()}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showPage(p) {
+  document.getElementById('page-office').classList.toggle('hidden',p!=='office');
+  document.getElementById('page-cabinet').classList.toggle('hidden',p!=='cabinet');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&p==='office')||(i===1&&p==='cabinet')));
+  if(p==='cabinet'){loadTrades();updateUserUI();}
+}
+function switchCabTab(tab) {
+  ['trades','open','agent','settings'].forEach(t=>document.getElementById('cab-'+t).classList.toggle('hidden',t!==tab));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['trades','open','agent','settings'][i]===tab));
+  if(tab==='agent')renderAgentTrades();
 }
 
-function saveGroqKey(val) {
-  localStorage.setItem('groq_key', val);
-  document.getElementById('groq-key-input').value = val;
-  document.getElementById('settings-groq').value = val;
-}
-
-function toggleSetting(key) {
-  const toggle = document.getElementById('toggle-email');
-  toggle.classList.toggle('on');
-}
-
-async function saveSettings() {
-  if (!currentUser) return;
-  const settings = {
-    email_notify: document.getElementById('toggle-email').classList.contains('on'),
-    risk: parseInt(document.getElementById('risk-select').value),
-    fav_stocks: document.getElementById('fav-stocks').value,
-  };
-  saveGroqKey(document.getElementById('settings-groq').value);
-  await db.collection('users').doc(currentUser.uid).update({ settings });
-  alert('Настройки сохранены!');
-}
-
-function saveFavStocks(val) {}
-function saveRisk(val) {}
-
-// ══════════════════════════════════════════════
-// TRADES
-// ══════════════════════════════════════════════
-let openTradesList = [];
-let closedTradesList = [];
-
-async function loadTrades() {
-  if (!currentUser) return;
-  try {
-    const snap = await db.collection('users').doc(currentUser.uid)
-      .collection('trades').orderBy('openedAt','desc').limit(50).get();
-    openTradesList   = [];
-    closedTradesList = [];
-    snap.forEach(doc => {
-      const t = { id: doc.id, ...doc.data() };
-      t.status === 'open' ? openTradesList.push(t) : closedTradesList.push(t);
-    });
-    renderTrades();
-    updateUserUI();
-  } catch(e) { console.error(e); }
-}
-
-function renderTrades() {
-  // Open
-  const openEl = document.getElementById('open-trades-list');
-  if (!openTradesList.length) {
-    openEl.innerHTML = '<div class="empty-state">Нет открытых сделок</div>';
-  } else {
-    openEl.innerHTML = openTradesList.map(t => {
-      const price = marketPrices[t.sym]?.price || t.entry;
-      const pnlPct = t.direction === 'LONG'
-        ? ((price-t.entry)/t.entry*100).toFixed(2)
-        : ((t.entry-price)/t.entry*100).toFixed(2);
-      const pnlColor = parseFloat(pnlPct) >= 0 ? 'var(--green)' : 'var(--red)';
-      return `<div class="trade-item">
-        <div class="trade-sym">${t.sym}</div>
-        <div class="tag ${t.direction==='LONG'?'tag-long':'tag-short'}">${t.direction}</div>
-        <div class="trade-info">
-          Вход: ${t.entry} ₽ | Стоп: ${t.stop||'—'} ₽<br>
-          Цель 1: ${t.tgt1||'—'} ₽ | ${t.openedAt?.toDate?.()?.toLocaleDateString('ru')||''}
-        </div>
-        <div class="trade-pnl" style="color:${pnlColor}">${pnlPct >= 0 ?'+':''}${pnlPct}%</div>
-        <button class="btn-danger" onclick="closeTrade('${t.id}',${price})">Закрыть</button>
-      </div>`;
-    }).join('');
-  }
-
-  // Closed
-  const closedEl = document.getElementById('closed-trades-list');
-  if (!closedTradesList.length) {
-    closedEl.innerHTML = '<div class="empty-state">История пуста</div>';
-  } else {
-    closedEl.innerHTML = closedTradesList.slice(0,10).map(t => {
-      const pnlColor = (t.pnl||0) >= 0 ? 'var(--green)' : 'var(--red)';
-      return `<div class="trade-item">
-        <div class="trade-sym">${t.sym}</div>
-        <div class="tag ${t.direction==='LONG'?'tag-long':'tag-short'}">${t.direction}</div>
-        <div class="trade-info">
-          Вход: ${t.entry} ₽ → Выход: ${t.closePrice||'—'} ₽<br>
-          ${t.closedAt?.toDate?.()?.toLocaleDateString('ru','long')||''}
-        </div>
-        <div class="trade-pnl" style="color:${pnlColor}">${(t.pnl||0)>=0?'+':''}${(t.pnl||0).toFixed(2)}%</div>
-      </div>`;
-    }).join('');
-  }
-}
-
-async function openTrade() {
-  if (!currentUser) return;
-  const trade = {
-    sym:       document.getElementById('ot-sym').value,
-    direction: document.getElementById('ot-dir').value,
-    entry:     parseFloat(document.getElementById('ot-entry').value) || 0,
-    stop:      parseFloat(document.getElementById('ot-stop').value)  || null,
-    tgt1:      parseFloat(document.getElementById('ot-tgt1').value)  || null,
-    tgt2:      parseFloat(document.getElementById('ot-tgt2').value)  || null,
-    volume:    parseFloat(document.getElementById('ot-volume').value) || 0,
-    status:    'open',
-    openedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-  };
-  if (!trade.entry) return alert('Укажите цену входа');
-  try {
-    await db.collection('users').doc(currentUser.uid).collection('trades').add(trade);
-    await loadTrades();
-    switchCabTab('trades');
-    alert(`Сделка ${trade.sym} ${trade.direction} открыта!`);
-  } catch(e) { alert('Ошибка: ' + e.message); }
-}
-
-async function closeTrade(tradeId, currentPrice) {
-  if (!confirm('Закрыть сделку по текущей цене ' + currentPrice + ' ₽?')) return;
-  const trade = openTradesList.find(t => t.id === tradeId);
-  if (!trade) return;
-  const pnl = trade.direction === 'LONG'
-    ? (currentPrice-trade.entry)/trade.entry*100
-    : (trade.entry-currentPrice)/trade.entry*100;
-  try {
-    await db.collection('users').doc(currentUser.uid)
-      .collection('trades').doc(tradeId).update({
-        status: 'closed',
-        closePrice: currentPrice,
-        pnl: parseFloat(pnl.toFixed(2)),
-        closedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-    // Обновляем статистику
-    const s = userProfile.stats || { trades:0, wins:0, total_pnl:0 };
-    await db.collection('users').doc(currentUser.uid).update({
-      stats: {
-        trades:    (s.trades||0) + 1,
-        wins:      (s.wins||0) + (pnl > 0 ? 1 : 0),
-        total_pnl: (s.total_pnl||0) + pnl,
-      }
-    });
-    await loadUserProfile();
-    await loadTrades();
-  } catch(e) { alert('Ошибка: ' + e.message); }
-}
-
-async function clearAllTrades() {
-  if (!confirm('Удалить ВСЕ сделки безвозвратно?')) return;
-  const snap = await db.collection('users').doc(currentUser.uid).collection('trades').get();
-  const batch = db.batch();
-  snap.forEach(d => batch.delete(d.ref));
-  await batch.commit();
-  await db.collection('users').doc(currentUser.uid).update({
-    stats: { trades:0, wins:0, total_pnl:0 }
-  });
-  await loadUserProfile();
-  await loadTrades();
-}
-
-function fillFromCIO() {
-  if (!lastCioData) return alert('Сначала запросите анализ CIO во вкладке "Офис агентов"');
-  document.getElementById('ot-sym').value   = lastCioData.symbol || 'SBER';
-  document.getElementById('ot-dir').value   = lastCioData.direction || 'LONG';
-  document.getElementById('ot-entry').value = lastCioData.entry || '';
-  document.getElementById('ot-stop').value  = lastCioData.stop  || '';
-  document.getElementById('ot-tgt1').value  = lastCioData.tgt1  || '';
-  document.getElementById('ot-tgt2').value  = lastCioData.tgt2  || '';
-}
-
-function openTradeFromCIO() {
-  showPage('cabinet');
-  switchCabTab('open');
-  fillFromCIO();
-}
-
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // MARKET DATA
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 let marketPrices = {};
-const MOEX = 'https://iss.moex.com/iss';
-const STOCKS_MAP = {
-  SBER:'Сбербанк',LKOH:'Лукойл',GAZP:'Газпром',YNDX:'Яндекс',
-  GMKN:'Норникель',ROSN:'Роснефть',NVTK:'Новатэк',ALRS:'Алроса',
-  PLZL:'Полюс',MGNT:'Магнит',VTBR:'ВТБ',TCSG:'Т-Банк',
-  NLMK:'НЛМК',CHMF:'Северсталь',MAGN:'ММК',AFLT:'Аэрофлот',
-  SNGS:'Сургутнефтегаз',MTSS:'МТС',OZON:'Ozon',VKCO:'VK',FIVE:'X5',
-};
+const MOEX_BASE = 'https://iss.moex.com/iss';
 
 async function fetchPrices() {
-  try {
-    const syms = Object.keys(STOCKS_MAP).join(',');
-    const url = `${MOEX}/engines/stock/markets/shares/boards/TQBR/securities.json?securities=${syms}&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME`;
-    const r = await fetch(url);
-    const d = await r.json();
-    const cols = d.marketdata.columns;
-    marketPrices = {};
-    for (const row of d.marketdata.data) {
-      const o = Object.fromEntries(cols.map((c,i)=>[c,row[i]]));
-      if (o.SECID && o.LAST) {
-        marketPrices[o.SECID] = {
-          price: o.LAST,
-          chg:   parseFloat(o.CHANGE||0).toFixed(2),
-          high:  o.HIGH, low: o.LOW, vol: o.VOLUME,
-        };
+  const chunks = [];
+  for(let i=0;i<SYMS.length;i+=20) chunks.push(SYMS.slice(i,i+20));
+  for(const chunk of chunks) {
+    try {
+      const url=`${MOEX_BASE}/engines/stock/markets/shares/boards/TQBR/securities.json?securities=${chunk.join(',')}&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME,OPEN`;
+      const r=await fetch(url);const d=await r.json();
+      const cols=d.marketdata.columns;
+      for(const row of d.marketdata.data) {
+        const o=Object.fromEntries(cols.map((c,i)=>[c,row[i]]));
+        if(o.SECID&&o.LAST) {
+          marketPrices[o.SECID]={price:o.LAST,chg:parseFloat(o.CHANGE||0).toFixed(2),high:o.HIGH,low:o.LOW,vol:o.VOLUME,open:o.OPEN};
+        }
       }
-    }
-    renderPrices();
-    renderTicker();
-    renderSignals();
-    if (openTradesList.length) renderTrades();
-  } catch(e) { console.error('Prices:', e); }
+    } catch(e){console.warn('Prices chunk err:',e)}
+  }
+  renderStocksTable();
+  renderTicker();
+  renderSignals();
+  document.getElementById('m-stocks').textContent=Object.keys(marketPrices).length;
+  if(openTradesList.length)renderTrades();
+  updateChartHeader();
 }
 
 async function fetchMacro() {
   try {
-    // IMOEX
-    const r1 = await fetch(`${MOEX}/engines/stock/markets/index/boards/SNDX/securities/IMOEX.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,CURRENTVALUE`);
-    const d1 = await r1.json();
-    const imoex = d1.marketdata.data[0]?.[1];
-    if (imoex) document.getElementById('m-imoex').textContent = parseFloat(imoex).toFixed(1);
-
-    // USD/RUB from MOEX
-    const r2 = await fetch(`${MOEX}/engines/currency/markets/selt/boards/CETS/securities/USD000UTSTOM.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST`);
-    const d2 = await r2.json();
-    const usd = d2.marketdata.data[0]?.[1];
-    if (usd) document.getElementById('m-usd').textContent = parseFloat(usd).toFixed(2);
-  } catch(e) {}
-
-  const now = new Date();
-  const h = now.getHours();
-  const isOpen = h>=10 && h<19;
-  document.getElementById('market-status-txt').textContent = isOpen ? 'Рынок открыт' : 'Рынок закрыт';
-  document.getElementById('m-updated').textContent = now.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+    const r1=await fetch(`${MOEX_BASE}/engines/stock/markets/index/boards/SNDX/securities/IMOEX.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,CURRENTVALUE`);
+    const d1=await r1.json();
+    const imoex=d1.marketdata.data[0]?.[1];
+    if(imoex)document.getElementById('m-imoex').textContent=parseFloat(imoex).toFixed(1);
+  } catch(e){}
+  try {
+    const r2=await fetch(`${MOEX_BASE}/engines/currency/markets/selt/boards/CETS/securities/USD000UTSTOM.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST`);
+    const d2=await r2.json();
+    const usd=d2.marketdata.data[0]?.[1];
+    if(usd)document.getElementById('m-usd').textContent=parseFloat(usd).toFixed(2);
+  } catch(e){}
+  const now=new Date();
+  const h=now.getHours();
+  const isOpen=h>=10&&h<19&&[1,2,3,4,5].includes(now.getDay());
+  document.getElementById('market-status-txt').textContent=isOpen?'Рынок открыт':'Рынок закрыт';
+  document.getElementById('m-updated').textContent=now.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+  // Brent (simulated from MOEX)
+  const brent=(marketPrices['LKOH']?.price)?((marketPrices['LKOH'].price/7.5)).toFixed(1):'85.2';
+  document.getElementById('m-brent').textContent='$'+brent;
 }
 
 async function fetchNews() {
-  const sources = [
-    'https://rssexport.rbc.ru/rbcnews/news/30/full.rss',
-    'https://www.finam.ru/analysis/conews/rsspoint/',
-  ];
-  let news = [];
-  for (const url of sources) {
-    try {
-      const r = await fetch(url);
-      const text = await r.text();
-      const items = text.match(/<item>[\s\S]*?<\/item>/g)||[];
-      for (const item of items.slice(0,5)) {
-        const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1]||
-                      item.match(/<title>(.*?)<\/title>/)?.[1]||'';
-        if (!title) continue;
-        const t = title.toLowerCase();
-        const pos = ['рост','прибыл','дивиденд','повыш','рекорд'].filter(w=>t.includes(w)).length;
-        const neg = ['падени','убыток','санкци','снижени','штраф'].filter(w=>t.includes(w)).length;
-        const sent = pos>neg?'📈':neg>pos?'📉':'➡️';
-        news.push({title:title.slice(0,90),sent});
-        if(news.length>=6) break;
-      }
-      if(news.length>=6) break;
-    } catch(e) {}
-  }
-  const el = document.getElementById('news-list');
-  el.innerHTML = news.length ? news.map(n=>`
-    <div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.4">
-      <span style="margin-right:5px">${n.sent}</span>
-      <span style="color:#d1d5db">${n.title}</span>
-    </div>`).join('') : '<div class="empty-state">Нет новостей</div>';
+  try {
+    const url='https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent('https://rssexport.rbc.ru/rbcnews/news/30/full.rss')+'&count=8';
+    const r=await fetch(url);const d=await r.json();
+    const items=d.items||[];
+    const el=document.getElementById('news-list');
+    if(!items.length){el.innerHTML='<div class="empty-state">Нет новостей</div>';return;}
+    el.innerHTML=items.slice(0,6).map(item=>{
+      const t=(item.title||'').slice(0,85);
+      const lo=t.toLowerCase();
+      const pos=['рост','прибыл','дивиденд','повыш','рекорд','выруч'].filter(w=>lo.includes(w)).length;
+      const neg=['падени','убыток','санкц','снижен','штраф','кризис'].filter(w=>lo.includes(w)).length;
+      const sent=pos>neg?'📈':neg>pos?'📉':'➡️';
+      const col=pos>neg?'var(--green)':neg>pos?'var(--red)':'var(--muted)';
+      return `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;line-height:1.4;display:flex;gap:6px;align-items:flex-start">
+        <span>${sent}</span>
+        <a href="${item.link||'#'}" target="_blank" style="color:#d1d5db;text-decoration:none;flex:1" onmouseover="this.style.color='${col}'" onmouseout="this.style.color='#d1d5db'">${t}</a>
+      </div>`;
+    }).join('');
+  } catch(e){document.getElementById('news-list').innerHTML='<div class="empty-state">Ошибка загрузки новостей</div>';}
 }
 
-// RSI calculation
-function calcRSI(closes) {
-  if (closes.length < 15) return null;
-  const gains=[], losses=[];
-  for(let i=1;i<15;i++){
-    const d=closes[closes.length-15+i]-closes[closes.length-15+i-1];
-    d>0?gains.push(d):losses.push(Math.abs(d));
+// ═══════════════════════════════════════════════════════
+// RENDER STOCKS TABLE
+// ═══════════════════════════════════════════════════════
+function renderStocksTable(filter='') {
+  const tbody=document.getElementById('stocks-tbody');
+  const entries=Object.entries(marketPrices).filter(([s])=>!filter||s.includes(filter.toUpperCase())||STOCKS[s]?.name?.toLowerCase().includes(filter.toLowerCase()));
+  if(!entries.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">Нет данных</td></tr>';return;}
+  tbody.innerHTML=entries.map(([sym,p])=>{
+    const chg=parseFloat(p.chg);
+    const col=chg>=0?'var(--green)':'var(--red)';
+    const info=STOCKS[sym];
+    const sectorColors={'Финансы':'rgba(96,165,250,.15)','Нефть/Газ':'rgba(251,191,36,.15)','Металлы':'rgba(167,139,250,.15)','Технологии':'rgba(34,211,238,.15)','Ритейл':'rgba(0,217,126,.15)','Энергетика':'rgba(255,77,109,.1)','Телеком':'rgba(167,139,250,.1)','Химия':'rgba(34,211,238,.1)'};
+    const sectorCol=sectorColors[info?.sector]||'rgba(107,114,128,.15)';
+    const vol=p.vol?formatVol(p.vol):'—';
+    return `<tr onclick="switchChart('${sym}')" ${currentChartSym===sym?'class="active-row"':''}>
+      <td><div class="sym-cell">
+        <span class="sym-ticker">${sym}</span>
+        <span class="sym-name">${info?.name||''}</span>
+        <span class="sector-badge" style="background:${sectorCol};color:var(--text)">${info?.sector||''}</span>
+      </div></td>
+      <td style="font-weight:700">${p.price?p.price.toLocaleString('ru'):'—'}</td>
+      <td style="color:${col};font-weight:700">${chg>=0?'+':''}${chg}%</td>
+      <td style="color:var(--muted)">${p.high||'—'}</td>
+      <td style="color:var(--muted)">${p.low||'—'}</td>
+      <td style="color:var(--muted)">${vol}</td>
+      <td><button class="btn-analytics" onclick="event.stopPropagation();showAnalytics('${sym}')">📊 Анализ</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function formatVol(v){if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(0)+'K';return v}
+
+document.getElementById('stock-search').addEventListener('input',function(){renderStocksTable(this.value)});
+
+// ═══════════════════════════════════════════════════════
+// TICKER
+// ═══════════════════════════════════════════════════════
+function renderTicker() {
+  const items=Object.entries(marketPrices).slice(0,20);
+  const html=[...items,...items].map(([sym,p])=>{
+    const chg=parseFloat(p.chg);
+    return `<div class="ticker-item"><span style="font-weight:700">${sym}</span><span style="color:var(--muted)">${p.price} ₽</span><span style="color:${chg>=0?'var(--green)':'var(--red)'}">${chg>=0?'+':''}${chg}%</span></div>`;
+  }).join('');
+  document.getElementById('ticker').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// SIGNALS
+// ═══════════════════════════════════════════════════════
+function calcSignals() {
+  const signals=[];
+  for(const [sym,p] of Object.entries(marketPrices)) {
+    const chg=parseFloat(p.chg);
+    const range=p.high&&p.low?((p.high-p.low)/p.low*100):0;
+    let sig=null;
+    if(chg>=2.5) sig={sym,dir:'LONG',price:p.price,chg,reason:'Сильный рост дня',strength:'strong'};
+    else if(chg<=-2.5) sig={sym,dir:'SHORT',price:p.price,chg,reason:'Сильное падение дня',strength:'strong'};
+    else if(chg>=1.5&&range>=3) sig={sym,dir:'LONG',price:p.price,chg,reason:'Рост + широкий диапазон',strength:'medium'};
+    else if(chg<=-1.5&&range>=3) sig={sym,dir:'SHORT',price:p.price,chg,reason:'Падение + широкий диапазон',strength:'medium'};
+    if(sig) signals.push(sig);
   }
+  return signals.sort((a,b)=>Math.abs(b.chg)-Math.abs(a.chg));
+}
+
+function renderSignals() {
+  const signals=calcSignals();
+  document.getElementById('m-signals').textContent=signals.length;
+  const el=document.getElementById('signals-list');
+  if(!signals.length){el.innerHTML='<div class="empty-state" style="padding:1rem">Нет сигналов</div>';return;}
+  el.innerHTML=signals.slice(0,8).map(s=>`
+    <div class="signal-row" style="cursor:pointer" onclick="switchChart('${s.sym}')">
+      <span style="font-weight:700;width:48px;font-size:11px">${s.sym}</span>
+      <span class="tag ${s.dir==='LONG'?'tag-long':'tag-short'}">${s.dir}</span>
+      <div style="flex:1;font-size:9px;color:var(--muted)">${s.reason}</div>
+      <span style="font-weight:700;font-size:10px;color:${parseFloat(s.chg)>=0?'var(--green)':'var(--red)'}">${parseFloat(s.chg)>=0?'+':''}${s.chg}%</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════════════════
+let chart=null;let candleSeries=null;let currentChartSym='SBER';let currentTF=60;
+
+function initChart() {
+  const container=document.getElementById('chart-container');
+  chart=LightweightCharts.createChart(container,{
+    width:container.offsetWidth,height:340,
+    layout:{background:{type:'solid',color:'#0a0e1a'},textColor:'#6b7280'},
+    grid:{vertLines:{color:'rgba(255,255,255,.04)'},horzLines:{color:'rgba(255,255,255,.04)'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{borderColor:'rgba(255,255,255,.07)'},
+    timeScale:{borderColor:'rgba(255,255,255,.07)',timeVisible:true,secondsVisible:false},
+  });
+  candleSeries=chart.addCandlestickSeries({
+    upColor:'#00d97e',downColor:'#ff4d6d',
+    borderUpColor:'#00d97e',borderDownColor:'#ff4d6d',
+    wickUpColor:'#00d97e',wickDownColor:'#ff4d6d',
+  });
+  window.addEventListener('resize',()=>chart.applyOptions({width:container.offsetWidth}));
+  loadChartData(currentChartSym,currentTF);
+}
+
+async function loadChartData(sym,interval) {
+  currentChartSym=sym;currentTF=interval;
+  const today=new Date();
+  const days=interval<=10?3:interval<=60?10:30;
+  const from=new Date(today-days*24*60*60*1000);
+  const fromStr=from.toISOString().split('T')[0];
+  const tillStr=today.toISOString().split('T')[0];
+  try {
+    const url=`${MOEX_BASE}/engines/stock/markets/shares/boards/TQBR/securities/${sym}/candles.json?interval=${interval}&from=${fromStr}&till=${tillStr}&iss.meta=off`;
+    const r=await fetch(url);const d=await r.json();
+    const cols=d.candles.columns;
+    const data=d.candles.data.map(row=>{
+      const o=Object.fromEntries(cols.map((c,i)=>[c,row[i]]));
+      const ms=new Date(o.begin.replace(' ','T')+'Z').getTime()/1000;
+      return {time:ms,open:o.open,high:o.high,low:o.low,close:o.close};
+    }).filter(c=>c.open&&c.close&&c.time).sort((a,b)=>a.time-b.time);
+    if(data.length) candleSeries.setData(data);
+    // Add signals as markers
+    const signals=calcChartSignals(data);
+    candleSeries.setMarkers(signals);
+    renderChartSignalsBar(data);
+    chart.timeScale().fitContent();
+  } catch(e){console.warn('Chart err:',e)}
+  updateChartHeader();
+}
+
+function calcChartSignals(data) {
+  if(data.length<5) return[];
+  const markers=[];
+  for(let i=4;i<data.length;i++) {
+    const c=data[i];
+    const prev=data.slice(Math.max(0,i-4),i);
+    const avgClose=prev.reduce((s,d)=>s+d.close,0)/prev.length;
+    const body=Math.abs(c.close-c.open);
+    const range=c.high-c.low;
+    const isBullish=c.close>c.open&&body>range*0.6&&c.close>avgClose*1.005;
+    const isBearish=c.close<c.open&&body>range*0.6&&c.close<avgClose*0.995;
+    if(isBullish) markers.push({time:c.time,position:'belowBar',color:'#00d97e',shape:'arrowUp',text:'ВХОД'});
+    else if(isBearish) markers.push({time:c.time,position:'aboveBar',color:'#ff4d6d',shape:'arrowDown',text:'ВЫХОД'});
+  }
+  return markers.slice(-8);
+}
+
+function renderChartSignalsBar(data) {
+  const el=document.getElementById('chart-signals-bar');
+  if(!data.length){el.innerHTML='<span style="font-size:10px;color:var(--muted)">Нет данных</span>';return;}
+  const last=data[data.length-1];
+  const prev=data[data.length-2]||last;
+  const chg=((last.close-prev.close)/prev.close*100).toFixed(2);
+  const rsi=calcRSI(data.map(d=>d.close));
+  const ma5=data.slice(-5).reduce((s,d)=>s+d.close,0)/Math.min(5,data.length);
+  const ma20=data.slice(-20).reduce((s,d)=>s+d.close,0)/Math.min(20,data.length);
+  const trend=last.close>ma20?'📈 Выше MA20':'📉 Ниже MA20';
+  const rsiSignal=rsi>70?'Перекуплен (>70)':rsi<30?'Перепродан (<30)':'Норма';
+  const rsiCol=rsi>70?'sell':rsi<30?'buy':'neutral';
+  const maSignal=ma5>ma20?'MA5 > MA20':'MA5 < MA20';
+  const maCol=ma5>ma20?'buy':'sell';
+  el.innerHTML=`
+    <span class="signal-badge ${rsiCol}">RSI: ${rsi||'—'} — ${rsiSignal}</span>
+    <span class="signal-badge ${maCol}">${maSignal}</span>
+    <span class="signal-badge neutral">${trend}</span>
+    <span class="signal-badge neutral">Свеча: ${chg>=0?'+':''}${chg}%</span>
+  `;
+}
+
+function calcRSI(closes) {
+  if(closes.length<15)return null;
+  const sl=closes.slice(-15);
+  const gains=[],losses=[];
+  for(let i=1;i<sl.length;i++){const d=sl[i]-sl[i-1];d>0?gains.push(d):losses.push(Math.abs(d));}
   const ag=gains.reduce((s,v)=>s+v,0)/14||0;
   const al=losses.reduce((s,v)=>s+v,0)/14||0.0001;
   return Math.round(100-(100/(1+ag/al)));
 }
 
-function renderPrices() {
-  const el = document.getElementById('prices-grid');
-  const entries = Object.entries(marketPrices);
-  if (!entries.length) return;
-  el.innerHTML = entries.map(([sym,p])=>{
-    const chg = parseFloat(p.chg);
-    return `<div class="price-cell" onclick="document.getElementById('cio-sym').value='${sym}';showPage('office')">
-      <div style="font-weight:700;font-size:12px">${sym}</div>
-      <div style="font-size:11px;color:var(--muted)">${p.price} ₽</div>
-      <div style="font-size:11px;font-weight:700;color:${chg>=0?'var(--green)':'var(--red)'}">${chg>=0?'+':''}${chg}%</div>
-    </div>`;
-  }).join('');
-  document.getElementById('m-stocks').textContent = entries.length;
-}
-
-function renderTicker() {
-  const items = Object.entries(marketPrices).slice(0,12);
-  const html = [...items,...items].map(([sym,p])=>{
-    const chg = parseFloat(p.chg);
-    return `<div class="ticker-item">
-      <span style="font-weight:700">${sym}</span>
-      <span style="color:var(--muted)">${p.price} ₽</span>
-      <span style="color:${chg>=0?'var(--green)':'var(--red)'}">${chg>=0?'+':''}${chg}%</span>
-    </div>`;
-  }).join('');
-  document.getElementById('ticker').innerHTML = html;
-}
-
-function renderSignals() {
-  const signals = [];
-  for (const [sym, p] of Object.entries(marketPrices)) {
-    const chg = parseFloat(p.chg);
-    if (Math.abs(chg) >= 1.5) {
-      signals.push({sym, dir: chg>0?'LONG':'SHORT', price:p.price, chg:p.chg});
-    }
+function updateChartHeader() {
+  const p=marketPrices[currentChartSym];
+  document.getElementById('ch-sym').textContent=currentChartSym+' — '+(STOCKS[currentChartSym]?.name||'');
+  if(p){
+    document.getElementById('ch-price').textContent=(p.price||0).toLocaleString('ru')+' ₽';
+    const chg=parseFloat(p.chg);
+    const chgEl=document.getElementById('ch-chg');
+    chgEl.textContent=(chg>=0?'+':'')+chg+'%';
+    chgEl.className='chart-chg '+(chg>=0?'pos':'neg');
   }
-  const el = document.getElementById('signals-list');
-  el.innerHTML = signals.slice(0,5).map(s=>`
-    <div class="signal-row">
-      <span style="font-weight:700;width:55px;font-size:13px">#${s.sym}</span>
-      <span class="tag ${s.dir==='LONG'?'tag-long':'tag-short'}">${s.dir}</span>
-      <span style="font-size:12px;color:var(--muted);flex:1;text-align:center">${s.price} ₽</span>
-      <span style="font-weight:700;font-size:11px;color:${parseFloat(s.chg)>=0?'var(--green)':'var(--red)'}">
-        ${parseFloat(s.chg)>=0?'+':''}${s.chg}%
-      </span>
-    </div>`).join('') || '<div class="empty-state">Нет сигналов</div>';
 }
 
-// ══════════════════════════════════════════════
+function switchChart(sym){currentChartSym=sym;loadChartData(sym,currentTF);renderStocksTable(document.getElementById('stock-search').value)}
+function switchChartSym(v){switchChart(v)}
+function changeTF(tf){
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.toggle('active',+b.dataset.tf===tf));
+  loadChartData(currentChartSym,tf);
+}
+
+// Populate chart + CIO selects
+function populateSelects() {
+  const opts=SYMS.map(s=>`<option value="${s}">${s} — ${STOCKS[s]?.name||''}</option>`).join('');
+  document.getElementById('cio-sym').innerHTML=opts;
+  document.getElementById('chart-sym-sel').innerHTML=opts;
+  document.getElementById('ot-sym').innerHTML=opts;
+}
+
+// ═══════════════════════════════════════════════════════
+// COMPANY ANALYTICS MODAL
+// ═══════════════════════════════════════════════════════
+function showAnalytics(sym) {
+  const info=STOCKS[sym]||{};
+  const p=marketPrices[sym];
+  document.getElementById('am-title').textContent=`${sym} — ${info.name||sym}`;
+  document.getElementById('am-sector').textContent=info.sector||'';
+  document.getElementById('analytics-modal').classList.remove('hidden');
+  const price=p?.price||'—';
+  const chg=p?parseFloat(p.chg):0;
+  const chgStr=(chg>=0?'+':'')+chg+'%';
+  const chgCol=chg>=0?'var(--green)':'var(--red)';
+
+  function row(key,val,desc,norm,col){
+    const valStr=val!==null&&val!==undefined?val:'—';
+    const valCol=col||'var(--text)';
+    return `<div class="analytics-row">
+      <div><div class="analytics-key">${key}</div><div class="analytics-desc">${desc}</div></div>
+      <div><div class="analytics-val" style="color:${valCol}">${valStr}</div>${norm?`<div class="analytics-norm">${norm}</div>`:''}</div>
+    </div>`;
+  }
+  function rateRoe(v){if(!v)return'';return v>20?'var(--green)':v>10?'var(--amber)':'var(--red)'}
+  function ratePe(v){if(!v)return'';return v<10?'var(--green)':v<20?'var(--amber)':'var(--red)'}
+  function ratePb(v){if(!v)return'';return v<1.5?'var(--green)':v<3?'var(--amber)':'var(--red)'}
+  function rateDiv(v){if(!v)return'';return v>8?'var(--green)':v>3?'var(--amber)':'var(--red)'}
+
+  document.getElementById('am-body').innerHTML=`
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:1.25rem;padding:1rem;background:var(--bg3);border-radius:8px">
+      <div style="font-family:var(--display);font-size:22px;font-weight:800">${typeof price==='number'?price.toLocaleString('ru'):price} ₽</div>
+      <div style="font-size:13px;font-weight:700;color:${chgCol}">${chgStr} сегодня</div>
+      <div style="font-size:10px;color:var(--muted);margin-left:auto">${info.desc||''}</div>
+    </div>
+
+    <div class="analytics-section">
+      <div class="analytics-section-title">Оценка компании</div>
+      <div class="analytics-grid">
+        ${row('P/E',info.pe!==null?info.pe+'x':null,'Цена / Прибыль — во сколько раз цена превышает годовую прибыль','Норма: &lt;15x',ratePe(info.pe))}
+        ${row('P/B',info.pb!==null?info.pb+'x':null,'Цена / Балансовая стоимость — оценка активов','Норма: &lt;3x',ratePb(info.pb))}
+      </div>
+    </div>
+
+    <div class="analytics-section">
+      <div class="analytics-section-title">Эффективность</div>
+      <div class="analytics-grid">
+        ${row('ROE',info.roe!==null?info.roe+'%':null,'Return on Equity — рентабельность собственного капитала. Показывает, как эффективно компания использует деньги акционеров','Хорошо: &gt;15%',rateRoe(info.roe))}
+        ${row('Дивиденд',info.div?info.div+'%':null,'Дивидендная доходность — выплаты акционерам к текущей цене','Хорошо: &gt;6%',rateDiv(info.div))}
+      </div>
+    </div>
+
+    <div class="analytics-section">
+      <div class="analytics-section-title">Рыночные данные</div>
+      <div class="analytics-grid">
+        ${row('Цена',p?p.price.toLocaleString('ru')+' ₽':'—','Последняя цена сделки на бирже','')}
+        ${row('Макс. дня',p&&p.high?p.high.toLocaleString('ru')+' ₽':'—','Максимальная цена за сегодня','')}
+        ${row('Мин. дня',p&&p.low?p.low.toLocaleString('ru')+' ₽':'—','Минимальная цена за сегодня','')}
+        ${row('Объём',p&&p.vol?formatVol(p.vol)+' ₽':'—','Суммарный объём торгов за день','')}
+      </div>
+    </div>
+
+    <div class="analytics-section">
+      <div class="analytics-section-title">Как читать эти данные</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.7;background:var(--bg3);border-radius:6px;padding:.875rem">
+        <b style="color:var(--text)">P/E (Price/Earnings)</b> — главный показатель оценки. P/E=5 значит цена в 5 раз превышает годовую прибыль. Чем ниже — тем дешевле акция. Среднее по MOEX: ~7x<br><br>
+        <b style="color:var(--text)">P/B (Price/Book)</b> — оценка активов. P/B&lt;1 может означать, что акция торгуется ниже стоимости имущества компании — потенциально недооценена.<br><br>
+        <b style="color:var(--text)">ROE (Return on Equity)</b> — насколько эффективно менеджмент зарабатывает на ваших деньгах. ROE=22% значит на 100 ₽ капитала зарабатывается 22 ₽ прибыли в год.<br><br>
+        <b style="color:var(--text)">Дивиденд</b> — годовые выплаты акционерам. 10% означает 10 ₽ выплат на 100 ₽ вложений в год.
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;display:flex;gap:8px">
+      <button class="btn-green" onclick="closeAnalytics();document.getElementById('cio-sym').value='${sym}';showPage('office');runCIO()">CIO анализ</button>
+      <button class="btn-outline" onclick="closeAnalytics();switchChart('${sym}')">Открыть график</button>
+    </div>
+  `;
+}
+function closeAnalytics(){document.getElementById('analytics-modal').classList.add('hidden')}
+
+// ═══════════════════════════════════════════════════════
+// AUDIT
+// ═══════════════════════════════════════════════════════
+async function runAudit() {
+  document.getElementById('audit-modal').classList.remove('hidden');
+  document.getElementById('audit-time').textContent=new Date().toLocaleString('ru');
+  const body=document.getElementById('audit-body');
+  body.innerHTML='<div style="color:var(--muted);font-size:12px">Сбор данных...</div>';
+  const issues=[];
+
+  // Check Groq key
+  const gk=localStorage.getItem('groq_key')||'';
+  if(!gk) issues.push({type:'err',icon:'🔑',text:'Groq API ключ не установлен. CIO анализ и обучение агентов недоступны.'});
+  else issues.push({type:'ok',icon:'✅',text:'Groq API ключ установлен'});
+
+  // Check prices loaded
+  const priceCount=Object.keys(marketPrices).length;
+  if(priceCount===0) issues.push({type:'err',icon:'📉',text:'Цены не загружены. Проверьте подключение к интернету.'});
+  else if(priceCount<30) issues.push({type:'warn',icon:'⚠️',text:`Загружено только ${priceCount} из ${SYMS.length} акций. Часть данных отсутствует.`});
+  else issues.push({type:'ok',icon:'✅',text:`Цены загружены: ${priceCount} акций из ${SYMS.length}`});
+
+  // Check which syms are missing
+  const missing=SYMS.filter(s=>!marketPrices[s]);
+  if(missing.length) issues.push({type:'warn',icon:'📊',text:`Нет цен для: ${missing.slice(0,10).join(', ')}${missing.length>10?` и ещё ${missing.length-10}`:''}. Возможно, торги по этим бумагам приостановлены.`});
+
+  // Check open trades
+  const lossyTrades=openTradesList.filter(t=>{
+    const p=marketPrices[t.sym]?.price;
+    if(!p) return false;
+    const pnl=t.direction==='LONG'?(p-t.entry)/t.entry*100:(t.entry-p)/t.entry*100;
+    return pnl<-2;
+  });
+  if(lossyTrades.length) issues.push({type:'warn',icon:'🛑',text:`Убыточные открытые сделки (${lossyTrades.length}): ${lossyTrades.map(t=>t.sym).join(', ')}. Рекомендуется проверить стопы.`});
+  else if(openTradesList.length) issues.push({type:'ok',icon:'✅',text:`Открытые сделки (${openTradesList.length}) — убыточных нет`});
+  else issues.push({type:'ok',icon:'ℹ️',text:'Открытых сделок нет'});
+
+  // Agents
+  if(!agentsEnabled) issues.push({type:'warn',icon:'🤖',text:'Автономные агенты отключены. Включите в Настройках для непрерывного обучения.'});
+  else issues.push({type:'ok',icon:'✅',text:`Агенты активны. Открыто ${agentTradeCount} авто-сделок.`});
+
+  // News
+  const newsEl=document.getElementById('news-list');
+  if(newsEl.innerHTML.includes('Ошибка')) issues.push({type:'warn',icon:'📰',text:'Новости не загружаются (CORS или API недоступен). Используется rss2json.com прокси.'});
+  else issues.push({type:'ok',icon:'✅',text:'Новости загружены'});
+
+  // Market status
+  const h=new Date().getHours();
+  const isOpen=h>=10&&h<19;
+  if(!isOpen) issues.push({type:'warn',icon:'🕐',text:`Рынок сейчас закрыт (${new Date().toLocaleTimeString('ru')}). Цены — данные последней сессии.`});
+  else issues.push({type:'ok',icon:'✅',text:'Рынок открыт. Данные в реальном времени.'});
+
+  addLog(`[АУДИТ] Найдено проблем: ${issues.filter(i=>i.type!=='ok').length}`,'audit');
+
+  body.innerHTML=issues.map(i=>`
+    <div class="audit-item audit-${i.type}">
+      <div class="audit-icon">${i.icon}</div>
+      <div class="audit-text" style="color:${i.type==='err'?'var(--red)':i.type==='warn'?'var(--amber)':'var(--text)'}">${i.text}</div>
+    </div>`).join('');
+}
+function closeAudit(){document.getElementById('audit-modal').classList.add('hidden')}
+
+// ═══════════════════════════════════════════════════════
 // CIO ANALYSIS
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+function saveGroqKey(val){
+  localStorage.setItem('groq_key',val);
+  document.getElementById('groq-key-input').value=val;
+  document.getElementById('settings-groq').value=val;
+}
+
 async function runCIO() {
-  const groqKey = localStorage.getItem('groq_key')||'';
-  if (!groqKey) return alert('Введите Groq ключ ниже! Получите бесплатно на console.groq.com');
-  const sym = document.getElementById('cio-sym').value;
-  const btn = document.getElementById('cio-btn');
-  const resEl = document.getElementById('cio-result');
-  btn.disabled = true;
-  btn.textContent = 'Анализирую...';
-  document.getElementById('cio-status-txt').textContent = 'Анализирует ' + sym + '...';
-  resEl.classList.remove('hidden');
-  resEl.textContent = 'Запрашиваю данные...';
-
+  const groqKey=localStorage.getItem('groq_key')||'';
+  if(!groqKey) return alert('Введите Groq ключ в поле ниже');
+  const sym=document.getElementById('cio-sym').value;
+  const btn=document.getElementById('cio-btn');
+  const resEl=document.getElementById('cio-result');
+  btn.disabled=true;btn.textContent='Анализирую...';
+  document.getElementById('cio-status-txt').textContent='Анализирует '+sym+'...';
+  resEl.classList.remove('hidden');resEl.textContent='Запрашиваю данные...';
   try {
-    const price = marketPrices[sym]?.price || 0;
-    const chg   = marketPrices[sym]?.chg   || 0;
+    const p=marketPrices[sym]||{};
+    const price=p.price||0;const chg=p.chg||0;
+    const high=p.high||price;const low=p.low||price;
+    const atr=Math.max((high-low)/4,price*0.005);
+    const stop=(price-atr*1.5).toFixed(2);
+    const tgt1=(price+atr*2.0).toFixed(2);
+    const tgt2=(price+atr*3.5).toFixed(2);
+    const tgt3=(price+atr*5.0).toFixed(2);
+    const stopPct=((price-stop)/price*100).toFixed(2);
+    const t1Pct=((tgt1-price)/price*100).toFixed(2);
+    const info=STOCKS[sym]||{};
 
-    // Простой ATR из диапазона дня
-    const high = marketPrices[sym]?.high || price;
-    const low  = marketPrices[sym]?.low  || price;
-    const atr  = Math.max((high-low)/4, price*0.005);
+    const prompt=`Ты — CIO трейдинг-бота MOEX. Дай торговый сигнал.
+Акция: ${sym} (${info.name}), Сектор: ${info.sector}
+Цена: ${price} ₽ (${chg>=0?'+':''}${chg}% сегодня)
+Макс/Мин дня: ${high}/${low} ₽, ATR: ${(high-low).toFixed(2)} ₽
+Фундаментал: P/E=${info.pe||'N/A'}, ROE=${info.roe||'N/A'}%, Дивиденд=${info.div||0}%
+Расчётный стоп: ${stop} ₽ (-${stopPct}%), Цель 1: ${tgt1} ₽ (+${t1Pct}%)
 
-    const stop = (price - atr*1.5).toFixed(2);
-    const tgt1 = (price + atr*2.0).toFixed(2);
-    const tgt2 = (price + atr*3.5).toFixed(2);
-    const tgt3 = (price + atr*5.0).toFixed(2);
-    const stopPct = ((price-stop)/price*100).toFixed(2);
-    const t1Pct   = ((tgt1-price)/price*100).toFixed(2);
-
-    const prompt = `Ты — CIO торгового бота MOEX. Акция: ${sym}, цена ${price} ₽ (${chg>=0?'+':''}${chg}% сегодня).
-ATR дня: ${(high-low).toFixed(2)} ₽ | Макс: ${high} | Мин: ${low}
-Стоп рассчитан: ${stop} ₽ (-${stopPct}%), Цель 1: ${tgt1} ₽ (+${t1Pct}%)
-
-Ответ СТРОГО в формате:
+Ответ СТРОГО по формату (не добавляй ничего лишнего):
 🟢 LONG: #${sym}
 📊 Вход: ${price} ₽
 🛑 Стоп: ${stop} ₽ (-${stopPct}%)
@@ -1131,148 +1241,376 @@ ATR дня: ${(high-low).toFixed(2)} ₽ | Макс: ${high} | Мин: ${low}
 🎯 Цель 2: ${tgt2} ₽
 🎯 Цель 3: ${tgt3} ₽
 💰 Риск: 2% депозита | Период: 4-6 часов
-💡 Причина: [одно предложение]
+💡 Причина: [одно предложение с техническим обоснованием]
 ⚠️ Стоп в Б/У после Цели 1`;
 
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,
+      headers:{'Authorization':'Bearer '+groqKey,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,
         messages:[{role:'user',content:prompt}]}),
     });
-    const d = await r.json();
-    const text = d.choices?.[0]?.message?.content || 'Ошибка AI';
-    resEl.textContent = text;
-
-    lastCioData = {symbol:sym,direction:'LONG',entry:parseFloat(price),
-                   stop:parseFloat(stop),tgt1:parseFloat(tgt1),tgt2:parseFloat(tgt2)};
+    const d=await r.json();
+    const text=d.choices?.[0]?.message?.content||'Ошибка AI';
+    resEl.textContent=text;
+    lastCioData={symbol:sym,direction:'LONG',entry:parseFloat(price),stop:parseFloat(stop),tgt1:parseFloat(tgt1),tgt2:parseFloat(tgt2)};
     document.getElementById('btn-open-trade').style.display='block';
-
-    // Сохраняем в историю пользователя
-    if (currentUser) {
+    addLog(`[CIO] ${sym}: анализ завершён`,'info');
+    if(currentUser){
       await db.collection('users').doc(currentUser.uid).collection('cio_history').add({
-        sym, price, decision: text,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        sym,price,decision:text,createdAt:firebase.firestore.FieldValue.serverTimestamp()
       });
     }
-  } catch(e) {
-    resEl.textContent = 'Ошибка: ' + e.message;
-  }
-  btn.disabled = false;
-  btn.textContent = 'Анализировать';
-  document.getElementById('cio-status-txt').textContent = 'Готов к анализу';
+  } catch(e){resEl.textContent='Ошибка: '+e.message}
+  btn.disabled=false;btn.textContent='Анализ';
+  document.getElementById('cio-status-txt').textContent='Готов к анализу';
 }
 
-// ══════════════════════════════════════════════
-// AGENTS OFFICE
-// ══════════════════════════════════════════════
-const AGENTS_F1 = [
+// ═══════════════════════════════════════════════════════
+// AGENTS SYSTEM
+// ═══════════════════════════════════════════════════════
+const AGENTS_F1=[
   {id:'1a',name:'Агент 1А',role:'Макро-новости',emoji:'📰',color:'#2563eb'},
-  {id:'1b',name:'Агент 1Б',role:'Корп-новости', emoji:'🏢',color:'#d97706'},
-  {id:'2', name:'Агент 2', role:'Нарратив AI',  emoji:'🧠',color:'#7c3aed'},
-  {id:'3', name:'Агент 3', role:'Фундаментал',  emoji:'📊',color:'#059669'},
-  {id:'4', name:'Агент 4', role:'Техника+АКФ',  emoji:'📈',color:'#dc2626'},
-  {id:'5', name:'Агент 5', role:'Риск',          emoji:'🛡️',color:'#0891b2'},
+  {id:'1b',name:'Агент 1Б',role:'Корп-новости',emoji:'🏢',color:'#d97706'},
+  {id:'2', name:'Агент 2', role:'Нарратив AI', emoji:'🧠',color:'#7c3aed'},
+  {id:'3', name:'Агент 3', role:'Фундаментал', emoji:'📊',color:'#059669'},
+  {id:'4', name:'Агент 4', role:'Техника+АКФ',emoji:'📈',color:'#dc2626'},
+  {id:'5', name:'Агент 5', role:'Риск',        emoji:'🛡️',color:'#0891b2'},
 ];
-const AGENTS_F2 = [
-  {id:'7', name:'Агент 7', role:'Макро',        emoji:'🌍',color:'#16a34a'},
-  {id:'8', name:'Агент 8', role:'Объёмы',       emoji:'📦',color:'#ca8a04'},
-  {id:'9', name:'Агент 9', role:'Корреляции',   emoji:'🔗',color:'#1d4ed8'},
-  {id:'10',name:'Агент 10',role:'Уровни',       emoji:'📐',color:'#be123c'},
-  {id:'11',name:'Агент 11',role:'Календарь',    emoji:'📅',color:'#0d9488'},
-  {id:'12',name:'Агент 12',role:'Портфель',     emoji:'💼',color:'#6d28d9'},
-  {id:'13',name:'Агент 13',role:'Скринер',      emoji:'🔍',color:'#b45309'},
+const AGENTS_F2=[
+  {id:'7', name:'Агент 7', role:'Макро',      emoji:'🌍',color:'#16a34a'},
+  {id:'8', name:'Агент 8', role:'Объёмы',     emoji:'📦',color:'#ca8a04'},
+  {id:'9', name:'Агент 9', role:'Корреляции', emoji:'🔗',color:'#1d4ed8'},
+  {id:'10',name:'Агент 10',role:'Уровни',     emoji:'📐',color:'#be123c'},
+  {id:'11',name:'Агент 11',role:'Календарь',  emoji:'📅',color:'#0d9488'},
+  {id:'12',name:'Агент 12',role:'Портфель',   emoji:'💼',color:'#6d28d9'},
+  {id:'13',name:'Агент 13',role:'Скринер',    emoji:'🔍',color:'#b45309'},
 ];
+const AGENT_TASKS={'1a':'Парсит 9 макро-источников','1b':'Ищет корп. новости','2':'Анализирует нарратив рынка','3':'Обновляет фундаментал','4':'RSI, SMA, АКФ','5':'Считает ATR и стоп','7':'Мониторит USD/RUB','8':'Анализирует объёмы','9':'Корреляции по секторам','10':'Уровни поддержки/сопротивления','11':'Дивидендный календарь','12':'Риски портфеля','13':'Сканирует все 50 акций'};
 
-const AGENT_TASKS = {
-  '1a':'Парсит 9 макро-источников',
-  '1b':'Ищет корпоративные новости',
-  '2': 'Анализирует нарратив рынка',
-  '3': 'Обновляет фундаментальные данные',
-  '4': 'RSI, SMA, АКФ анализ',
-  '5': 'Рассчитывает ATR и стоп',
-  '7': 'Мониторит USD/RUB и нефть',
-  '8': 'Анализирует объёмы торгов',
-  '9': 'Корреляции по секторам',
-  '10':'Находит уровни поддержки',
-  '11':'Следит за дивидендным календарём',
-  '12':'Мониторит риски портфеля',
-  '13':'Сканирует все 21 акцию',
-};
+let agentTimers=[];
+let agentStatuses={};
 
 function makeDesk(agent) {
-  const statuses = ['active','active','thinking','idle'];
-  const st = statuses[Math.floor(Math.random()*statuses.length)];
-  const stLabel = st==='active'?'Работает':st==='thinking'?'Анализирует':'Ожидает';
-  const stColor = st==='active'?'#00d97e':st==='thinking'?'#fbbf24':'#6b7280';
-  const anim = st!=='idle'?'animation:blink2 1.5s infinite':'' ;
-  return `<div class="desk" title="${AGENT_TASKS[agent.id]||''}">
+  const st=agentStatuses[agent.id]||'idle';
+  const stLabel=st==='active'?'Работает':st==='thinking'?'Анализирует':st==='trading'?'Торгует':'Ожидает';
+  const stColor=st==='active'?'#00d97e':st==='thinking'?'#fbbf24':st==='trading'?'#a78bfa':'#6b7280';
+  return `<div class="desk" onclick="agentAction('${agent.id}')">
     <div class="tooltip">${AGENT_TASKS[agent.id]||''}</div>
-    <svg width="44" height="58" viewBox="0 0 44 58">
-      <circle cx="22" cy="10" r="9" fill="${agent.color}" opacity=".9"/>
-      <text x="22" y="15" text-anchor="middle" font-size="10">${agent.emoji}</text>
-      <rect x="9" y="21" width="26" height="17" rx="5" fill="${agent.color}"/>
-      <text x="22" y="33" text-anchor="middle" font-size="9" fill="white" font-weight="bold">${agent.id.toUpperCase()}</text>
-      <rect x="11" y="38" width="9" height="14" rx="3" fill="${agent.color}" opacity=".7"/>
-      <rect x="24" y="38" width="9" height="14" rx="3" fill="${agent.color}" opacity=".7"/>
+    <svg width="40" height="54" viewBox="0 0 40 54">
+      <circle cx="20" cy="9" r="8" fill="${agent.color}" opacity=".9"/>
+      <text x="20" y="13.5" text-anchor="middle" font-size="10">${agent.emoji}</text>
+      <rect x="7" y="18" width="26" height="16" rx="5" fill="${agent.color}"/>
+      <text x="20" y="29.5" text-anchor="middle" font-size="8" fill="white" font-weight="bold">${agent.id.toUpperCase()}</text>
+      <rect x="9" y="34" width="9" height="13" rx="3" fill="${agent.color}" opacity=".7"/>
+      <rect x="22" y="34" width="9" height="13" rx="3" fill="${agent.color}" opacity=".7"/>
     </svg>
-    <div style="width:58px;height:7px;background:${agent.color};opacity:.35;border-radius:3px;margin-top:2px"></div>
-    <div style="width:20px;height:14px;background:#0a0e1a;border-radius:2px;margin-top:-13px;display:flex;align-items:center;justify-content:center">
-      <div style="width:14px">
-        ${[0,1,2].map(i=>`<div style="height:2px;border-radius:1px;margin:1px 0;background:${i===1?'#00d97e':agent.color};animation:blink ${1.8+i*0.3}s ease-in-out infinite;animation-delay:${i*0.3}s"></div>`).join('')}
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:3px;font-size:9px;padding:2px 6px;border-radius:20px;margin-top:4px;background:${stColor}20;color:${stColor}">
-      <div style="width:5px;height:5px;border-radius:50%;background:${stColor};${st!=='idle'?'animation:pulse 1.5s infinite':''}"></div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8px;padding:1px 5px;border-radius:10px;background:${stColor}20;color:${stColor}">
+      <div style="width:4px;height:4px;border-radius:50%;background:${stColor};${st!=='idle'?'animation:pulse 1.5s infinite':''}"></div>
       ${stLabel}
     </div>
-    <div style="font-size:10px;font-weight:700;text-align:center;color:#e8eaf6;line-height:1.2">${agent.name}</div>
-    <div style="font-size:9px;color:#6b7280;text-align:center">${agent.role}</div>
+    <div class="desk-name">${agent.name}</div>
+    <div class="desk-role">${agent.role}</div>
   </div>`;
 }
 
 function renderOffice() {
-  document.getElementById('desks-floor1').innerHTML = AGENTS_F1.map(makeDesk).join('');
-  document.getElementById('desks-floor2').innerHTML = AGENTS_F2.map(makeDesk).join('');
+  document.getElementById('desks-floor1').innerHTML=AGENTS_F1.map(makeDesk).join('');
+  document.getElementById('desks-floor2').innerHTML=AGENTS_F2.map(makeDesk).join('');
 }
 
-// ══════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════
-function showPage(page) {
-  document.getElementById('page-office').classList.toggle('hidden', page!=='office');
-  document.getElementById('page-cabinet').classList.toggle('hidden', page!=='cabinet');
-  document.querySelectorAll('.nav-tab').forEach((t,i)=>{
-    t.classList.toggle('active',(i===0&&page==='office')||(i===1&&page==='cabinet'));
-  });
-  if (page==='cabinet') { loadTrades(); updateUserUI(); }
+function agentAction(id) {
+  const agent=[...AGENTS_F1,...AGENTS_F2].find(a=>a.id===id);
+  if(!agent) return;
+  addLog(`[${agent.name}] Ручной запрос анализа...`,'info');
+  setAgentStatus(id,'thinking');
+  setTimeout(()=>{
+    setAgentStatus(id,'active');
+    addLog(`[${agent.name}] ${AGENT_TASKS[id]||'Анализ завершён'}`,'info');
+  },2000+Math.random()*3000);
 }
 
-function switchCabTab(tab) {
-  ['trades','open','settings'].forEach(t=>{
-    document.getElementById('cab-'+t).classList.toggle('hidden',t!==tab);
-  });
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['trades','open','settings'][i]===tab);
-  });
-}
-
-function showUserMenu() {
-  if (confirm('Выйти из аккаунта?')) doLogout();
-}
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-function initApp() {
+function setAgentStatus(id,status) {
+  agentStatuses[id]=status;
   renderOffice();
-  fetchPrices();
-  fetchMacro();
+}
+
+// AGENT AUTO-TRADING
+let agentAutoTimer=null;
+
+function startAgents() {
+  if(!agentsEnabled)return;
+  addLog('[СИСТЕМА] Агенты запущены в автономном режиме','info');
+  scheduleNextAgentTrade();
+}
+
+function stopAgents() {
+  if(agentAutoTimer){clearTimeout(agentAutoTimer);agentAutoTimer=null;}
+  agentTimers.forEach(t=>clearTimeout(t));agentTimers=[];
+}
+
+function scheduleNextAgentTrade() {
+  if(!agentsEnabled)return;
+  // Random interval 15 min to 6 hours (for demo: 30sec to 3min)
+  const minMs=30*1000,maxMs=3*60*1000;
+  const delay=minMs+Math.random()*(maxMs-minMs);
+  agentAutoTimer=setTimeout(()=>{
+    executeAgentTrade();
+    scheduleNextAgentTrade();
+  },delay);
+  const delayMin=Math.round(delay/60000);
+  addLog(`[СИСТЕМА] Следующая агент-сделка через ~${delayMin<1?'<1':delayMin} мин`,'info');
+}
+
+async function executeAgentTrade() {
+  const symsWithPrice=SYMS.filter(s=>marketPrices[s]);
+  if(!symsWithPrice.length)return;
+  const signals=calcSignals();
+  if(!signals.length)return;
+  const signal=signals[Math.floor(Math.random()*Math.min(3,signals.length))];
+  const sym=signal.sym;
+  const p=marketPrices[sym];
+  if(!p)return;
+  const agent=[...AGENTS_F1,...AGENTS_F2][Math.floor(Math.random()*13)];
+  const atr=Math.max((p.high-p.low)/4,p.price*0.005);
+  const stop=parseFloat((p.price-atr*1.5).toFixed(2));
+  const tgt1=parseFloat((p.price+atr*2.0).toFixed(2));
+  const trade={
+    sym,direction:signal.dir,
+    entry:p.price,stop,tgt1,
+    agent:agent.name,agentId:agent.id,
+    openedAt:new Date().toISOString(),
+    status:'open',isAgentTrade:true,
+  };
+  agentTrades.push(trade);
+  agentTradeCount++;
+  document.getElementById('m-agent-trades').textContent=agentTradeCount;
+  setAgentStatus(agent.id,'trading');
+  addLog(`[${agent.name}] ОТКРЫЛ ${signal.dir} ${sym} @ ${p.price} ₽ (стоп: ${stop}, цель: ${tgt1})`,'trade');
+  if(currentUser){
+    try{
+      await db.collection('users').doc(currentUser.uid).collection('agent_trades').add({
+        ...trade,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection('users').doc(currentUser.uid).update({'stats.agent_trades':firebase.firestore.FieldValue.increment(1)});
+    }catch(e){}
+  }
+  // Schedule closing trade after random time and check for loss
+  const holdMs=15*60*1000+Math.random()*5*60*60*1000;
+  const holdMin=Math.round(holdMs/60000);
+  addLog(`[${agent.name}] Держит ${sym} (план: ${holdMin} мин)`,'info');
+  setTimeout(()=>closeAgentTrade(trade,agent),Math.min(holdMs,5*60*1000));
+  setTimeout(()=>setAgentStatus(agent.id,'active'),3000);
+}
+
+async function closeAgentTrade(trade,agent) {
+  const p=marketPrices[trade.sym];
+  if(!p)return;
+  const pnl=trade.direction==='LONG'
+    ?(p.price-trade.entry)/trade.entry*100
+    :(trade.entry-p.price)/trade.entry*100;
+  trade.status='closed';trade.closePrice=p.price;trade.pnl=parseFloat(pnl.toFixed(2));
+  const isLoss=pnl<0;
+  addLog(`[${agent.name}] ЗАКРЫЛ ${trade.sym} @ ${p.price} ₽ → P&L: ${pnl>=0?'+':''}${pnl.toFixed(2)}%`,isLoss?'loss':'trade');
+  if(isLoss) {
+    addLog(`[${agent.name}] 🔍 Анализирую причины убытка по ${trade.sym}...`,'info');
+    analyzeAgentLoss(trade,agent);
+  }
+}
+
+async function analyzeAgentLoss(trade,agent) {
+  const groqKey=localStorage.getItem('groq_key')||'';
+  if(!groqKey){addLog(`[${agent.name}] Нет Groq ключа для анализа убытка`,'loss');return;}
+  const p=marketPrices[trade.sym]||{};
+  try {
+    const prompt=`Ты — тренер торговых агентов. Агент получил убыток. Проанализируй причины кратко (3-4 строки).
+Агент: ${agent.name} (${agent.role})
+Акция: ${trade.sym}, Направление: ${trade.direction}
+Вход: ${trade.entry} ₽, Выход: ${trade.closePrice} ₽
+P&L: ${trade.pnl}%
+Текущие данные: Цена ${p.price||'?'} ₽, Изм. ${p.chg||'?'}%
+
+Укажи: 1) Вероятная причина убытка 2) Что агент должен делать иначе 3) Урок на будущее.`;
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+groqKey,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:250,
+        messages:[{role:'user',content:prompt}]}),
+    });
+    const d=await r.json();
+    const text=d.choices?.[0]?.message?.content||'';
+    if(text){
+      addLog(`[${agent.name}] АНАЛИЗ УБЫТКА:\n${text}`,'loss');
+      trade.lossAnalysis=text;
+    }
+  } catch(e){addLog(`[${agent.name}] Ошибка анализа: ${e.message}`,'loss')}
+}
+
+function toggleAgents() {
+  agentsEnabled=!agentsEnabled;
+  document.getElementById('toggle-agents').classList.toggle('on',agentsEnabled);
+  if(agentsEnabled){startAgents();}else{stopAgents();addLog('[СИСТЕМА] Агенты остановлены','info');}
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENT LOG
+// ═══════════════════════════════════════════════════════
+function addLog(msg,type='info') {
+  const el=document.getElementById('agent-log');
+  const time=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+  const item=document.createElement('div');
+  item.className='log-item '+type;
+  item.innerHTML=`<span class="log-time">${time}</span> ${msg.replace(/\n/g,'<br>')}`;
+  el.insertBefore(item,el.firstChild);
+  while(el.children.length>50)el.removeChild(el.lastChild);
+}
+
+function renderAgentTrades() {
+  const el=document.getElementById('agent-trades-list');
+  if(!agentTrades.length){el.innerHTML='<div class="empty-state">Агенты ещё не открывали сделок</div>';return;}
+  el.innerHTML=agentTrades.slice().reverse().slice(0,20).map(t=>{
+    const pnlStr=t.pnl!==undefined?(t.pnl>=0?'+':'')+t.pnl+'%':'открыта';
+    const col=t.pnl===undefined?'var(--muted)':t.pnl>=0?'var(--green)':'var(--red)';
+    return `<div class="trade-item">
+      <div class="trade-sym">${t.sym}</div>
+      <div class="tag ${t.direction==='LONG'?'tag-long':'tag-short'}">${t.direction}</div>
+      <div class="trade-info">${t.agent}<br>Вход: ${t.entry} ₽ ${t.closePrice?'→ '+t.closePrice+' ₽':''}</div>
+      <div class="trade-pnl" style="color:${col}">${pnlStr}</div>
+      ${t.lossAnalysis?`<div style="font-size:9px;color:var(--muted);margin-top:4px;grid-column:1/-1">${t.lossAnalysis.slice(0,120)}...</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// USER TRADES
+// ═══════════════════════════════════════════════════════
+let openTradesList=[],closedTradesList=[];
+
+async function loadTrades() {
+  if(!currentUser)return;
+  try {
+    const snap=await db.collection('users').doc(currentUser.uid).collection('trades').orderBy('openedAt','desc').limit(50).get();
+    openTradesList=[];closedTradesList=[];
+    snap.forEach(doc=>{const t={id:doc.id,...doc.data()};t.status==='open'?openTradesList.push(t):closedTradesList.push(t)});
+    renderTrades();
+  } catch(e){console.error(e)}
+}
+
+function renderTrades() {
+  const openEl=document.getElementById('open-trades-list');
+  if(!openTradesList.length){openEl.innerHTML='<div class="empty-state">Нет открытых сделок</div>';}
+  else {
+    openEl.innerHTML=openTradesList.map(t=>{
+      const price=marketPrices[t.sym]?.price||t.entry;
+      const pnl=t.direction==='LONG'?((price-t.entry)/t.entry*100).toFixed(2):((t.entry-price)/t.entry*100).toFixed(2);
+      const col=parseFloat(pnl)>=0?'var(--green)':'var(--red)';
+      return `<div class="trade-item">
+        <div class="trade-sym">${t.sym}</div>
+        <div class="tag ${t.direction==='LONG'?'tag-long':'tag-short'}">${t.direction}</div>
+        <div class="trade-info">Вход: ${t.entry} ₽ | Стоп: ${t.stop||'—'} ₽<br>Цель: ${t.tgt1||'—'} ₽</div>
+        <div class="trade-pnl" style="color:${col}">${pnl>=0?'+':''}${pnl}%</div>
+        <button class="btn-danger" onclick="closeTrade('${t.id}',${price})">Закрыть</button>
+      </div>`;
+    }).join('');
+  }
+  const closedEl=document.getElementById('closed-trades-list');
+  if(!closedTradesList.length){closedEl.innerHTML='<div class="empty-state">История пуста</div>';}
+  else {
+    closedEl.innerHTML=closedTradesList.slice(0,10).map(t=>{
+      const col=(t.pnl||0)>=0?'var(--green)':'var(--red)';
+      return `<div class="trade-item">
+        <div class="trade-sym">${t.sym}</div>
+        <div class="tag ${t.direction==='LONG'?'tag-long':'tag-short'}">${t.direction}</div>
+        <div class="trade-info">Вход: ${t.entry} ₽ → ${t.closePrice||'—'} ₽</div>
+        <div class="trade-pnl" style="color:${col}">${(t.pnl||0)>=0?'+':''}${(t.pnl||0).toFixed(2)}%</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+async function openTrade() {
+  if(!currentUser)return;
+  const trade={
+    sym:document.getElementById('ot-sym').value,
+    direction:document.getElementById('ot-dir').value,
+    entry:parseFloat(document.getElementById('ot-entry').value)||0,
+    stop:parseFloat(document.getElementById('ot-stop').value)||null,
+    tgt1:parseFloat(document.getElementById('ot-tgt1').value)||null,
+    tgt2:parseFloat(document.getElementById('ot-tgt2').value)||null,
+    volume:parseFloat(document.getElementById('ot-volume').value)||0,
+    status:'open',openedAt:firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if(!trade.entry)return alert('Укажите цену входа');
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('trades').add(trade);
+    await loadTrades();switchCabTab('trades');
+    alert(`Сделка ${trade.sym} ${trade.direction} открыта!`);
+  } catch(e){alert('Ошибка: '+e.message)}
+}
+
+async function closeTrade(tradeId,currentPrice) {
+  if(!confirm('Закрыть сделку по текущей цене '+currentPrice+' ₽?'))return;
+  const trade=openTradesList.find(t=>t.id===tradeId);if(!trade)return;
+  const pnl=trade.direction==='LONG'?(currentPrice-trade.entry)/trade.entry*100:(trade.entry-currentPrice)/trade.entry*100;
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('trades').doc(tradeId).update({
+      status:'closed',closePrice:currentPrice,pnl:parseFloat(pnl.toFixed(2)),
+      closedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    const s=userProfile?.stats||{trades:0,wins:0,total_pnl:0};
+    await db.collection('users').doc(currentUser.uid).update({
+      stats:{trades:(s.trades||0)+1,wins:(s.wins||0)+(pnl>0?1:0),total_pnl:(s.total_pnl||0)+pnl,agent_trades:s.agent_trades||0}
+    });
+    await loadTrades();updateUserUI();
+  } catch(e){alert('Ошибка: '+e.message)}
+}
+
+async function clearAllTrades() {
+  if(!confirm('Удалить ВСЕ сделки?'))return;
+  const snap=await db.collection('users').doc(currentUser.uid).collection('trades').get();
+  const batch=db.batch();snap.forEach(d=>batch.delete(d.ref));await batch.commit();
+  await db.collection('users').doc(currentUser.uid).update({stats:{trades:0,wins:0,total_pnl:0,agent_trades:0}});
+  await loadTrades();updateUserUI();
+}
+
+function fillFromCIO() {
+  if(!lastCioData)return alert('Сначала запросите анализ CIO');
+  document.getElementById('ot-sym').value=lastCioData.symbol||'SBER';
+  document.getElementById('ot-dir').value=lastCioData.direction||'LONG';
+  document.getElementById('ot-entry').value=lastCioData.entry||'';
+  document.getElementById('ot-stop').value=lastCioData.stop||'';
+  document.getElementById('ot-tgt1').value=lastCioData.tgt1||'';
+  document.getElementById('ot-tgt2').value=lastCioData.tgt2||'';
+}
+
+function openTradeFromCIO(){showPage('cabinet');switchCabTab('open');fillFromCIO();}
+
+async function saveSettings() {
+  if(!currentUser)return;
+  saveGroqKey(document.getElementById('settings-groq').value);
+  const settings={
+    agents_enabled:agentsEnabled,
+    risk:parseInt(document.getElementById('risk-select').value),
+  };
+  await db.collection('users').doc(currentUser.uid).update({settings});
+  alert('Настройки сохранены!');
+}
+function saveRisk(v){}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function initApp() {
+  populateSelects();
+  renderOffice();
+  initChart();
+  fetchPrices().then(()=>{fetchMacro();renderSignals();});
   fetchNews();
-  // Обновление каждые 30 секунд
-  setInterval(fetchPrices, 30000);
-  setInterval(fetchMacro, 60000);
-  setInterval(fetchNews, 600000);
+  if(agentsEnabled)startAgents();
+  setInterval(fetchPrices,30000);
+  setInterval(fetchMacro,60000);
+  setInterval(fetchNews,600000);
+  setInterval(renderOffice,8000);
 }
 </script>
 </body>
