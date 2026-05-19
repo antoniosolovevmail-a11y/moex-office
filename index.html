@@ -8,7 +8,6 @@
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
 <style>
@@ -562,38 +561,49 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 // FIREBASE CONFIG — замените на ваши данные!
 // ══════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "ВСТАВЬТЕ_ВАШ_API_KEY",
-  authDomain: "ВСТАВЬТЕ_ВАШ_AUTH_DOMAIN",
-  projectId: "ВСТАВЬТЕ_ВАШ_PROJECT_ID",
-  storageBucket: "ВСТАВЬТЕ_ВАШ_STORAGE_BUCKET",
-  messagingSenderId: "ВСТАВЬТЕ_ВАШ_SENDER_ID",
-  appId: "ВСТАВЬТЕ_ВАШ_APP_ID"
+  apiKey: "AIzaSyCY6nDYPfZDjlJwjZVk5eoV5g0sjdBVX5w",
+  authDomain: "moex-trading-office.firebaseapp.com",
+  projectId: "moex-trading-office",
+  storageBucket: "moex-trading-office.firebasestorage.app",
+  messagingSenderId: "619234474602",
+  appId: "1:619234474602:web:518cf927df3b9f459ca813",
+  measurementId: "G-WRPL2G0PC7"
 };
 
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.firestore();
-
-// ══════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════
+const db = firebase.firestore();
+// Простая авторизация через Firestore (без Firebase Auth)
 let currentUser = null;
 let userProfile = {};
 let lastCioData = null;
 
-auth.onAuthStateChanged(async user => {
-  if (user) {
-    currentUser = user;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    await loadUserProfile();
-    initApp();
-  } else {
-    currentUser = null;
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
+// ══════════════════════════════════════════════
+// ПРОСТАЯ АВТОРИЗАЦИЯ (без Firebase Auth)
+// Хранит сессию в localStorage
+// ══════════════════════════════════════════════
+
+// Проверяем сохранённую сессию
+(async function checkSession() {
+  const savedUser = localStorage.getItem('moex_user');
+  if (savedUser) {
+    try {
+      const u = JSON.parse(savedUser);
+      // Проверяем что пользователь есть в Firestore
+      const doc = await db.collection('users').doc(u.id).get();
+      if (doc.exists) {
+        currentUser = { uid: u.id, email: u.email, displayName: u.name };
+        userProfile = doc.data();
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        initApp();
+        updateUserUI();
+        loadTrades();
+        return;
+      }
+    } catch(e) { console.error(e); }
   }
-});
+  document.getElementById('auth-screen').classList.remove('hidden');
+})();
 
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t,i) => {
@@ -611,66 +621,88 @@ function showAuthError(msg) {
 }
 function hideAuthError() { document.getElementById('auth-error').classList.add('hidden'); }
 
+function hashPassword(pass) {
+  // Простое хеширование для хранения в Firestore
+  let hash = 0;
+  for (let i = 0; i < pass.length; i++) {
+    hash = ((hash << 5) - hash) + pass.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36) + pass.length.toString(36);
+}
+
 async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
   if (!email || !pass) return showAuthError('Заполните все поля');
   try {
-    await auth.signInWithEmailAndPassword(email, pass);
-  } catch(e) {
-    const msgs = {
-      'auth/user-not-found': 'Пользователь не найден',
-      'auth/wrong-password': 'Неверный пароль',
-      'auth/invalid-email': 'Неверный формат email',
-      'auth/too-many-requests': 'Слишком много попыток. Подождите.',
-    };
-    showAuthError(msgs[e.code] || e.message);
-  }
-}
-
-async function doRegister() {
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const pass  = document.getElementById('reg-pass').value;
-  const pass2 = document.getElementById('reg-pass2').value;
-  if (!name || !email || !pass) return showAuthError('Заполните все поля');
-  if (pass !== pass2) return showAuthError('Пароли не совпадают');
-  if (pass.length < 6) return showAuthError('Пароль минимум 6 символов');
-  try {
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    await cred.user.updateProfile({ displayName: name });
-    // Создаём профиль в Firestore
-    await db.collection('users').doc(cred.user.uid).set({
-      name, email,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      settings: { email_notify: false, risk: 2, fav_stocks: 'SBER,LKOH,GAZP' },
-      stats: { trades: 0, wins: 0, total_pnl: 0 },
-    });
-  } catch(e) {
-    const msgs = {
-      'auth/email-already-in-use': 'Email уже используется',
-      'auth/invalid-email': 'Неверный формат email',
-      'auth/weak-password': 'Слишком простой пароль',
-    };
-    showAuthError(msgs[e.code] || e.message);
-  }
-}
-
-async function doResetPassword() {
-  const email = document.getElementById('login-email').value.trim();
-  if (!email) return showAuthError('Введите email для сброса пароля');
-  try {
-    await auth.sendPasswordResetEmail(email);
-    showAuthError('Письмо отправлено на ' + email);
-    document.getElementById('auth-error').style.color = 'var(--green)';
-    document.getElementById('auth-error').style.background = 'rgba(0,217,126,.1)';
+    // Ищем пользователя по email в Firestore
+    const snap = await db.collection('users').where('email','==',email).limit(1).get();
+    if (snap.empty) return showAuthError('Пользователь не найден');
+    const doc  = snap.docs[0];
+    const data = doc.data();
+    if (data.passHash !== hashPassword(pass)) return showAuthError('Неверный пароль');
+    // Сохраняем сессию
+    currentUser  = { uid: doc.id, email, displayName: data.name };
+    userProfile  = data;
+    localStorage.setItem('moex_user', JSON.stringify({id:doc.id, email, name:data.name}));
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    updateUserUI();
+    loadTrades();
+    initApp();
   } catch(e) {
     showAuthError('Ошибка: ' + e.message);
   }
 }
 
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  if (!name || !email || !pass) return showAuthError('Заполните все поля');
+  if (pass !== pass2) return showAuthError('Пароли не совпадают');
+  if (pass.length < 6) return showAuthError('Пароль минимум 6 символов');
+  if (!email.includes('@')) return showAuthError('Неверный формат email');
+  try {
+    // Проверяем что email не занят
+    const existing = await db.collection('users').where('email','==',email).limit(1).get();
+    if (!existing.empty) return showAuthError('Email уже используется');
+    // Создаём пользователя в Firestore
+    const uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    await db.collection('users').doc(uid).set({
+      name, email,
+      passHash: hashPassword(pass),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      settings: { email_notify: false, risk: 2, fav_stocks: 'SBER,LKOH,GAZP' },
+      stats: { trades: 0, wins: 0, total_pnl: 0 },
+    });
+    // Автологин
+    currentUser = { uid, email, displayName: name };
+    userProfile = { name, email, settings:{}, stats:{} };
+    localStorage.setItem('moex_user', JSON.stringify({id:uid, email, name}));
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    updateUserUI();
+    initApp();
+  } catch(e) {
+    showAuthError('Ошибка: ' + e.message);
+  }
+}
+
+async function doResetPassword() {
+  showAuthError('Для сброса пароля обратитесь к администратору');
+}
+
 function doLogout() {
-  if (confirm('Выйти из аккаунта?')) auth.signOut();
+  if (confirm('Выйти из аккаунта?')) {
+    localStorage.removeItem('moex_user');
+    currentUser = null;
+    userProfile = {};
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
 }
 
 // ══════════════════════════════════════════════
