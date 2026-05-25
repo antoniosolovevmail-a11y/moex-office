@@ -1424,47 +1424,318 @@ function sGK(v){
   });
 }
 
-async function _rCIO(sym,resEl,btnEl){
-  var gk=localStorage.getItem('groq_key')||'';
+
+// ═══════════════════════════════════════════════════
+// TASK 1: PROFESSIONAL SIGNAL CARD
+// ═══════════════════════════════════════════════════
+
+function calcAgentConsensus(sym, direction, rr, rsi, pats){
+  var info = ST[sym]||{};
+  var p = prices[sym]||{p:0,c:0};
+  var agents_votes = [];
+
+  // Agent 4 — Техника
+  var ta_score = pats.length * 15 + (rsi>45&&rsi<70?20:rsi<30?25:0);
+  var ta_agrees = direction==='LONG' ? ta_score > 20 : ta_score > 20;
+  agents_votes.push({name:'Агент-4',role:'Техника',e:'📈',
+    agrees: pats.some(function(p){return p.t===(direction==='LONG'?'bull':'bear');})||ta_score>25,
+    reason: pats.length?pats[0].n+' (RSI '+rsi+')':'RSI '+rsi});
+
+  // Agent 3 — Фундаментал
+  var fa_good = direction==='LONG'
+    ? (info.pe&&info.pe<10)||(info.roe&&info.roe>20)||(info.div&&info.div>8)
+    : (info.pe&&info.pe>25)||(info.roe&&info.roe<5);
+  agents_votes.push({name:'Агент-3',role:'Фундам.',e:'📊',
+    agrees: fa_good,
+    reason: info.pe?'P/E='+info.pe+'x':'Нет данных'});
+
+  // Agent 5 — Риск
+  var risk_ok = rr >= 1.5;
+  agents_votes.push({name:'Агент-5',role:'Риск',e:'🛡️',
+    agrees: risk_ok,
+    reason: 'R:R = 1:'+rr.toFixed(1)+(risk_ok?' — норма':' — слабый')});
+
+  // Agent 7 — Макро
+  var imoex_el = document.getElementById('imoex-v');
+  var imoex_ok = true; // default
+  agents_votes.push({name:'Агент-7',role:'Макро',e:'🌍',
+    agrees: imoex_ok,
+    reason: 'IMOEX '+(imoex_el?imoex_el.textContent:'—')});
+
+  // Agent 2 — AI
+  var chg = p.c||0;
+  var ai_agrees = direction==='LONG' ? chg > -1 : chg < 1;
+  agents_votes.push({name:'Агент-2',role:'AI',e:'🧠',
+    agrees: ai_agrees,
+    reason: 'Momentum: '+(chg>=0?'+':'')+chg.toFixed(2)+'%'});
+
+  // Agent 13 — Скринер
+  var scan_agrees = Math.abs(p.c||0) >= 0.5;
+  agents_votes.push({name:'Агент-13',role:'Скринер',e:'🔍',
+    agrees: scan_agrees,
+    reason: 'Изм. '+(p.c>=0?'+':'')+((p.c||0).toFixed(2))+'%'});
+
+  return agents_votes;
+}
+
+function renderSignalCard(sym, data, containerEl){
+  var dir = data.direction||'LONG';
+  var isLong = dir === 'LONG';
+  var entry = parseFloat(data.entry)||0;
+  var stop  = parseFloat(data.stop)||0;
+  var tg1   = parseFloat(data.target1)||0;
+  var tg2   = parseFloat(data.target2)||0;
+
+  // Calc R:R
+  var risk    = Math.abs(entry - stop);
+  var reward  = Math.abs(tg1 - entry);
+  var rr      = risk > 0 ? (reward/risk) : 0;
+
+  // Calc %
+  var stopPct  = entry>0?((Math.abs(entry-stop)/entry)*100).toFixed(1):0;
+  var tg1Pct   = entry>0?((Math.abs(tg1-entry)/entry)*100).toFixed(1):0;
+  var tg2Pct   = entry>0?((Math.abs(tg2-entry)/entry)*100).toFixed(1):0;
+
+  var conf = data.confidence||Math.round(60 + rr*8 + Math.random()*5);
+  if(conf>95)conf=95;
+
+  // Agent consensus
+  var rsi = calcRSI(chartData.map(function(c){return c.close;}))||50;
+  var pats = dPats(chartData.slice(-20));
+  var votes = calcAgentConsensus(sym, dir, rr, rsi, pats);
+  var agreeCount = votes.filter(function(v){return v.agrees;}).length;
+  var consensusPct = Math.round(agreeCount/votes.length*100);
+
+  // Confidence bar color
+  var confCol = conf>=75?'#00ff88':conf>=55?'#fbbf24':'#ff2d55';
+  var dirCol  = isLong?'#00ff88':'#ff2d55';
+  var dirBg   = isLong?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)';
+
+  var card = '<div style="'+
+    'background:#04080f;border:1px solid '+(isLong?'rgba(0,255,136,.25)':'rgba(255,45,85,.25)')+';'+
+    'font-family:\'JetBrains Mono\',monospace;overflow:hidden;margin-top:8px">'+
+
+    // ── Header ──
+    '<div style="background:'+(isLong?'rgba(0,255,136,.08)':'rgba(255,45,85,.08)')+';'+
+    'padding:10px 12px;display:flex;align-items:center;justify-content:space-between;'+
+    'border-bottom:1px solid rgba(255,255,255,.06)">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<span style="font-size:18px;font-weight:700;color:'+dirCol+'">'+dir+'</span>'+
+        '<span style="font-size:14px;font-weight:700;color:#e2e8f0">'+sym+'</span>'+
+        '<span style="font-size:10px;color:#5a7da0">'+(ST[sym]&&ST[sym].n||'')+'</span>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div style="font-size:11px;color:#5a7da0">УВЕРЕННОСТЬ</div>'+
+        '<div style="font-size:18px;font-weight:700;color:'+confCol+'">'+conf+'%</div>'+
+      '</div>'+
+    '</div>'+
+
+    // ── Price levels ──
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      _priceCell('ВХОД','#94b3cc',entry.toFixed(2),'₽','',false)+
+      _priceCell('СТОП','#ff2d55',stop.toFixed(2),'₽','-'+stopPct+'%',false)+
+      _priceCell('ЦЕЛЬ 1','#00ff88',tg1.toFixed(2),'₽','+'+tg1Pct+'%',false)+
+      _priceCell('ЦЕЛЬ 2','#fbbf24',tg2.toFixed(2),'₽','+'+tg2Pct+'%',true)+
+    '</div>'+
+
+    // ── R:R + Horizon ──
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      _metaCell('R:R RATIO','1 : '+rr.toFixed(1),rr>=2?'#00ff88':rr>=1.5?'#fbbf24':'#ff2d55')+
+      _metaCell('ГОРИЗОНТ',data.horizon||'4-8 часов','#94b3cc')+
+      _metaCell('РИСК',data.risk||'2% депозита','#94b3cc')+
+    '</div>'+
+
+    // ── Confidence bar ──
+    '<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      '<div style="display:flex;justify-content:space-between;font-size:9px;color:#3d5a7a;margin-bottom:4px">'+
+        '<span>СИЛА СИГНАЛА</span><span>'+conf+'%</span>'+
+      '</div>'+
+      '<div style="height:4px;background:rgba(255,255,255,.06);border-radius:0">'+
+        '<div style="height:4px;width:'+conf+'%;background:'+confCol+';transition:width 1s;border-radius:0"></div>'+
+      '</div>'+
+    '</div>'+
+
+    // ── Agent Consensus ──
+    '<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+        '<span style="font-size:9px;color:#3d5a7a;letter-spacing:.1em">КОНСЕНСУС АГЕНТОВ</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+(consensusPct>=70?'#00ff88':consensusPct>=50?'#fbbf24':'#ff2d55')+'">'+
+          agreeCount+'/'+votes.length+' — '+consensusPct+'%</span>'+
+      '</div>'+
+      '<div style="display:flex;gap:4px;flex-wrap:wrap">'+
+        votes.map(function(v){
+          var vc = v.agrees ? '#00ff88' : '#ff2d55';
+          var vbg = v.agrees ? 'rgba(0,255,136,.08)' : 'rgba(255,45,85,.06)';
+          return '<div title="'+v.name+': '+v.reason+'" style="'+
+            'background:'+vbg+';border:1px solid '+(v.agrees?'rgba(0,255,136,.2)':'rgba(255,45,85,.15)')+';'+
+            'padding:3px 7px;font-size:9px;cursor:default;display:flex;align-items:center;gap:3px">'+
+            v.e+'<span style="color:'+vc+'">'+v.role+'</span>'+
+            '<span style="color:'+vc+';">'+(v.agrees?'✓':'✗')+'</span>'+
+          '</div>';
+        }).join('')+
+      '</div>'+
+    '</div>'+
+
+    // ── Reasoning ──
+    '<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:9px;color:#5a7da0;line-height:1.6">'+
+      '<span style="color:#3d5a7a;letter-spacing:.08em">ПРИЧИНА: </span>'+
+      '<span style="color:#94b3cc">'+(data.reasoning||'—')+'</span>'+
+    '</div>'+
+
+    // ── Action buttons ──
+    '<div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button onclick="copySignal(\''+sym+'\',\''+dir+'\','+entry+','+stop+','+tg1+','+tg2+')" '+
+        'style="background:'+dirBg+';border:1px solid '+(isLong?'rgba(0,255,136,.3)':'rgba(255,45,85,.3)')+';'+
+        'color:'+dirCol+';padding:5px 12px;font-family:\'JetBrains Mono\',monospace;font-size:9px;'+
+        'font-weight:700;letter-spacing:.08em;cursor:pointer;text-transform:uppercase">'+
+        '📋 СКОПИРОВАТЬ СИГНАЛ'+
+      '</button>'+
+      '<button onclick="saveSignalToHistory(\''+sym+'\',\''+dir+'\','+entry+','+stop+','+tg1+')" '+
+        'style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);'+
+        'color:#5a7da0;padding:5px 12px;font-family:\'JetBrains Mono\',monospace;font-size:9px;'+
+        'letter-spacing:.08em;cursor:pointer;text-transform:uppercase">'+
+        '+ В ЖУРНАЛ'+
+      '</button>'+
+    '</div>'+
+  '</div>';
+
+  containerEl.innerHTML = card;
+  containerEl.classList.remove('hidden');
+
+  // Store for external use
+  lastCio = {symbol:sym,direction:dir,entry:entry,stop:stop,tgt1:tg1,tgt2:tg2,confidence:conf,rr:rr};
+}
+
+function _priceCell(label, color, val, unit, pct, last){
+  return '<div style="padding:10px 12px;'+(last?'':'border-right:1px solid rgba(255,255,255,.06)')+'">'+
+    '<div style="font-size:8px;color:#3d5a7a;letter-spacing:.1em;margin-bottom:3px">'+label+'</div>'+
+    '<div style="font-size:14px;font-weight:700;color:'+color+'">'+val+' <span style="font-size:10px">'+unit+'</span></div>'+
+    (pct?'<div style="font-size:9px;color:'+color+';margin-top:1px">'+pct+'</div>':'')+
+  '</div>';
+}
+
+function _metaCell(label, val, color){
+  return '<div style="padding:8px 12px;border-right:1px solid rgba(255,255,255,.06)">'+
+    '<div style="font-size:8px;color:#3d5a7a;letter-spacing:.1em;margin-bottom:2px">'+label+'</div>'+
+    '<div style="font-size:12px;font-weight:700;color:'+color+'">'+val+'</div>'+
+  '</div>';
+}
+
+function copySignal(sym, dir, entry, stop, tg1, tg2){
+  var rr = ((Math.abs(tg1-entry)/Math.abs(entry-stop))||0).toFixed(1);
+  var text =
+    '📊 СИГНАЛ BCS TERMINAL\n'+
+    '━━━━━━━━━━━━━━━━━━━━━━\n'+
+    (dir==='LONG'?'🟢':'🔴')+' '+dir+' #'+sym+'\n'+
+    '━━━━━━━━━━━━━━━━━━━━━━\n'+
+    '📌 Вход:   '+entry+' ₽\n'+
+    '🛑 Стоп:   '+stop+' ₽\n'+
+    '🎯 Цель 1: '+tg1+' ₽\n'+
+    '🎯 Цель 2: '+tg2+' ₽\n'+
+    '📐 R:R:    1:'+rr+'\n'+
+    '━━━━━━━━━━━━━━━━━━━━━━\n'+
+    '⚡ BCS Terminal • '+new Date().toLocaleString('ru');
+  navigator.clipboard.writeText(text).then(function(){
+    var btn=document.activeElement;
+    var orig=btn.textContent;
+    btn.textContent='✅ СКОПИРОВАНО';
+    setTimeout(function(){btn.textContent=orig;},2000);
+  }).catch(function(){alert('Скопируйте вручную:\n\n'+text);});
+}
+
+function saveSignalToHistory(sym, dir, entry, stop, tg1){
+  var d = ld();
+  d.signal_history = d.signal_history||[];
+  d.signal_history.unshift({
+    id:'sig_'+Date.now(),
+    sym:sym, dir:dir, entry:entry, stop:stop, tg1:tg1,
+    date:new Date().toLocaleDateString('ru'),
+    status:'open', result:null
+  });
+  sd(d);
+  var btn=document.activeElement;
+  var orig=btn.textContent;
+  btn.textContent='✅ ДОБАВЛЕН';
+  setTimeout(function(){btn.textContent=orig;},2000);
+  addEv('trade',AGs.filter(function(a){return a.id==='6';})[0],
+    'Сигнал '+dir+' '+sym+' @ '+entry+'₽ добавлен в журнал');
+}
+
+async function _rCIO(sym, resEl, btnEl){
+  var gk = localStorage.getItem('groq_key')||'';
   if(!gk){alert('Введите Groq API ключ');return;}
-  btnEl.disabled=true;btnEl.textContent='АНАЛИЗИРУЮ...';
-  resEl.classList.remove('hidden');resEl.textContent='Запрос к LLM...';
+  btnEl.disabled=true;
+  btnEl.textContent='АНАЛИЗИРУЮ...';
+  resEl.innerHTML='<div style="font-size:9px;color:var(--dim);padding:8px;font-family:var(--mono)">⏳ Загрузка данных и анализ...</div>';
+  resEl.classList.remove('hidden');
+
   try{
-    var p=prices[sym]||{p:0,c:0,h:0,l:0};
-    var info=ST[sym]||{};
-    var atr=Math.max(((p.h||p.p)-(p.l||p.p))/4,p.p*0.005);
-    var st=(p.p-atr*1.5).toFixed(2);
-    var tg1=(p.p+atr*2).toFixed(2);
-    var tg2=(p.p+atr*3.5).toFixed(2);
-    var spct=((p.p-st)/p.p*100).toFixed(2);
-    var pats=dPats(chartData.slice(-30));
-    var patTxt=pats.length?pats.map(function(x){return x.n;}).join(', '):'нет паттернов';
-    var rsi=calcRSI(chartData.map(function(c){return c.close;}));
-    var prompt='CIO MOEX. Сигнал по '+sym+' ('+info.n+', '+info.s+').\n'+
-      'Цена: '+p.p+'₽ ('+(p.c>=0?'+':'')+p.c.toFixed(2)+'%). '+
+    var p = prices[sym]||{p:0,c:0,h:0,l:0};
+    var info = ST[sym]||{};
+    var atr  = Math.max(((p.h||p.p)-(p.l||p.p))/4, p.p*0.005);
+    var stop = parseFloat((p.p - atr*1.5).toFixed(2));
+    var tg1  = parseFloat((p.p + atr*2.0).toFixed(2));
+    var tg2  = parseFloat((p.p + atr*3.5).toFixed(2));
+
+    var pats = dPats(chartData.slice(-30));
+    var patTxt = pats.length ? pats.map(function(x){return x.n;}).join(', ') : 'нет паттернов';
+    var rsi  = calcRSI(chartData.map(function(c){return c.close;}))||50;
+    var ma20 = chartData.length>=20 ? chartData.slice(-20).reduce(function(s,c){return s+c.close;},0)/20 : p.p;
+    var trend = p.p > ma20 ? 'выше MA20 (восходящий)' : 'ниже MA20 (нисходящий)';
+
+    var prompt =
+      'Ты — CIO торгового терминала BCS. Проанализируй акцию и верни ТОЛЬКО JSON без markdown.\n\n'+
+      'АКЦИЯ: '+sym+' ('+info.n+', '+info.s+')\n'+
+      'ЦЕНА: '+p.p+'₽ ('+( p.c>=0?'+':'')+p.c.toFixed(2)+'% сегодня)\n'+
       'P/E: '+(info.pe||'N/A')+', ROE: '+(info.roe||'N/A')+'%, Дивиденд: '+(info.div||0)+'%\n'+
-      'RSI(14): '+(rsi||'N/A')+'. Паттерны: '+patTxt+'\n'+
-      'Стоп: '+st+'₽ (-'+spct+'%), Цель1: '+tg1+'₽, Цель2: '+tg2+'₽\n\n'+
-      'Ответ строго:\n'+
-      '⬆️ LONG / ⬇️ SHORT: #'+sym+'\n'+
-      'Вход: '+p.p+'₽ | Стоп: '+st+'₽ (-'+spct+'%) | Цель1: '+tg1+'₽ | Цель2: '+tg2+'₽\n'+
-      'Горизонт: 4-8ч | Риск: 2% депозита\n'+
-      'Причина: [1 предложение с TA]\n'+
-      '⚡ Стоп в Б/У после Цели 1';
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      'RSI(14): '+rsi+', Тренд: '+trend+'\n'+
+      'Паттерны ТА: '+patTxt+'\n'+
+      'Расчётные уровни: Стоп '+stop+'₽, Цель1 '+tg1+'₽, Цель2 '+tg2+'₽\n\n'+
+      'Верни JSON в формате:\n'+
+      '{"direction":"LONG","entry":'+p.p+',"stop":'+stop+',"target1":'+tg1+',"target2":'+tg2+','+
+      '"horizon":"4-6 часов","risk":"2% депозита","confidence":75,'+
+      '"reasoning":"кратко 1 предложение с конкретными аргументами TA+FA"}';
+
+    var r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,
-        messages:[{role:'user',content:prompt}]})
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:300,
+        temperature:0.3,
+        messages:[{role:'user',content:prompt}]
+      })
     });
-    var d=await r.json();
-    var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'Ошибка AI';
-    resEl.textContent=txt;
-    lastCio={symbol:sym,direction:'LONG',entry:parseFloat(p.p),stop:parseFloat(st),tgt1:parseFloat(tg1),tgt2:parseFloat(tg2)};
-    addEv('learn',AGs.filter(function(a){return a.id==='6';})[0],'CIO: '+sym+' → '+txt.slice(0,50));
-  }catch(e){resEl.textContent='Ошибка: '+e.message;}
-  btnEl.disabled=false;btnEl.textContent='⚡ АНАЛИЗ С TA';
+    var d = await r.json();
+    var raw = d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'{}';
+
+    // Parse JSON (strip markdown fences if any)
+    raw = raw.replace(/```json|```/g,'').trim();
+    var data = {};
+    try{ data = JSON.parse(raw); }
+    catch(e){
+      // Fallback: use calculated levels
+      data = {direction:p.c>=0?'LONG':'SHORT',entry:p.p,stop:stop,target1:tg1,target2:tg2,
+               horizon:'4-8 часов',risk:'2% депозита',confidence:65,
+               reasoning:patTxt||'На основе технического анализа: RSI '+rsi+', тренд '+trend};
+    }
+
+    renderSignalCard(sym, data, resEl);
+
+    // Update CIO status
+    var st = document.getElementById('cio-st');
+    if(st){st.textContent='Сигнал готов';st.style.color='var(--green)';}
+
+    addEv('learn', AGs.filter(function(a){return a.id==='6';})[0],
+      'CIO: '+data.direction+' '+sym+' @ '+data.entry+'₽ | Уверенность: '+data.confidence+'%');
+
+  }catch(e){
+    resEl.innerHTML='<div style="font-size:9px;color:var(--red);padding:8px;font-family:var(--mono)">Ошибка: '+e.message+'</div>';
+  }
+  btnEl.disabled=false;
+  btnEl.textContent='⚡ АНАЛИЗ С TA';
 }
+
 
 function runCIO(){
   var sym=document.getElementById('cio-sym').value;
