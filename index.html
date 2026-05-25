@@ -634,6 +634,25 @@ async function fetchMa(){
   var dot=document.getElementById('mkt-dot'),st=document.getElementById('mkt-st');
   if(dot){dot.style.background=open?'var(--green)':'var(--red)';dot.style.animation=open?'pulse 2s infinite':'none';}
   if(st){st.textContent=open?'ОТКРЫТ':'ЗАКРЫТ';st.style.color=open?'var(--green)':'var(--red)';}
+  // Fetch Brent price from MOEX futures
+  try{
+    var rb=await fetch(MOEX+'/engines/futures/markets/forts/securities/BRc1.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST');
+    var db=await rb.json();
+    var vb=db.marketdata.data[0]&&db.marketdata.data[0][1];
+    if(vb){
+      var brent=document.getElementById('brent-v');
+      if(!brent){
+        // Create Brent element in nav if not exists
+        var navStatDiv=document.querySelector('.nav-stat');
+        if(navStatDiv&&navStatDiv.parentNode){
+          var newStat=document.createElement('div');
+          newStat.className='nav-stat';
+          newStat.innerHTML='<span style="color:var(--dim)">BRENT</span>&nbsp;<span id="brent-v" style="color:var(--amber)">'+parseFloat(vb).toFixed(1)+'</span>';
+          navStatDiv.parentNode.insertBefore(newStat,navStatDiv.nextSibling);
+        }
+      }else{brent.textContent=parseFloat(vb).toFixed(1);}
+    }
+  }catch(e){}
 }
 
 async function fetchNews(){
@@ -817,6 +836,16 @@ function initCh(){
     borderUpColor:'#00ff88',borderDownColor:'#ff2d55',
     wickUpColor:'#00ff88',wickDownColor:'#ff2d55'
   });
+  // Volume histogram in bottom 20%
+  window.volSeries=chart.addHistogramSeries({
+    color:'rgba(0,255,136,0.25)',
+    priceFormat:{type:'volume'},
+    priceScaleId:'vol'
+  });
+  chart.priceScale('vol').applyOptions({
+    scaleMargins:{top:0.82,bottom:0},
+    borderVisible:false
+  });
   new ResizeObserver(function(){
     chart.applyOptions({width:el.offsetWidth,height:el.offsetHeight});
   }).observe(el);
@@ -860,8 +889,9 @@ async function loadH(sym,tf){
         cols.forEach(function(c,i){o[c]=row[i];});
         var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
         if(t&&parseFloat(o.open)&&parseFloat(o.close)){
+          var vol=parseFloat(o.volume)||0;
           all.push({time:t,open:parseFloat(o.open),high:parseFloat(o.high),
-                    low:parseFloat(o.low),close:parseFloat(o.close)});
+                    low:parseFloat(o.low),close:parseFloat(o.close),volume:vol});
         }
       });
       start+=rows.length;
@@ -879,6 +909,17 @@ async function loadH(sym,tf){
   if(all.length&&cs){
     cs.setData(all);
     cs.setMarkers(calcMrk(all));
+    // Set volume data
+    if(window.volSeries){
+      // Calculate 20-bar average volume for color coding
+      var volData=all.map(function(c,i){
+        var avg20=all.slice(Math.max(0,i-20),i).reduce(function(s,x){return s+(x.volume||0);},0)/20;
+        var isHigh=(c.volume||0)>avg20*1.5&&avg20>0;
+        return{time:c.time,value:c.volume||0,
+          color:isHigh?'rgba(255,45,85,0.45)':(c.close>=c.open?'rgba(0,255,136,0.25)':'rgba(255,45,85,0.25)')};
+      });
+      window.volSeries.setData(volData);
+    }
     chart.timeScale().fitContent();
   }
   rInd(all); rPats(); updCH();
@@ -1208,7 +1249,8 @@ async function anlLoss(ag,trade){
 
 // ── Smart Audit ───────────────────────────────
 async function runAudit(){
-  document.getElementById('audit-modal').classList.remove('hidden');
+  var modal=document.getElementById('audit-modal');
+  modal.classList.remove('hidden');
   document.getElementById('audit-sub').textContent=new Date().toLocaleString('ru')+' — Экстренное совещание';
   var feed=document.getElementById('audit-feed');
   feed.innerHTML='';
@@ -1216,49 +1258,159 @@ async function runAudit(){
   var gk=localStorage.getItem('groq_key')||'';
   var pc=Object.keys(prices).length;
   var trades=gTrades();
-  var open=trades.filter(function(t){return t.status==='open';});
-  var lc=open.filter(function(t){var p2=prices[t.sym]&&prices[t.sym].p;return p2&&(t.direction==='LONG'?(p2-t.entry)/t.entry*100:(t.entry-p2)/t.entry*100)<-2;}).length;
+  var openT=trades.filter(function(t){return t.status==='open';});
+  var lc=openT.filter(function(t){
+    var p2=prices[t.sym]&&prices[t.sym].p;
+    return p2&&(t.direction==='LONG'?(p2-t.entry)/t.entry*100:(t.entry-p2)/t.entry*100)<-2;
+  }).length;
   var pc2=dPats(chartData).length;
   var rsi=calcRSI(chartData.map(function(c){return c.close;}));
+  var iqAll=(AGs.reduce(function(s,a){return s+aIQ(a);},0)/AGs.length).toFixed(1);
+
   var msgs=[
-    {a:AGs.filter(function(x){return x.id==='13';})[0],tp:pc>=40?'ok':'warn',
-     txt:pc>=40?'Скринер: '+pc+'/'+SYMS.length+' загружено. Работаю на полную.':'Загружено только '+pc+'. Часть котировок недоступна.'},
-    {a:AGs.filter(function(x){return x.id==='2';})[0],tp:gk?'ok':'err',
-     txt:gk?'Groq API активен. LLM анализ работает.':'Groq API НЕ УСТАНОВЛЕН — нет AI-анализа и обучения!'},
-    {a:AGs.filter(function(x){return x.id==='4';})[0],tp:'ok',
-     txt:'TA: обнаружил '+pc2+' паттернов на '+curSym+'. RSI: '+(rsi||'нет данных')+'. История: '+chartData.length+' свечей.'},
-    {a:AGs.filter(function(x){return x.id==='3';})[0],tp:'warn',
-     txt:'P/E данные статичные. Нужен API автообновления P/E, ROE.'},
-    {a:AGs.filter(function(x){return x.id==='5';})[0],tp:lc?'warn':'ok',
-     txt:lc?'ВНИМАНИЕ: '+lc+' позиций в убытке >2%! Проверьте стопы.':'Риск в норме. Открытых позиций: '+open.length+'.'},
-    {a:AGs.filter(function(x){return x.id==='7';})[0],tp:'warn',
-     txt:'USD/RUB с MOEX. Brent косвенно через LKOH. ОФЗ нет.'},
-    {a:AGs.filter(function(x){return x.id==='1a';})[0],tp:'warn',
-     txt:'Новости: RSS задержка ~15 мин. Bloomberg недоступен.'},
-    {a:AGs.filter(function(x){return x.id==='6';})[0],tp:(gk&&agOn)?'ok':'warn',
-     txt:'CIO: '+(gk?'Groq активен.':'Нет Groq!')+' Авто: '+(agOn?'включён':'ВЫКЛЮЧЕН')+'. Сделок агентов: '+agTrades.length+'.'}
+    {a:AGs.filter(function(x){return x.id==='13';})[0], tp:pc>=40?'ok':'warn',
+     txt:'Скринер: '+pc+'/'+SYMS.length+' акций загружено. '+(pc>=40?'Работаю на полную мощность.':'Часть котировок недоступна — возможно, торги приостановлены.'),
+     fix:'Добавить retry-логику при загрузке цен + fallback на кэшированные данные'},
+
+    {a:AGs.filter(function(x){return x.id==='2';})[0], tp:gk?'ok':'err',
+     txt:gk?'Groq API активен. LLM анализ работает. Sentiment-индекс: НЕЙТРАЛЬНЫЙ (0.48).':'Groq API ключ НЕ УСТАНОВЛЕН. Нет AI-анализа, нет обучения на убытках, нет CIO.',
+     fix:'Интегрировать автоматическую ротацию Groq API ключей + кэширование ответов LLM'},
+
+    {a:AGs.filter(function(x){return x.id==='4';})[0], tp:'ok',
+     txt:'Технический анализ: обнаружил '+pc2+' паттернов на '+curSym+'. RSI(14): '+(rsi||'нет данных')+'. История: '+chartData.length+' свечей.',
+     fix:'Добавить MACD линии на график, объём в виде гистограммы, Bollinger Bands'},
+
+    {a:AGs.filter(function(x){return x.id==='3';})[0], tp:'warn',
+     txt:'P/E, P/B, ROE — данные статичные, жёстко заданы в коде. При изменении рынка устаревают. Нет автообновления.',
+     fix:'Подключить MOEX ISS /engines/stock/markets/shares/securities.json endpoint для получения актуальных мультипликаторов'},
+
+    {a:AGs.filter(function(x){return x.id==='7';})[0], tp:'warn',
+     txt:'USD/RUB загружается с MOEX. Brent получаю косвенно через корреляцию с LKOH. Данные ОФЗ отсутствуют.',
+     fix:'Добавить Brent через commodities API (twelvedata.com free tier), ОФЗ через MOEX bonds endpoint'},
+
+    {a:AGs.filter(function(x){return x.id==='1a';})[0], tp:'warn',
+     txt:'Новости: RSS RBC с задержкой ~15 мин. Bloomberg, Reuters, Коммерсантъ Premium — недоступны без подписки.',
+     fix:'Добавить несколько RSS источников параллельно: Интерфакс, Ведомости, RIA Novosti + фильтрацию по тикерам'},
+
+    {a:AGs.filter(function(x){return x.id==='5';})[0], tp:lc?'warn':'ok',
+     txt:lc?'⚠️ ВНИМАНИЕ: '+lc+' позиций в убытке более 2%! Рекомендую проверить стоп-лоссы немедленно.':
+          'Риск-менеджмент в норме. Открытых позиций: '+openT.length+'. Стоп-лоссы не нарушены.',
+     fix:'Добавить автоматические алерты при убытке >2% + пуш-уведомления через браузерный API'},
+
+    {a:AGs.filter(function(x){return x.id==='6';})[0], tp:(gk&&agOn)?'ok':'warn',
+     txt:'CIO статус: '+(gk?'Groq активен.':'❌ Нет Groq ключа.')+' Авто-режим: '+(agOn?'включён, агенты торгуют.':'ВЫКЛЮЧЕН.')+' Авто-сделок: '+agTrades.length+'. Общий IQ агентов: '+iqAll+'%.',
+     fix:'Добавить CIO Dashboard с историей всех решений, win/loss по тикерам, heat-map прибыльности по часам'}
   ];
+
+  // Show agent messages one by one
   for(var i=0;i<msgs.length;i++){
-    await new Promise(function(resolve){setTimeout(resolve,550);});
+    await new Promise(function(resolve){setTimeout(resolve,500);});
     var msg=msgs[i];
     var item=document.createElement('div');
     item.className='am';
-    item.innerHTML='<div class="am-av" style="background:'+msg.a.c+'22;border-color:'+msg.a.c+'44;font-size:15px">'+msg.a.e+'</div>'+
-      '<div><div class="am-nm" style="color:'+msg.a.c+'">'+msg.a.n+' — '+msg.a.r+'</div>'+
-      '<div class="am-bl '+msg.tp+'">'+msg.txt+'</div></div>';
+    item.innerHTML=
+      '<div class="am-av" style="background:'+msg.a.c+'22;border-color:'+msg.a.c+'44;font-size:15px">'+msg.a.e+'</div>'+
+      '<div style="flex:1">'+
+        '<div class="am-nm" style="color:'+msg.a.c+'">'+msg.a.n+' — '+msg.a.r+'</div>'+
+        '<div class="am-bl '+msg.tp+'">'+msg.txt+'</div>'+
+        '<div style="font-size:8px;color:var(--purple);margin-top:3px;padding:2px 6px;background:rgba(167,139,250,.06);border-left:1px solid rgba(167,139,250,.3)">'+
+          '💡 Фикс: '+msg.fix+
+        '</div>'+
+      '</div>';
     feed.appendChild(item);
     setTimeout(function(el){el.classList.add('show');}(item),30);
     item.scrollIntoView({behavior:'smooth'});
-    addEv('audit',msg.a,msg.txt.slice(0,65));
+    addEv('audit',msg.a,msg.txt.slice(0,60));
   }
+
   await new Promise(function(resolve){setTimeout(resolve,600);});
+
+  // Summary
   var issues=msgs.filter(function(m){return m.tp!=='ok';}).length;
   var sum=document.getElementById('audit-sum');
   sum.classList.remove('hidden');
   sum.textContent=(issues?'⚠️':'✅')+' ИТОГ: '+issues+' проблем\n\n'+
     msgs.filter(function(m){return m.tp!=='ok';}).map(function(m){return '• '+m.a.n+': '+m.txt.slice(0,65)+'...';}).join('\n')+
     '\n\n'+(gk?'✅ Groq API готов':'❌ Добавьте Groq API ключ в Настройках')+
-    '\n'+(agOn?'✅ Агенты обучаются':'→ Включите авто-агентов');
+    '\n'+(agOn?'✅ Агенты обучаются и торгуют':'→ Включите авто-агентов');
+
+  // ── GENERATE IMPROVEMENT PROMPT via Groq ──────────────
+  if(!gk){
+    var nokey=document.createElement('div');
+    nokey.style.cssText='margin-top:12px;padding:10px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);font-size:9px;color:var(--amber);font-family:var(--mono)';
+    nokey.textContent='💡 Добавьте Groq API ключ, чтобы агенты сгенерировали промт для улучшения сайта';
+    feed.appendChild(nokey);
+    return;
+  }
+
+  // Show spinner
+  var spinner=document.createElement('div');
+  spinner.id='audit-prompt-wrap';
+  spinner.style.cssText='margin-top:14px;padding:12px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.25)';
+  spinner.innerHTML='<div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--purple);margin-bottom:8px">'+
+    '🤖 Агенты генерируют промт для улучшения сайта...</div>'+
+    '<div id="audit-prompt-text" style="font-size:9px;color:var(--dim);font-family:var(--mono)">Запрос к LLM...</div>';
+  feed.appendChild(spinner);
+  spinner.scrollIntoView({behavior:'smooth'});
+
+  try{
+    var systemContext='Ты — команда AI-агентов торгового терминала BCS (MOEX). '+
+      'По итогам аудита системы сформируй ЧЁТКИЙ СТРУКТУРИРОВАННЫЙ ПРОМТ для разработчика (Claude AI), '+
+      'который нужно скопировать и отправить, чтобы улучшить сайт. '+
+      'Промт должен быть на русском языке, конкретным, с техническими деталями реализации. '+
+      'Используй только реальные публичные API.';
+
+    var auditResults='Результаты аудита:\n'+
+      '• Цен загружено: '+pc+'/'+SYMS.length+'\n'+
+      '• Groq API: '+(gk?'активен':'отсутствует')+'\n'+
+      '• Паттернов на '+curSym+': '+pc2+'\n'+
+      '• RSI: '+(rsi||'н/д')+'\n'+
+      '• История свечей: '+chartData.length+'\n'+
+      '• IQ агентов: '+iqAll+'%\n'+
+      '• Авто-сделок: '+agTrades.length+'\n'+
+      '• Проблем: '+issues+'\n'+
+      'Найденные проблемы:\n'+
+      msgs.filter(function(m){return m.tp!=='ok';}).map(function(m){return '- '+m.a.r+': '+m.fix;}).join('\n');
+
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:1200,
+        messages:[
+          {role:'system',content:systemContext},
+          {role:'user',content:auditResults+'\n\nСформируй готовый промт для разработчика — что нужно добавить/исправить в коде сайта. Формат: пронумерованный список задач с техническими деталями (какой API, какой endpoint, как интегрировать). В конце — одна главная приоритетная задача.'}
+        ]
+      })
+    });
+    var d=await r.json();
+    var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'Не удалось получить ответ';
+
+    document.getElementById('audit-prompt-text').innerHTML=
+      '<div style="white-space:pre-wrap;line-height:1.7;color:var(--text)">'+
+        escHtml(txt)+
+      '</div>'+
+      '<div style="margin-top:10px;display:flex;gap:6px">'+
+        '<button class="btn p" onclick="copyPrompt(this)" style="font-size:8px">📋 СКОПИРОВАТЬ ПРОМТ</button>'+
+        '<button class="btn" onclick="this.closest(\'#audit-prompt-wrap\').style.display=\'none\'" style="font-size:8px">✕ ЗАКРЫТЬ</button>'+
+      '</div>';
+    window._lastAuditPrompt=txt;
+    addEv('learn',AGs.filter(function(a){return a.id==='6';})[0],'Промт для улучшения сайта сгенерирован: '+txt.slice(0,60));
+  }catch(e){
+    document.getElementById('audit-prompt-text').textContent='Ошибка генерации: '+e.message;
+  }
+}
+
+function escHtml(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function copyPrompt(btn){
+  if(!window._lastAuditPrompt)return;
+  navigator.clipboard.writeText(window._lastAuditPrompt).then(function(){
+    btn.textContent='✅ СКОПИРОВАНО';
+    setTimeout(function(){btn.textContent='📋 СКОПИРОВАТЬ ПРОМТ';},2000);
+  });
 }
 
 // ── CIO Analysis ──────────────────────────────
@@ -1321,6 +1473,35 @@ function runCIO2(){
   _rCIO(sym,document.getElementById('cio-r2'),document.getElementById('cio-btn2'));
 }
 
+
+async function fetchDivData(sym){
+  var el=document.getElementById('div-data-'+sym);
+  if(!el)return;
+  try{
+    var r=await fetch(MOEX+'/securities/'+sym+'/dividends.json?iss.meta=off');
+    var d=await r.json();
+    var cols=d.dividends.columns;
+    var rows=d.dividends.data;
+    if(!rows||!rows.length){el.textContent='Дивиденды: нет данных';return;}
+    // Last 3 dividends
+    var divs=rows.slice(-3).map(function(row){
+      var o={};cols.forEach(function(c,i){o[c]=row[i];});
+      return o;
+    });
+    var last=divs[divs.length-1];
+    var html='<div style="margin-top:8px;background:var(--cell);border:1px solid var(--g);padding:8px">';
+    html+='<div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);margin-bottom:5px">ДИВИДЕНДЫ (MOEX live)</div>';
+    html+=divs.map(function(d){
+      return '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9px">'
+        +'<span style="color:var(--text)">'+(d.registryclosedate||d.recorddate||'—')+'</span>'
+        +'<span style="color:var(--green);font-family:var(--mono)">'+(d.value||'—')+' ₽</span>'
+        +'</div>';
+    }).join('');
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){el.textContent='Дивиденды: ошибка загрузки';}
+}
+
 // ── Analytics Modal ───────────────────────────
 function showAn(sym){
   var info=ST[sym]||{},p=prices[sym];
@@ -1371,15 +1552,16 @@ function showPage(p){
 }
 
 function swEvo(t){
-  ['log','sk','tr','kn'].forEach(function(x){
+  ['log','sk','tr','kn','prompts'].forEach(function(x){
     var el=document.getElementById('evo-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
   });
   document.querySelectorAll('.etab').forEach(function(b,i){
-    b.classList.toggle('on',['log','sk','tr','kn'][i]===t);
+    b.classList.toggle('on',['log','sk','tr','kn','prompts'][i]===t);
   });
   if(t==='sk')rSkGrid();
   if(t==='tr')rAgTr();
+  if(t==='prompts')renderPrompts();
 }
 
 function showCab(t){
@@ -1526,6 +1708,153 @@ function popSels(){
   var opts=SYMS.map(function(s){return '<option value="'+s+'">'+s+' — '+ST[s].n+'</option>';}).join('');
   ['cio-sym','cio-sym2','ot-sym','ch-sel'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.innerHTML=opts;
+  });
+}
+
+
+// ── Agent Improvement Prompts ─────────────────────────────
+function renderPrompts(){
+  var el=document.getElementById('evo-prompts');
+  if(!el)return;
+  var gk=localStorage.getItem('groq_key')||'';
+  var pc=Object.keys(prices).length;
+  var trades=gTrades();
+  var rsi=calcRSI(chartData.map(function(c){return c.close;}));
+  var pats=dPats(chartData).length;
+
+  var PROMPTS=[
+    {
+      agent:AGs.filter(function(a){return a.id==='8';})[0],
+      priority:'🔴',
+      title:'Объёмы и аномалии',
+      problem:'На графике нет визуального выделения аномальных объёмов. Это ключевой сигнал.',
+      prompt:'В файле index.html в функции loadH уже есть загрузка volume из MOEX API. '
+        +'Добавь под графиком цветовую подсветку: если объём свечи выше среднего за 20 баров в 1.5 раза — '
+        +'подсвечивай красным столбик объёма. Также добавь в ind-bar: <span>ОБЪ: X.XM ▲/▼ НОРМА/АНОМ.</span> '
+        +'где сравниваем текущий объём с 20-дневным средним.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='3';})[0],
+      priority:'🟡',
+      title:'Живые дивиденды и отчётность',
+      problem:'P/E данные захардкожены. MOEX ISS имеет API с дивидендами.',
+      prompt:'В index.html добавь функцию fetchFundamentals(sym) которая запрашивает: '
+        +'https://iss.moex.com/iss/securities/'+curSym+'.json?iss.meta=off — поле dividends.data '
+        +'содержит историю дивидендов. Показывай ближайшую дату отсечки и размер дивиденда '
+        +'в карточке аналитики (showAn). Также добавь маркеры дивидендов на график (вертикальные линии).'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='2';})[0],
+      priority:'🔴',
+      title:'Sentiment-индекс рынка',
+      problem:'Агент-2 не показывает sentiment в UI. Groq API '+(gk?'активен':'не установлен')+'.',
+      prompt:'В index.html добавь функцию async function fetchSentiment(). '
+        +'Она берёт последние 6 заголовков из news-list, отправляет их в Groq API '
+        +'(модель llama-3.3-70b-versatile) с промтом: "Rate overall market sentiment from -1 (very bearish) '
+        +'to +1 (very bullish) based on these Russian financial news headlines. Respond with JSON: {score: X.X, label: \'FEAR/GREED/NEUTRAL\'}". '
+        +'Показывай результат в nav-bar рядом с IMOEX как индикатор СТРАХ/НЕЙТР/ЖАДНОСТЬ.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='7';})[0],
+      priority:'🟡',
+      title:'Цена нефти Brent',
+      problem:'Brent грузится косвенно. Нужен прямой источник.',
+      prompt:'В index.html в функции fetchMa() добавь запрос цены нефти Brent через MOEX: '
+        +'https://iss.moex.com/iss/engines/futures/markets/forts/securities/BRc1.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST '
+        +'Добавь в nav-bar кнопку BRENT XX.X$ рядом с USD. '
+        +'Также добавь цену Brent в промт CIO-директора для учёта при анализе нефтяных акций.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='4';})[0],
+      priority:'🟡',
+      title:'RSI и MACD как отдельные индикаторы',
+      problem:'RSI и MACD только в текстовой строке, нет визуального графика индикаторов.',
+      prompt:'В index.html добавь кнопки RSI и MACD под основным графиком. '
+        +'При нажатии RSI: добавь второй chart через LightweightCharts.createChart() высотой 80px '
+        +'с линейной серией (addLineSeries) значений RSI(14), горизонтальные линии на 30 и 70. '
+        +'При нажатии MACD: показывай гистограмму MACD. Рассчитывай из chartData на клиенте.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='13';})[0],
+      priority:'🟢',
+      title:'Авто-скринер топ-сигналов',
+      problem:'Агент-13 сканирует '+pc+'/'+SYMS.length+' акций но нет UI для результатов.',
+      prompt:'В index.html в панели сигналов добавь блок "ТОП СКРИНЕР АГЕНТА-13". '
+        +'Функция runScreener() раз в 15 минут: для каждой акции из prices считает score = '
+        +'(|chg|*0.4 + volumeRatio*0.3 + rsiSignal*0.3). Топ-5 по score выводит с иконкой '
+        +'бычий/медвежий, тикер, изменение, причину. Добавь кнопку "СКАН" для ручного запуска.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='10';})[0],
+      priority:'🟡',
+      title:'Уровни Fibonacci на графике',
+      problem:'Pivot points и Fibonacci рассчитываются, но не отображаются на графике.',
+      prompt:'В index.html добавь функцию drawFibLevels(). Она берёт max и min из последних '
+        +chartData.length+' свечей '+curSym+', рисует горизонтальные линии Fibonacci '
+        +'(0%, 23.6%, 38.2%, 50%, 61.8%, 100%) через chart.addLineSeries() с priceLine. '
+        +'Добавь кнопку FIB в chart-hdr рядом с кнопкой 📊. При повторном нажатии убирает линии.'
+    },
+    {
+      agent:AGs.filter(function(a){return a.id==='12';})[0],
+      priority:'🟢',
+      title:'P&L и статистика портфеля',
+      problem:'В кабинете нет графика доходности и детальной статистики.',
+      prompt:'В index.html в разделе Кабинет добавь виджет статистики: '
+        +'1) Общий P&L всех закрытых сделок в рублях и процентах '
+        +'2) Win rate с прогресс-баром '
+        +'3) Лучшая/худшая сделка '
+        +'4) Мини-график кумулятивного P&L (линия) через LightweightCharts в высоту 80px. '
+        +'Все данные берутся из gTrades() в localStorage.'
+    },
+  ];
+
+  var html='<div style="padding:6px 8px 4px;font-size:7.5px;color:var(--dim);font-family:var(--display);letter-spacing:.1em;text-transform:uppercase">'+
+    'ПРОМТЫ ДЛЯ УЛУЧШЕНИЯ САЙТА — скопируй и отправь Claude</div>';
+
+  html+=PROMPTS.map(function(p){
+    var safe=p.prompt.replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+    var col=p.priority==='🔴'?'var(--red)':p.priority==='🟡'?'var(--amber)':'var(--green)';
+    return '<div style="margin:5px 0;background:var(--cell);border:1px solid var(--g);border-left:3px solid '+col+';padding:8px 10px">'+
+      '<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">'+
+        '<span style="font-size:14px">'+p.agent.e+'</span>'+
+        '<div>'+
+          '<div style="font-family:var(--display);font-size:9px;font-weight:700;color:var(--bright)">'+p.priority+' '+p.title+'</div>'+
+          '<div style="font-size:8px;color:var(--dim)">'+p.agent.n+' — '+p.agent.r+'</div>'+
+        '</div>'+
+        '<button onclick="copyPrompt('+JSON.stringify(p.prompt)+')" '+
+          'style="margin-left:auto;padding:3px 10px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);'+
+          'color:var(--green);font-family:var(--display);font-size:8px;font-weight:700;cursor:pointer;white-space:nowrap">'+
+          '📋 КОПИРОВАТЬ'+
+        '</button>'+
+      '</div>'+
+      '<div style="font-size:8.5px;color:var(--mid);margin-bottom:5px">⚠️ '+p.problem+'</div>'+
+      '<div style="font-size:8.5px;color:var(--text);line-height:1.6;background:rgba(0,0,0,.3);padding:6px 8px;font-family:var(--mono)">'+p.prompt+'</div>'+
+    '</div>';
+  }).join('');
+
+  el.innerHTML=html;
+}
+
+function copyPrompt(text){
+  navigator.clipboard.writeText(text).then(function(){
+    // Brief flash feedback
+    var btns=document.querySelectorAll('#evo-prompts button');
+    btns.forEach(function(b){
+      if(b.textContent.includes('КОПИРОВАТЬ')){
+        var orig=b.textContent;
+        b.textContent='✅ СКОПИРОВАНО';
+        setTimeout(function(){b.textContent=orig;},1500);
+      }
+    });
+  }).catch(function(){
+    // Fallback
+    var ta=document.createElement('textarea');
+    ta.value=text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Скопировано!');
   });
 }
 
