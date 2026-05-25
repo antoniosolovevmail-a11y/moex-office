@@ -278,9 +278,11 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
           <span class="c-price up" id="ch-price">—</span>
           <span class="c-chg" id="ch-chg">—</span>
           <div class="tf-wrap">
+            <button class="tf" onclick="setTF('1m')" data-tf="1m">1М</button>
+            <button class="tf" onclick="setTF('10m')" data-tf="10m">10М</button>
             <button class="tf" onclick="setTF('5D')" data-tf="5D">5Д</button>
-            <button class="tf" onclick="setTF('1M')" data-tf="1M">1М</button>
-            <button class="tf" onclick="setTF('3M')" data-tf="3M">3М</button>
+            <button class="tf" onclick="setTF('1Mo')" data-tf="1Mo">1МС</button>
+            <button class="tf" onclick="setTF('3Mo')" data-tf="3Mo">3МС</button>
             <button class="tf on" onclick="setTF('1Y')" data-tf="1Y">1Г</button>
             <button class="tf" onclick="setTF('3Y')" data-tf="3Y">3Г</button>
             <button class="tf" onclick="setTF('5Y')" data-tf="5Y">5Г</button>
@@ -548,7 +550,7 @@ const TA=[
 
 // ── Agents ────────────────────────────────────
 const SKN={pr:'Паттерны',tm:'Тайминг',rm:'Риск',sk:'Сектора'};
-const TFM={'5D':{iv:60,d:5},'1M':{iv:24,d:31},'3M':{iv:24,d:92},'1Y':{iv:24,d:365},'3Y':{iv:24,d:1095},'5Y':{iv:31,d:1825}};
+const TFM={'1m':{iv:1,d:0.17},'10m':{iv:10,d:1},'5D':{iv:60,d:5},'1Mo':{iv:24,d:31},'3Mo':{iv:24,d:92},'1Y':{iv:24,d:365},'3Y':{iv:24,d:1095},'5Y':{iv:31,d:1825}};
 const AGs=[
   {id:'1a',n:'Агент-1А',r:'Макро',e:'📰',c:'#3b82f6',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет Bloomberg. RSS задержка ~15мин.',audit:'Источники: 6/9. Задержка ≈15 мин.'},
   {id:'1b',n:'Агент-1Б',r:'Корп.',e:'🏢',c:'#d97706',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет СПАРК.',audit:'Дивиденды актуальны.'},
@@ -826,7 +828,8 @@ async function loadH(sym,tf){
   var today=new Date();
   var from=new Date(today.getTime()-cfg.d*86400000);
   var fromStr=from.toISOString().split('T')[0];
-  var tillStr=today.toISOString().split('T')[0];
+  var tomorrow=new Date(today.getTime()+86400000);
+  var tillStr=tomorrow.toISOString().split('T')[0];
   var all=[],start=0;
   while(true){
     try{
@@ -1503,6 +1506,19 @@ function popSels(){
 }
 
 // ── INIT ──────────────────────────────────────
+
+// Update chart with live price
+function updateChartLivePrice(){
+  if(!cs||!chartData.length)return;
+  var p=prices[curSym];
+  if(!p)return;
+  var now=Math.floor(Date.now()/1000);
+  var last=chartData[chartData.length-1];
+  // Update last candle close with live price
+  var updated=Object.assign({},last,{close:p.p,high:Math.max(last.high,p.p),low:Math.min(last.low,p.p)});
+  try{cs.update(updated);}catch(e){}
+}
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -1518,10 +1534,17 @@ function showApp(){
   updCabUI();
   lCabTr();
   if(agOn)schedAg();
-  fetchP().then(function(){fetchMa();rSigs();rCabTr();});
+  fetchP().then(function(){fetchMa();rSigs();rCabTr();updateChartLivePrice();});
   fetchNews();
   addEv('learn',null,'BCS Terminal v3.0 запущен. Данные MOEX загружаются...');
-  setInterval(fetchP,30000);
+  setInterval(function(){fetchP().then(updateChartLivePrice);},5000);
+  // Auto-refresh chart for intraday views
+  setInterval(function(){
+    if(curTF==='1m')loadH(curSym,curTF);
+  },15000);
+  setInterval(function(){
+    if(curTF==='10m'||curTF==='5D'||curTF==='1Mo'||curTF==='3Mo')loadH(curSym,curTF);
+  },60000);
   setInterval(fetchMa,60000);
   setInterval(fetchNews,600000);
   setInterval(function(){
