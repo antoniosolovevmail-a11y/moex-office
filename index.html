@@ -296,7 +296,16 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
       </div>
       <!-- RIGHT -->
       <div class="right-col">
-        <div class="ph"><span class="ph-t">Watchlist</span><input id="wl-search" class="inp" placeholder="Поиск..." style="width:80px;font-size:9px;padding:2px 6px" oninput="filterWL(this.value)"/></div>
+        <div style="padding:8px 10px;border-bottom:1px solid var(--g);flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)">КОНСЕНСУС АГЕНТОВ</span>
+          <span id="consensus-sym" style="font-size:9px;color:var(--green);font-family:var(--mono)">SBER</span>
+        </div>
+        <div id="consensus-panel">
+          <div style="font-size:8.5px;color:var(--dim)">Загрузка...</div>
+        </div>
+      </div>
+      <div class="ph"><span class="ph-t">Watchlist</span><input id="wl-search" class="inp" placeholder="Поиск..." style="width:80px;font-size:9px;padding:2px 6px" oninput="filterWL(this.value)"/></div>
         <div style="overflow-y:auto;flex:1" id="wl-list"></div>
         <div class="ph"><span class="ph-t">Сигналы AI</span><span class="ph-v" id="sig-cnt3">0</span></div>
         <div style="max-height:110px;overflow-y:auto" id="sig-list"></div>
@@ -922,7 +931,7 @@ async function loadH(sym,tf){
     }
     chart.timeScale().fitContent();
   }
-  rInd(all); rPats(); updCH();
+  rInd(all); rPats(); updCH(); renderConsensusPanel(curSym);
   console.log('loadH',sym,tf,': loaded',all.length,'candles');
 }
 
@@ -1026,8 +1035,11 @@ function sSym(sym){
   rWL();
   var sel=document.getElementById('ch-sel');
   if(sel)sel.value=sym;
-  // Refresh news filtered by new ticker
   fetchNewsMulti(sym);
+  // Update consensus panel
+  var symEl=document.getElementById('consensus-sym');
+  if(symEl)symEl.textContent=sym;
+  renderConsensusPanel(sym);
 }
 
 function rSectors(){
@@ -2348,6 +2360,251 @@ async function fetchAllData(){
   ]);
 }
 
+
+// ═══════════════════════════════════════════════════
+// TASK 2: AGENT CONSENSUS — MAIN SCREEN
+// ═══════════════════════════════════════════════════
+
+function calcFullConsensus(sym){
+  var p   = prices[sym]||{p:0,c:0,h:0,l:0};
+  var info= ST[sym]||{};
+  var rsi = calcRSI(chartData.map(function(c){return c.close;}))||50;
+  var pats= dPats(chartData.slice(-30));
+  var n   = chartData.length;
+  var ma20= n>=20 ? chartData.slice(-20).reduce(function(s,c){return s+c.close;},0)/20 : p.p;
+  var ma50= n>=50 ? chartData.slice(-50).reduce(function(s,c){return s+c.close;},0)/50 : p.p;
+  var chg = p.c||0;
+  var atr = p.h&&p.l ? (p.h-p.l) : p.p*0.01;
+
+  // ── Agent scoring algorithms ──────────────────────
+  var agents = [
+
+    (function(){
+      // Агент-4 — Техника: RSI + MA cross + patterns
+      var score = 50;
+      if(rsi < 35) score += 25;       // oversold = bullish
+      else if(rsi > 65) score -= 20;  // overbought = bearish
+      if(p.p > ma20) score += 10;
+      if(ma20 > ma50) score += 10;
+      var bullPats = pats.filter(function(p){return p.t==='bull';}).length;
+      var bearPats = pats.filter(function(p){return p.t==='bear';}).length;
+      score += bullPats*12 - bearPats*12;
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var reason = pats.length
+        ? pats[0].n+' · RSI '+rsi
+        : 'RSI '+rsi+' · MA '+(ma20>ma50?'бычий':'медвежий');
+      return {id:'4',name:'Агент-4',role:'Техника',e:'📈',c:'#dc2626',
+              dir:dir,conf:score,reason:reason};
+    })(),
+
+    (function(){
+      // Агент-3 — Фундаментал: P/E + ROE + дивиденды
+      var score = 50;
+      if(info.pe){
+        if(info.pe < 6)  score += 20;
+        else if(info.pe < 10) score += 10;
+        else if(info.pe > 20) score -= 15;
+      }
+      if(info.roe){
+        if(info.roe > 25) score += 15;
+        else if(info.roe > 15) score += 8;
+        else if(info.roe < 5)  score -= 10;
+      }
+      if(info.div){
+        if(info.div > 10) score += 12;
+        else if(info.div > 5) score += 6;
+      }
+      if(info.pb && info.pb < 1) score += 10;
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var parts = [];
+      if(info.pe)  parts.push('P/E='+info.pe+'x');
+      if(info.roe) parts.push('ROE='+info.roe+'%');
+      if(info.div) parts.push('Div='+info.div+'%');
+      return {id:'3',name:'Агент-3',role:'Фундам.',e:'📊',c:'#059669',
+              dir:dir,conf:score,reason:parts.join(' · ')||'Нет данных'};
+    })(),
+
+    (function(){
+      // Агент-2 — AI Нарратив: momentum + news
+      var score = 50;
+      if(chg > 2) score += 20;
+      else if(chg > 0.5) score += 10;
+      else if(chg < -2) score -= 20;
+      else if(chg < -0.5) score -= 10;
+      // Vol spike
+      if(p.v && p.v > 1e8) score += 5;
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      return {id:'2',name:'Агент-2',role:'AI',e:'🧠',c:'#7c3aed',
+              dir:dir,conf:score,
+              reason:'Движение '+(chg>=0?'+':'')+chg.toFixed(2)+'% · объём '+(p.v?fmtVol(p.v):'—')};
+    })(),
+
+    (function(){
+      // Агент-5 — Риск: волатильность + позиция в диапазоне
+      var score = 50;
+      var rangePos = (p.h&&p.l&&p.h>p.l) ? (p.p-p.l)/(p.h-p.l) : 0.5;
+      if(rangePos < 0.3) score += 20;  // near low = good entry
+      else if(rangePos > 0.8) score -= 15; // near high = risky
+      var atrPct = p.p>0 ? (atr/p.p*100) : 2;
+      if(atrPct > 4) score -= 10; // high vol = risky
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      return {id:'5',name:'Агент-5',role:'Риск',e:'🛡️',c:'#0891b2',
+              dir:dir,conf:score,
+              reason:'Позиция в диапазоне: '+(rangePos*100).toFixed(0)+'% · ATR: '+(atrPct).toFixed(1)+'%'};
+    })(),
+
+    (function(){
+      // Агент-7 — Макро: IMOEX + USD
+      var score = 50;
+      var imoexEl = document.getElementById('imoex-v');
+      var usdEl   = document.getElementById('usd-v');
+      // IMOEX direction from ticker
+      var imoexChg = 0;
+      document.querySelectorAll('.tick-item').forEach(function(el){
+        if(el.textContent.includes('IMOEX')){
+          var m = el.textContent.match(/([+-]?\d+\.?\d*)%/);
+          if(m) imoexChg = parseFloat(m[1]);
+        }
+      });
+      if(imoexChg > 0.3) score += 15;
+      else if(imoexChg < -0.3) score -= 15;
+      // Sector correlation
+      if(info.s==='Нефть/Газ') score += (imoexChg>0?5:-5);
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      return {id:'7',name:'Агент-7',role:'Макро',e:'🌍',c:'#16a34a',
+              dir:dir,conf:score,
+              reason:'IMOEX '+(imoexEl?imoexEl.textContent:'—')+' · USD '+(usdEl?usdEl.textContent:'—')};
+    })(),
+
+    (function(){
+      // Агент-13 — Скринер: сила сигнала
+      var score = 50;
+      var absChg = Math.abs(chg);
+      if(absChg > 3) score += 25;
+      else if(absChg > 1.5) score += 15;
+      else if(absChg > 0.5) score += 5;
+      if(chg < 0) score = 100 - score; // invert for direction
+      score = Math.max(5,Math.min(95,score));
+      var dir = chg>0?'LONG':chg<0?'SHORT':'HOLD';
+      return {id:'13',name:'Агент-13',role:'Скринер',e:'🔍',c:'#b45309',
+              dir:dir,conf:score,
+              reason:'Изм. '+(chg>=0?'+':'')+chg.toFixed(2)+'% · '+Object.keys(prices).length+' акций'};
+    })(),
+
+    (function(){
+      // Агент-10 — Уровни ТА: положение относительно уровней
+      var score = 50;
+      if(n >= 20){
+        var highs = chartData.slice(-20).map(function(c){return c.high;});
+        var lows  = chartData.slice(-20).map(function(c){return c.low;});
+        var maxH  = Math.max.apply(null,highs);
+        var minL  = Math.min.apply(null,lows);
+        var range = maxH-minL;
+        if(range>0){
+          var pos = (p.p-minL)/range;
+          if(pos<0.25) score+=20;       // near support
+          else if(pos>0.8) score-=15;   // near resistance
+        }
+      }
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      return {id:'10',name:'Агент-10',role:'Уровни',e:'📐',c:'#be123c',
+              dir:dir,conf:score,reason:'Позиция в 20-свечном диапазоне'};
+    })()
+  ];
+
+  // ── Aggregate ──────────────────────────────────
+  var longVotes  = agents.filter(function(a){return a.dir==='LONG';}).length;
+  var shortVotes = agents.filter(function(a){return a.dir==='SHORT';}).length;
+  var total      = agents.length;
+  var avgConf    = Math.round(agents.reduce(function(s,a){return s+a.conf;},0)/total);
+  var finalDir   = longVotes>shortVotes?'LONG':shortVotes>longVotes?'SHORT':'HOLD';
+  var majorityPct= Math.round(Math.max(longVotes,shortVotes)/total*100);
+
+  return {agents:agents,dir:finalDir,longVotes:longVotes,shortVotes:shortVotes,
+          total:total,avgConf:avgConf,majorityPct:majorityPct,sym:sym};
+}
+
+function fmtVol(v){
+  if(v>=1e9) return (v/1e9).toFixed(1)+'B';
+  if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return (v/1e3).toFixed(0)+'K';
+  return String(v);
+}
+
+function renderConsensusPanel(sym){
+  var el = document.getElementById('consensus-panel');
+  if(!el) return;
+
+  if(!prices[sym]){
+    el.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px 0">Загрузка данных...</div>';
+    return;
+  }
+
+  var res = calcFullConsensus(sym);
+  var isLong  = res.dir==='LONG';
+  var isShort = res.dir==='SHORT';
+  var dirCol  = isLong?'var(--green)':isShort?'var(--red)':'var(--amber)';
+
+  var html =
+    // ── Header row ──
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">'+
+      '<div style="display:flex;align-items:center;gap:6px">'+
+        '<span style="font-size:12px;font-weight:700;color:'+dirCol+'">'+res.dir+'</span>'+
+        '<span style="font-size:9px;color:var(--dim)">'+sym+'</span>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<span style="font-size:11px;font-weight:700;color:'+dirCol+'">'+
+          Math.max(res.longVotes,res.shortVotes)+'/'+res.total+
+        '</span>'+
+        '<span style="font-size:8.5px;color:var(--dim)"> агентов</span>'+
+      '</div>'+
+    '</div>'+
+
+    // ── Agent rows ──
+    res.agents.map(function(a){
+      var ac  = a.dir==='LONG'?'var(--green)':a.dir==='SHORT'?'var(--red)':'var(--amber)';
+      var ico = a.dir==='LONG'?'▲':a.dir==='SHORT'?'▼':'—';
+      return '<div style="margin-bottom:5px" title="'+a.reason+'">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'+
+          '<div style="display:flex;align-items:center;gap:5px">'+
+            '<span style="font-size:11px">'+a.e+'</span>'+
+            '<span style="font-size:9px;color:var(--text)">'+a.role+'</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:5px">'+
+            '<span style="font-size:8.5px;color:var(--dim)">'+a.reason.slice(0,28)+(a.reason.length>28?'…':'')+'</span>'+
+            '<span style="font-size:9px;font-weight:700;color:'+ac+';width:38px;text-align:right">'+
+              ico+' '+a.conf+'%</span>'+
+          '</div>'+
+        '</div>'+
+        '<div style="height:2px;background:rgba(255,255,255,.06)">'+
+          '<div style="height:2px;background:'+ac+';width:'+a.conf+'%;transition:width .8s"></div>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+
+    // ── Summary bar ──
+    '<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.05)">'+
+      '<div style="display:flex;gap:2px;height:6px;border-radius:0;overflow:hidden;margin-bottom:4px">'+
+        '<div style="background:var(--green);flex:'+(res.longVotes||0)+'"></div>'+
+        '<div style="background:var(--amber);flex:'+(res.total-res.longVotes-res.shortVotes||0)+'"></div>'+
+        '<div style="background:var(--red);flex:'+(res.shortVotes||0)+'"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--dim)">'+
+        '<span style="color:var(--green)">▲ LONG: '+res.longVotes+'</span>'+
+        '<span style="color:var(--dim)">Ср. уверен.: '+res.avgConf+'%</span>'+
+        '<span style="color:var(--red)">SHORT: '+res.shortVotes+' ▼</span>'+
+      '</div>'+
+    '</div>';
+
+  el.innerHTML = html;
+}
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -2358,16 +2615,25 @@ function showApp(){
   lAS();
   rSectors();
   rAgCards();
+  renderConsensusPanel(curSym);
   initCh();
   rTaKb();
   updCabUI();
   lCabTr();
   if(agOn)schedAg();
   // Parallel data load (Task 5 integration)
-  fetchAllData().then(function(){rSigs();rCabTr();updateChartLivePrice();});
+  fetchAllData().then(function(){
+    rSigs();rCabTr();updateChartLivePrice();
+    renderConsensusPanel(curSym);
+  });
   fetchNews();
   addEv('learn',null,'BCS Terminal v3.0 запущен. Данные MOEX загружаются...');
-  setInterval(function(){fetchP().then(function(){updateChartLivePrice();rSigs();});},5000);
+  setInterval(function(){
+    fetchP().then(function(){
+      updateChartLivePrice();rSigs();
+      renderConsensusPanel(curSym);
+    });
+  },5000);
   setInterval(fetchBrent,30000);
   setInterval(fetchOFZ,60000);
   setInterval(fetchFundamentals,300000); // every 5 min
