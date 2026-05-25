@@ -555,8 +555,61 @@ function showCab(t){["trades","open","settings"].forEach(x=>document.getElementB
 function hp(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0}return Math.abs(h).toString(36)+p.length.toString(36)}
 function swTab(t){document.querySelectorAll(".atab").forEach((el,i)=>el.classList.toggle("on",(i===0&&t==="login")||(i===1&&t==="reg")));document.getElementById("f-login").classList.toggle("hidden",t!=="login");document.getElementById("f-reg").classList.toggle("hidden",t!=="reg");document.getElementById("auth-err").classList.add("hidden");}
 function showErr(m){const el=document.getElementById("auth-err");el.textContent=m;el.classList.remove("hidden");}
-async function doLogin(){const e=document.getElementById("l-em").value.trim().toLowerCase(),p=document.getElementById("l-pw").value;if(!e||!p)return showErr("Заполните поля");try{const s=await db.collection("users").where("email","==",e).limit(1).get();if(s.empty)return showErr("Не найден");const doc=s.docs[0],dd=doc.data();if(dd.passHash!==hp(p))return showErr("Неверный пароль");CU={uid:doc.id,email:e,displayName:dd.name};UP=dd;localStorage.setItem("bcs_u",JSON.stringify({id:doc.id,email:e,name:dd.name}));showApp();}catch(e){showErr("Ошибка: "+e.message);}}
-async function doReg(){const n=document.getElementById("r-nm").value.trim(),e=document.getElementById("r-em").value.trim().toLowerCase(),p=document.getElementById("r-pw").value,p2=document.getElementById("r-pw2").value;if(!n||!e||!p)return showErr("Заполните поля");if(p!==p2)return showErr("Пароли не совпадают");if(p.length<6)return showErr("Пароль мин. 6 символов");try{const ex=await db.collection("users").where("email","==",e).limit(1).get();if(!ex.empty)return showErr("Email занят");const uid="u_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);await db.collection("users").doc(uid).set({name:n,email:e,passHash:hp(p),createdAt:firebase.firestore.FieldValue.serverTimestamp(),settings:{agents_enabled:false,risk:2},stats:{trades:0,wins:0,total_pnl:0}});CU={uid,email:e,displayName:n};UP={name:n,email:e,settings:{},stats:{}};localStorage.setItem("bcs_u",JSON.stringify({id:uid,email:e,name:n}));showApp();}catch(e){showErr("Ошибка: "+e.message);}}
+async function doLogin(){
+  const email=document.getElementById("l-em").value.trim().toLowerCase();
+  const pass=document.getElementById("l-pw").value;
+  if(!email||!pass)return showErr("Заполните все поля");
+  const btn=document.querySelector("#f-login .bts");
+  if(btn){btn.disabled=true;btn.textContent="ВХОД...";}
+  try{
+    const s=await db.collection("users").where("email","==",email).limit(1).get();
+    if(s.empty){if(btn){btn.disabled=false;btn.textContent="ВОЙТИ";}return showErr("Пользователь не найден");}
+    const doc=s.docs[0],dd=doc.data();
+    if(dd.passHash!==hp(pass)){if(btn){btn.disabled=false;btn.textContent="ВОЙТИ";}return showErr("Неверный пароль");}
+    CU={uid:doc.id,email:email,displayName:dd.name};UP=dd;
+    localStorage.setItem("bcs_u",JSON.stringify({id:doc.id,email:email,name:dd.name}));
+    showApp();
+  }catch(err){
+    console.error("Login error:",err);
+    if(btn){btn.disabled=false;btn.textContent="ВОЙТИ";}
+    if(err.code==="permission-denied"||String(err.message).includes("Missing")){
+      showErr("⚠️ Нет доступа: Firebase Console → Firestore → Rules → allow read, write: if true;");
+    }else{showErr("Ошибка: "+err.message);}
+  }
+}
+async function doReg(){
+  const name=document.getElementById("r-nm").value.trim();
+  const email=document.getElementById("r-em").value.trim().toLowerCase();
+  const pass=document.getElementById("r-pw").value;
+  const pass2=document.getElementById("r-pw2").value;
+  if(!name||!email||!pass)return showErr("Заполните все поля");
+  if(pass!==pass2)return showErr("Пароли не совпадают");
+  if(pass.length<6)return showErr("Пароль мин. 6 символов");
+  if(!/\S+@\S+\.\S+/.test(email))return showErr("Неверный формат email");
+  const btn=document.querySelector("#f-reg .bts");
+  if(btn){btn.disabled=true;btn.textContent="СОЗДАНИЕ...";}
+  try{
+    const ex=await db.collection("users").where("email","==",email).limit(1).get();
+    if(!ex.empty){if(btn){btn.disabled=false;btn.textContent="СОЗДАТЬ АККАУНТ";}return showErr("Email уже занят");}
+    const uid="u_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+    await db.collection("users").doc(uid).set({
+      name,email,passHash:hp(pass),
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      settings:{agents_enabled:false,risk:2},
+      stats:{trades:0,wins:0,total_pnl:0}
+    });
+    CU={uid,email,displayName:name};
+    UP={name,email,settings:{agents_enabled:false,risk:2},stats:{trades:0,wins:0,total_pnl:0}};
+    localStorage.setItem("bcs_u",JSON.stringify({id:uid,email,name}));
+    showApp();
+  }catch(err){
+    console.error("Registration error:",err);
+    if(btn){btn.disabled=false;btn.textContent="СОЗДАТЬ АККАУНТ";}
+    if(err.code==="permission-denied"||String(err.message).includes("Missing")||String(err.message).includes("PERMISSION")){
+      showErr("⚠️ Нет доступа к БД. Зайдите в Firebase Console → Firestore Database → Rules и вставьте: allow read, write: if true;");
+    }else{showErr("Ошибка регистрации: "+err.message);}
+  }
+}
 function doLogout(){localStorage.removeItem("bcs_u");CU=null;if(agOn)toggleAg();document.getElementById("auth").classList.remove("hidden");document.getElementById("app").classList.add("hidden");}
 async function lCabTr(){if(!CU)return;try{const s=await db.collection("users").doc(CU.uid).collection("trades").orderBy("openedAt","desc").limit(50).get();openTrades=[];closedTrades=[];s.forEach(doc=>{const t={id:doc.id,...doc.data()};t.status==="open"?openTrades.push(t):closedTrades.push(t)});rCabTr();}catch(e){}}
 function rCabTr(){const oe=document.getElementById("open-list"),ce=document.getElementById("hist-list");if(!openTrades.length){if(oe)oe.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">Нет открытых</div>';}else if(oe)oe.innerHTML=openTrades.map(t=>{const p2=prices[t.sym]?.p||t.entry;const pnl=t.direction==="LONG"?(p2-t.entry)/t.entry*100:(t.entry-p2)/t.entry*100;const col=pnl>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">Вход: ${t.entry}₽ | Стоп: ${t.stop||"—"}₽</div><span class="tr-pnl" style="color:${col}">${pnl>=0?"+":""}${pnl.toFixed(2)}%</span><button class="btn d" onclick="cTr('${t.id}',${p2})" style="font-size:8px;padding:2px 5px">✕</button></div>`;}).join("");if(!closedTrades.length){if(ce)ce.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">История пуста</div>';}else if(ce)ce.innerHTML=closedTrades.slice(0,10).map(t=>{const col=(t.pnl||0)>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">${t.entry}₽→${t.closePrice||"—"}₽</div><span class="tr-pnl" style="color:${col}">${(t.pnl||0)>=0?"+":""}${(t.pnl||0).toFixed(2)}%</span></div>`;}).join("");const oe2=document.getElementById("open-cnt");if(oe2)oe2.textContent=openTrades.length;}
@@ -568,7 +621,17 @@ async function saveSettings(){if(!CU)return;const gk=document.getElementById("s-
 function updCabUI(){const name=CU?.displayName||UP?.name||"—",email=CU?.email||"",init=name.slice(0,1).toUpperCase();["nav-av","cab-init"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=init;});const nme=document.getElementById("nav-nm");if(nme)nme.textContent=name.split(" ")[0];["cab-nm","cab-em"].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=i===0?name:email;});const s=UP?.stats||{};document.getElementById("st-tr")&&(document.getElementById("st-tr").textContent=s.trades||0);document.getElementById("st-ag")&&(document.getElementById("st-ag").textContent=agTrades.length);const wr=s.trades>0?Math.round(s.wins/s.trades*100):null;const wre=document.getElementById("st-wr");if(wre){wre.textContent=wr!==null?wr+"%":"—";wre.style.color=wr>=50?"var(--green)":wr!==null?"var(--red)":"var(--dim)";}const ap=s.trades>0?(s.total_pnl/s.trades).toFixed(2):null;const ape=document.getElementById("st-pnl");if(ape){ape.textContent=ap!==null?(ap>=0?"+":"")+ap+"%":"—";ape.style.color=ap>=0?"var(--green)":"var(--red)";}const gk=localStorage.getItem("groq_key")||"";if(gk){["groq-key","groq-key2","s-gk"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=gk;});}}
 function popSels(){const opts=Object.keys(ST).map(s=>`<option value="${s}">${s} — ${ST[s].n}</option>`).join("");["cio-sym","cio-sym2","ot-sym","ch-sel"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});}
 function showApp(){document.getElementById("auth").classList.add("hidden");document.getElementById("app").classList.remove("hidden");popSels();lAS();rSectors();rAgCards();initCh();rTaKb();updCabUI();lCabTr();agOn=UP?.settings?.agents_enabled||false;if(agOn)schedAg();fetchP().then(()=>{fetchMa();rSigs();rCabTr();});fetchNews();addEv("learn",null,"Терминал BCS v3.0 запущен. Система готова.");setInterval(fetchP,30000);setInterval(fetchMa,60000);setInterval(fetchNews,600000);setInterval(()=>{const t=new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const el=document.getElementById("clk");if(el)el.textContent=t;},1000);}
-(async function(){const s=localStorage.getItem("bcs_u");if(s){try{const u=JSON.parse(s);const doc=await db.collection("users").doc(u.id).get();if(doc.exists){CU={uid:u.id,email:u.email,displayName:u.name};UP=doc.data();showApp();return;}}catch(e){}}document.getElementById("auth").classList.remove("hidden");})();
+(async function(){
+  const s=localStorage.getItem("bcs_u");
+  if(s){
+    try{
+      const u=JSON.parse(s);
+      const doc=await db.collection("users").doc(u.id).get();
+      if(doc.exists){CU={uid:u.id,email:u.email,displayName:u.name};UP=doc.data();showApp();return;}
+    }catch(err){console.warn("Auto-login failed:",err.message);}
+  }
+  document.getElementById("auth").classList.remove("hidden");
+})();
 </script>
 </body>
 </html>
