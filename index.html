@@ -278,14 +278,15 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
           <span class="c-price up" id="ch-price">—</span>
           <span class="c-chg" id="ch-chg">—</span>
           <div class="tf-wrap">
-            <button class="tf" onclick="setTF('1m')" data-tf="1m">1М</button>
+            <button class="tf" onclick="setTF('1m')"  data-tf="1m">1М</button>
             <button class="tf" onclick="setTF('10m')" data-tf="10m">10М</button>
-            <button class="tf" onclick="setTF('5D')" data-tf="5D">5Д</button>
+            <button class="tf" onclick="setTF('5D')"  data-tf="5D">5Д</button>
             <button class="tf" onclick="setTF('1Mo')" data-tf="1Mo">1МС</button>
             <button class="tf" onclick="setTF('3Mo')" data-tf="3Mo">3МС</button>
-            <button class="tf on" onclick="setTF('1Y')" data-tf="1Y">1Г</button>
-            <button class="tf" onclick="setTF('3Y')" data-tf="3Y">3Г</button>
-            <button class="tf" onclick="setTF('5Y')" data-tf="5Y">5Г</button>
+            <button class="tf on" onclick="setTF('1Y')"  data-tf="1Y">1Г</button>
+            <button class="tf" onclick="setTF('3Y')"  data-tf="3Y">3Г</button>
+            <button class="tf" onclick="setTF('5Y')"  data-tf="5Y">5Г</button>
+            <button class="tf" onclick="setTF('MAX')" data-tf="MAX">МАКС</button>
           </div>
           <select class="ch-sel" id="ch-sel" onchange="selSym(this.value)"></select>
           <button class="btn" onclick="showAn(curSym)" style="font-size:8px;padding:2px 8px;margin-left:4px">📊</button>
@@ -550,7 +551,7 @@ const TA=[
 
 // ── Agents ────────────────────────────────────
 const SKN={pr:'Паттерны',tm:'Тайминг',rm:'Риск',sk:'Сектора'};
-const TFM={'1m':{iv:1,d:0.17},'10m':{iv:10,d:1},'5D':{iv:60,d:5},'1Mo':{iv:24,d:31},'3Mo':{iv:24,d:92},'1Y':{iv:24,d:365},'3Y':{iv:24,d:1095},'5Y':{iv:31,d:1825}};
+const TFM={'1m':{iv:1,d:0.17},'10m':{iv:10,d:1},'5D':{iv:60,d:5},'1Mo':{iv:24,d:31},'3Mo':{iv:24,d:92},'1Y':{iv:24,d:365},'3Y':{iv:24,d:1095},'5Y':{iv:24,d:1825},'MAX':{iv:24,d:5475}};
 const AGs=[
   {id:'1a',n:'Агент-1А',r:'Макро',e:'📰',c:'#3b82f6',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет Bloomberg. RSS задержка ~15мин.',audit:'Источники: 6/9. Задержка ≈15 мин.'},
   {id:'1b',n:'Агент-1Б',r:'Корп.',e:'🏢',c:'#d97706',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет СПАРК.',audit:'Дивиденды актуальны.'},
@@ -826,32 +827,54 @@ async function loadH(sym,tf){
   curSym=sym; curTF=tf;
   var cfg=TFM[tf]||TFM['1Y'];
   var today=new Date();
-  var from=new Date(today.getTime()-cfg.d*86400000);
-  var fromStr=from.toISOString().split('T')[0];
   var tomorrow=new Date(today.getTime()+86400000);
   var tillStr=tomorrow.toISOString().split('T')[0];
-  var all=[],start=0;
-  while(true){
+  // For MAX use fixed far-back date
+  var fromDate;
+  if(tf==='MAX'){
+    fromDate=new Date('2010-01-01');
+  } else {
+    fromDate=new Date(today.getTime()-cfg.d*86400000);
+  }
+  var fromStr=fromDate.toISOString().split('T')[0];
+
+  // Show loading state
+  var indEl=document.getElementById('ind-bar');
+  if(indEl)indEl.innerHTML='<span style="font-size:9px;color:var(--dim)">Загрузка '+sym+' '+tf+'...</span>';
+
+  var all=[],start=0,maxPages=(tf==='MAX'||tf==='5Y'||tf==='3Y')?20:4;
+  var pagesDone=0;
+  while(pagesDone<maxPages){
     try{
-      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+'/candles.json?interval='+cfg.iv+'&from='+fromStr+'&till='+tillStr+'&start='+start+'&iss.meta=off';
+      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+        '/candles.json?interval='+cfg.iv+'&from='+fromStr+'&till='+tillStr+
+        '&start='+start+'&iss.meta=off';
       var r=await fetch(url);
+      if(!r.ok)break;
       var d=await r.json();
       var cols=d.candles.columns;
       var rows=d.candles.data;
-      if(!rows.length)break;
+      if(!rows||!rows.length)break;
       rows.forEach(function(row){
-        var o={};cols.forEach(function(c,i){o[c]=row[i];});
+        var o={};
+        cols.forEach(function(c,i){o[c]=row[i];});
         var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
-        var candle={time:t,open:parseFloat(o.open),high:parseFloat(o.high),low:parseFloat(o.low),close:parseFloat(o.close)};
-        if(candle.open&&candle.close&&candle.time)all.push(candle);
+        if(t&&parseFloat(o.open)&&parseFloat(o.close)){
+          all.push({time:t,open:parseFloat(o.open),high:parseFloat(o.high),
+                    low:parseFloat(o.low),close:parseFloat(o.close)});
+        }
       });
       start+=rows.length;
-      if(rows.length<500||start>5000)break;
-    }catch(e){break;}
+      pagesDone++;
+      if(rows.length<500)break; // last page
+    }catch(e){console.warn('loadH page error',e);break;}
   }
+
+  // Sort and deduplicate
   all.sort(function(a,b){return a.time-b.time;});
   var seen={};
   all=all.filter(function(c){if(seen[c.time])return false;seen[c.time]=1;return true;});
+
   chartData=all;
   if(all.length&&cs){
     cs.setData(all);
@@ -859,6 +882,7 @@ async function loadH(sym,tf){
     chart.timeScale().fitContent();
   }
   rInd(all); rPats(); updCH();
+  console.log('loadH',sym,tf,': loaded',all.length,'candles');
 }
 
 function calcMrk(data){
