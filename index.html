@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>BCS Trading Terminal</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap");
@@ -228,33 +226,8 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
 </style>
 </head>
 <body>
-<!-- AUTH -->
-<div id="auth">
-  <div class="auth-box">
-    <h1>BCS_TERMINAL</h1>
-    <p>MOEX TRADING OFFICE v3.0</p>
-    <div class="auth-tabs">
-      <button class="atab on" onclick="swTab('login')">ВХОД</button>
-      <button class="atab" onclick="swTab('reg')">РЕГИСТРАЦИЯ</button>
-    </div>
-    <div id="auth-err" class="ae hidden"></div>
-    <div id="f-login">
-      <label class="fl">Email</label><input type="email" id="l-em" class="fi" placeholder="user@mail.com"/>
-      <label class="fl">Пароль</label><input type="password" id="l-pw" class="fi" placeholder="••••••••"/>
-      <button class="bts" onclick="doLogin()">ВОЙТИ</button>
-    </div>
-    <div id="f-reg" class="hidden">
-      <label class="fl">Имя</label><input type="text" id="r-nm" class="fi" placeholder="Имя"/>
-      <label class="fl">Email</label><input type="email" id="r-em" class="fi" placeholder="user@mail.com"/>
-      <label class="fl">Пароль</label><input type="password" id="r-pw" class="fi" placeholder="Мин. 6 символов"/>
-      <label class="fl">Повтор</label><input type="password" id="r-pw2" class="fi" placeholder="••••••••"/>
-      <button class="bts" onclick="doReg()">СОЗДАТЬ АККАУНТ</button>
-    </div>
-  </div>
-</div>
-
 <!-- APP -->
-<div id="app" class="hidden">
+<div id="app">
   <!-- TICKER -->
   <div class="tick-bar">
     <div class="tick-logo">BCS</div>
@@ -468,9 +441,15 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
   </div>
 </div>
 <script>
-const FB={apiKey:"AIzaSyCY6nDYPfZDjlJwjZVk5eoV5g0sjdBVX5w",authDomain:"moex-trading-office.firebaseapp.com",projectId:"moex-trading-office",storageBucket:"moex-trading-office.firebasestorage.app",messagingSenderId:"619234474602",appId:"1:619234474602:web:518cf927df3b9f459ca813"};
-firebase.initializeApp(FB);const db=firebase.firestore();
-let CU=null,UP={},lastCio=null,openTrades=[],closedTrades=[],prices={},curSym="SBER",curTF="1Y",chartData=[],agOn=false,agTimer=null,agEvs=[],agTrades=[],selAg=null;
+// ═══════════════════════════════════
+// LOCAL STORAGE HELPERS (no-auth)
+// ═══════════════════════════════════
+function loadData(){try{return JSON.parse(localStorage.getItem('bcs_data')||'{}');}catch(e){return {};}}
+function setUserName(n){const d=loadData();d.name=n;saveData(d);}
+function saveData(d){localStorage.setItem('bcs_data',JSON.stringify(d));}
+function loadLocalStats(){return loadData().stats||{trades:0,wins:0,total_pnl:0};}
+// No-auth mode
+let lastCio=null,openTrades=[],closedTrades=[],prices={},curSym="SBER",curTF="1Y",chartData=[],agOn=false,agTimer=null,agEvs=[],agTrades=[],selAg=null;
 const M="https://iss.moex.com/iss";
 const ST={SBER:{n:"Сбербанк",s:"Финансы",pe:4.8,pb:0.9,roe:22,div:11.2},VTBR:{n:"ВТБ",s:"Финансы",pe:3.2,pb:0.5,roe:18,div:5.1},TCSG:{n:"Т-Банк",s:"Финансы",pe:12.1,pb:3.2,roe:28,div:0},MOEX:{n:"МосБиржа",s:"Финансы",pe:9.4,pb:3.1,roe:33,div:8.5},BSPB:{n:"Банк СПБ",s:"Финансы",pe:3.5,pb:0.7,roe:21,div:6.4},LKOH:{n:"Лукойл",s:"Нефть/Газ",pe:5.8,pb:1.2,roe:21,div:14.5},GAZP:{n:"Газпром",s:"Нефть/Газ",pe:3.1,pb:0.3,roe:8,div:6.8},ROSN:{n:"Роснефть",s:"Нефть/Газ",pe:5.4,pb:0.9,roe:17,div:8.2},NVTK:{n:"Новатэк",s:"Нефть/Газ",pe:8.2,pb:1.8,roe:22,div:5.3},SNGS:{n:"Сургут",s:"Нефть/Газ",pe:2.1,pb:0.4,roe:18,div:22.4},TATN:{n:"Татнефть",s:"Нефть/Газ",pe:6.2,pb:1.4,roe:24,div:12.8},GMKN:{n:"Норникель",s:"Металлы",pe:7.4,pb:4.2,roe:57,div:5.8},ALRS:{n:"Алроса",s:"Металлы",pe:6.8,pb:1.1,roe:17,div:4.2},PLZL:{n:"Полюс",s:"Металлы",pe:9.1,pb:3.5,roe:39,div:3.4},NLMK:{n:"НЛМК",s:"Металлы",pe:5.2,pb:1.3,roe:25,div:8.9},CHMF:{n:"Северсталь",s:"Металлы",pe:5.8,pb:2.1,roe:36,div:11.4},MAGN:{n:"ММК",s:"Металлы",pe:4.9,pb:0.9,roe:19,div:7.6},PHOR:{n:"ФосАгро",s:"Химия",pe:7.3,pb:3.8,roe:52,div:12.1},RUAL:{n:"Русал",s:"Металлы",pe:null,pb:0.4,roe:-2,div:0},YNDX:{n:"Яндекс",s:"Технологии",pe:22.4,pb:4.8,roe:22,div:0},OZON:{n:"Ozon",s:"Технологии",pe:null,pb:null,roe:-15,div:0},HEAD:{n:"HeadHunter",s:"Технологии",pe:18.5,pb:9.2,roe:51,div:6.8},ASTR:{n:"Астра",s:"Технологии",pe:28.1,pb:6.4,roe:23,div:2.1},POSI:{n:"Позитив",s:"Технологии",pe:24.2,pb:7.1,roe:29,div:4.5},MGNT:{n:"Магнит",s:"Ритейл",pe:8.4,pb:2.1,roe:25,div:7.8},FIVE:{n:"X5 Group",s:"Ритейл",pe:7.2,pb:2.8,roe:39,div:14.2},MTSS:{n:"МТС",s:"Телеком",pe:6.8,pb:null,roe:null,div:17.4},RTKM:{n:"Ростелеком",s:"Телеком",pe:9.4,pb:1.2,roe:13,div:8.2},HYDR:{n:"РусГидро",s:"Энергетика",pe:5.1,pb:0.5,roe:10,div:6.8},FEES:{n:"ФСК",s:"Энергетика",pe:3.8,pb:0.3,roe:8,div:5.4},IRAO:{n:"Интер РАО",s:"Энергетика",pe:4.2,pb:0.5,roe:13,div:5.8},UPRO:{n:"Юнипро",s:"Энергетика",pe:8.9,pb:1.1,roe:12,div:12.1},AFLT:{n:"Аэрофлот",s:"Транспорт",pe:null,pb:1.8,roe:-5,div:0},FLOT:{n:"Совкомфлот",s:"Транспорт",pe:4.1,pb:0.8,roe:20,div:9.4},LSRG:{n:"ЛСР",s:"Недвижимость",pe:7.8,pb:1.1,roe:14,div:8.4},PIKK:{n:"ПИК",s:"Недвижимость",pe:null,pb:1.5,roe:-3,div:0},SMLT:{n:"Самолёт",s:"Недвижимость",pe:null,pb:2.8,roe:-8,div:0},BELU:{n:"Белуга",s:"Потреб.",pe:12.4,pb:3.2,roe:26,div:5.8},AQUA:{n:"Инарктика",s:"Потреб.",pe:8.2,pb:2.4,roe:29,div:8.1},MDMG:{n:"MD Medical",s:"Медицина",pe:14.8,pb:3.4,roe:23,div:5.2},GLTR:{n:"Globaltrans",s:"Транспорт",pe:5.4,pb:1.4,roe:26,div:0},SELG:{n:"Селигдар",s:"Металлы",pe:14.2,pb:2.1,roe:15,div:3.8},BANE:{n:"Башнефть",s:"Нефть/Газ",pe:4.1,pb:0.6,roe:15,div:9.2},OGKB:{n:"ОГК-2",s:"Энергетика",pe:3.9,pb:0.4,roe:11,div:7.2},MVID:{n:"М.Видео",s:"Ритейл",pe:null,pb:0.6,roe:-12,div:0},SPBE:{n:"СПБ Биржа",s:"Финансы",pe:null,pb:0.8,roe:-5,div:0},VKCO:{n:"VK",s:"Технологии",pe:null,pb:1.2,roe:-8,div:0},RENI:{n:"Ренессанс",s:"Финансы",pe:5.2,pb:1.1,roe:24,div:7.8}};
 const SYMS=Object.keys(ST);
@@ -610,28 +589,55 @@ async function doReg(){
     }else{showErr("Ошибка регистрации: "+err.message);}
   }
 }
-function doLogout(){localStorage.removeItem("bcs_u");CU=null;if(agOn)toggleAg();document.getElementById("auth").classList.remove("hidden");document.getElementById("app").classList.add("hidden");}
-async function lCabTr(){if(!CU)return;try{const s=await db.collection("users").doc(CU.uid).collection("trades").orderBy("openedAt","desc").limit(50).get();openTrades=[];closedTrades=[];s.forEach(doc=>{const t={id:doc.id,...doc.data()};t.status==="open"?openTrades.push(t):closedTrades.push(t)});rCabTr();}catch(e){}}
-function rCabTr(){const oe=document.getElementById("open-list"),ce=document.getElementById("hist-list");if(!openTrades.length){if(oe)oe.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">Нет открытых</div>';}else if(oe)oe.innerHTML=openTrades.map(t=>{const p2=prices[t.sym]?.p||t.entry;const pnl=t.direction==="LONG"?(p2-t.entry)/t.entry*100:(t.entry-p2)/t.entry*100;const col=pnl>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">Вход: ${t.entry}₽ | Стоп: ${t.stop||"—"}₽</div><span class="tr-pnl" style="color:${col}">${pnl>=0?"+":""}${pnl.toFixed(2)}%</span><button class="btn d" onclick="cTr('${t.id}',${p2})" style="font-size:8px;padding:2px 5px">✕</button></div>`;}).join("");if(!closedTrades.length){if(ce)ce.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">История пуста</div>';}else if(ce)ce.innerHTML=closedTrades.slice(0,10).map(t=>{const col=(t.pnl||0)>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">${t.entry}₽→${t.closePrice||"—"}₽</div><span class="tr-pnl" style="color:${col}">${(t.pnl||0)>=0?"+":""}${(t.pnl||0).toFixed(2)}%</span></div>`;}).join("");const oe2=document.getElementById("open-cnt");if(oe2)oe2.textContent=openTrades.length;}
-async function openTrade(){if(!CU)return;const trade={sym:document.getElementById("ot-sym").value,direction:document.getElementById("ot-dir").value,entry:parseFloat(document.getElementById("ot-en").value)||0,stop:parseFloat(document.getElementById("ot-st").value)||null,tgt1:parseFloat(document.getElementById("ot-t1").value)||null,volume:parseFloat(document.getElementById("ot-vl").value)||0,status:"open",openedAt:firebase.firestore.FieldValue.serverTimestamp()};if(!trade.entry)return alert("Укажите цену входа");try{await db.collection("users").doc(CU.uid).collection("trades").add(trade);await lCabTr();showCab("trades");}catch(e){alert("Ошибка: "+e.message);}}
-async function cTr(id,price){if(!confirm("Закрыть по "+price+"₽?"))return;const t=openTrades.find(x=>x.id===id);if(!t)return;const pnl=t.direction==="LONG"?(price-t.entry)/t.entry*100:(t.entry-price)/t.entry*100;try{await db.collection("users").doc(CU.uid).collection("trades").doc(id).update({status:"closed",closePrice:price,pnl:parseFloat(pnl.toFixed(2)),closedAt:firebase.firestore.FieldValue.serverTimestamp()});const s=UP?.stats||{};await db.collection("users").doc(CU.uid).update({"stats.trades":(s.trades||0)+1,"stats.wins":(s.wins||0)+(pnl>0?1:0),"stats.total_pnl":(s.total_pnl||0)+pnl});await lCabTr();updCabUI();}catch(e){}}
-async function clearTrades(){if(!confirm("Удалить все сделки?"))return;const s=await db.collection("users").doc(CU.uid).collection("trades").get();const b=db.batch();s.forEach(d=>b.delete(d.ref));await b.commit();await db.collection("users").doc(CU.uid).update({"stats.trades":0,"stats.wins":0,"stats.total_pnl":0});await lCabTr();updCabUI();}
-function fillCIO(){if(!lastCio)return alert("Сначала запустите CIO");document.getElementById("ot-sym").value=lastCio.symbol||"SBER";document.getElementById("ot-dir").value=lastCio.direction||"LONG";document.getElementById("ot-en").value=lastCio.entry||"";}
-async function saveSettings(){if(!CU)return;const gk=document.getElementById("s-gk").value;if(gk)sGK(gk);await db.collection("users").doc(CU.uid).update({settings:{agents_enabled:agOn,risk:parseInt(document.getElementById("s-risk").value)}});alert("Сохранено!");}
-function updCabUI(){const name=CU?.displayName||UP?.name||"—",email=CU?.email||"",init=name.slice(0,1).toUpperCase();["nav-av","cab-init"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=init;});const nme=document.getElementById("nav-nm");if(nme)nme.textContent=name.split(" ")[0];["cab-nm","cab-em"].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=i===0?name:email;});const s=UP?.stats||{};document.getElementById("st-tr")&&(document.getElementById("st-tr").textContent=s.trades||0);document.getElementById("st-ag")&&(document.getElementById("st-ag").textContent=agTrades.length);const wr=s.trades>0?Math.round(s.wins/s.trades*100):null;const wre=document.getElementById("st-wr");if(wre){wre.textContent=wr!==null?wr+"%":"—";wre.style.color=wr>=50?"var(--green)":wr!==null?"var(--red)":"var(--dim)";}const ap=s.trades>0?(s.total_pnl/s.trades).toFixed(2):null;const ape=document.getElementById("st-pnl");if(ape){ape.textContent=ap!==null?(ap>=0?"+":"")+ap+"%":"—";ape.style.color=ap>=0?"var(--green)":"var(--red)";}const gk=localStorage.getItem("groq_key")||"";if(gk){["groq-key","groq-key2","s-gk"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=gk;});}}
-function popSels(){const opts=Object.keys(ST).map(s=>`<option value="${s}">${s} — ${ST[s].n}</option>`).join("");["cio-sym","cio-sym2","ot-sym","ch-sel"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});}
-function showApp(){document.getElementById("auth").classList.add("hidden");document.getElementById("app").classList.remove("hidden");popSels();lAS();rSectors();rAgCards();initCh();rTaKb();updCabUI();lCabTr();agOn=UP?.settings?.agents_enabled||false;if(agOn)schedAg();fetchP().then(()=>{fetchMa();rSigs();rCabTr();});fetchNews();addEv("learn",null,"Терминал BCS v3.0 запущен. Система готова.");setInterval(fetchP,30000);setInterval(fetchMa,60000);setInterval(fetchNews,600000);setInterval(()=>{const t=new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const el=document.getElementById("clk");if(el)el.textContent=t;},1000);}
-(async function(){
-  const s=localStorage.getItem("bcs_u");
-  if(s){
-    try{
-      const u=JSON.parse(s);
-      const doc=await db.collection("users").doc(u.id).get();
-      if(doc.exists){CU={uid:u.id,email:u.email,displayName:u.name};UP=doc.data();showApp();return;}
-    }catch(err){console.warn("Auto-login failed:",err.message);}
+function doLogout(){
+  if(confirm('Сбросить имя пользователя?')){
+    const d=loadData();delete d.name;saveData(d);updCabUI();
   }
-  document.getElementById("auth").classList.remove("hidden");
-})();
+}
+function lCabTr(){
+  const d=loadData();
+  const all=(d.trades||[]);
+  openTrades=all.filter(t=>t.status==='open');
+  closedTrades=all.filter(t=>t.status!=='open');
+  rCabTr();
+}
+function rCabTr(){const oe=document.getElementById("open-list"),ce=document.getElementById("hist-list");if(!openTrades.length){if(oe)oe.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">Нет открытых</div>';}else if(oe)oe.innerHTML=openTrades.map(t=>{const p2=prices[t.sym]?.p||t.entry;const pnl=t.direction==="LONG"?(p2-t.entry)/t.entry*100:(t.entry-p2)/t.entry*100;const col=pnl>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">Вход: ${t.entry}₽ | Стоп: ${t.stop||"—"}₽</div><span class="tr-pnl" style="color:${col}">${pnl>=0?"+":""}${pnl.toFixed(2)}%</span><button class="btn d" onclick="cTr('${t.id}',${p2})" style="font-size:8px;padding:2px 5px">✕</button></div>`;}).join("");if(!closedTrades.length){if(ce)ce.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px">История пуста</div>';}else if(ce)ce.innerHTML=closedTrades.slice(0,10).map(t=>{const col=(t.pnl||0)>=0?"var(--green)":"var(--red)";return`<div class="tr"><span class="tr-sym">${t.sym}</span><span class="tr-dir ${t.direction?.toLowerCase()||"long"}">${t.direction}</span><div class="tr-info">${t.entry}₽→${t.closePrice||"—"}₽</div><span class="tr-pnl" style="color:${col}">${(t.pnl||0)>=0?"+":""}${(t.pnl||0).toFixed(2)}%</span></div>`;}).join("");const oe2=document.getElementById("open-cnt");if(oe2)oe2.textContent=openTrades.length;}
+function openTrade(){
+  const trade={id:'t_'+Date.now(),sym:document.getElementById("ot-sym").value,direction:document.getElementById("ot-dir").value,entry:parseFloat(document.getElementById("ot-en").value)||0,stop:parseFloat(document.getElementById("ot-st").value)||null,tgt1:parseFloat(document.getElementById("ot-t1").value)||null,volume:parseFloat(document.getElementById("ot-vl").value)||0,status:"open",openedAt:new Date().toISOString()};
+  if(!trade.entry)return alert("Укажите цену входа");
+  const d=loadData();d.trades=d.trades||[];d.trades.push(trade);saveData(d);
+  lCabTr();showCab("trades");
+}
+async function cTr(id,price){
+  if(!confirm('Закрыть по '+price+'₽?'))return;
+  const t=openTrades.find(x=>x.id===id);if(!t)return;
+  const pnl=t.direction==='LONG'?(price-t.entry)/t.entry*100:(t.entry-price)/t.entry*100;
+  const d=loadData();
+  d.trades=(d.trades||[]).map(tr=>tr.id===id?{...tr,status:'closed',closePrice:price,pnl:parseFloat(pnl.toFixed(2)),closedAt:new Date().toISOString()}:tr);
+  const s=d.stats||{trades:0,wins:0,total_pnl:0};
+  d.stats={trades:(s.trades||0)+1,wins:(s.wins||0)+(pnl>0?1:0),total_pnl:(s.total_pnl||0)+pnl};
+  saveData(d);lCabTr();updCabUI();
+}
+function clearTrades(){
+  if(!confirm("Удалить все сделки?"))return;
+  const d=loadData();d.trades=[];d.stats={trades:0,wins:0,total_pnl:0};saveData(d);
+  lCabTr();updCabUI();
+}
+function fillCIO(){if(!lastCio)return alert("Сначала запустите CIO");document.getElementById("ot-sym").value=lastCio.symbol||"SBER";document.getElementById("ot-dir").value=lastCio.direction||"LONG";document.getElementById("ot-en").value=lastCio.entry||"";}
+function saveSettings(){
+  const gk=document.getElementById("s-gk").value;if(gk)sGK(gk);
+  localStorage.setItem("ag_on",JSON.stringify(agOn));
+  alert("Сохранено!");
+}
+function updCabUI(){const name=CU?.displayName||UP?.name||"—",email=CU?.email||"",init=name.slice(0,1).toUpperCase();["nav-av","cab-init"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=init;});const nme=document.getElementById("nav-nm");if(nme)nme.textContent=name.split(" ")[0];["cab-nm","cab-em"].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=i===0?name:email;});const s=loadLocalStats();document.getElementById("st-tr")&&(document.getElementById("st-tr").textContent=s.trades||0);document.getElementById("st-ag")&&(document.getElementById("st-ag").textContent=agTrades.length);const wr=s.trades>0?Math.round(s.wins/s.trades*100):null;const wre=document.getElementById("st-wr");if(wre){wre.textContent=wr!==null?wr+"%":"—";wre.style.color=wr>=50?"var(--green)":wr!==null?"var(--red)":"var(--dim)";}const ap=s.trades>0?(s.total_pnl/s.trades).toFixed(2):null;const ape=document.getElementById("st-pnl");if(ape){ape.textContent=ap!==null?(ap>=0?"+":"")+ap+"%":"—";ape.style.color=ap>=0?"var(--green)":"var(--red)";}const gk=localStorage.getItem("groq_key")||"";if(gk){["groq-key","groq-key2","s-gk"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=gk;});}}
+function popSels(){const opts=Object.keys(ST).map(s=>`<option value="${s}">${s} — ${ST[s].n}</option>`).join("");["cio-sym","cio-sym2","ot-sym","ch-sel"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});}
+function showApp(){
+  // First visit - ask for name
+  if(!loadData().name){
+    const n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя (или нажмите OK):','Трейдер');
+    if(n&&n.trim()){setUserName(n.trim());}else{setUserName('Трейдер');}
+  }// no authpopSels();lAS();rSectors();rAgCards();initCh();rTaKb();updCabUI();lCabTr();agOn=JSON.parse(localStorage.getItem("ag_on")||"false");if(agOn)schedAg();fetchP().then(()=>{fetchMa();rSigs();rCabTr();});fetchNews();addEv("learn",null,"Терминал BCS v3.0 запущен. Система готова.");setInterval(fetchP,30000);setInterval(fetchMa,60000);setInterval(fetchNews,600000);setInterval(()=>{const t=new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const el=document.getElementById("clk");if(el)el.textContent=t;},1000);}
+showApp();
 </script>
 </body>
 </html>
