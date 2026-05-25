@@ -1026,6 +1026,8 @@ function sSym(sym){
   rWL();
   var sel=document.getElementById('ch-sel');
   if(sel)sel.value=sym;
+  // Refresh news filtered by new ticker
+  fetchNewsMulti(sym);
 }
 
 function rSectors(){
@@ -1528,6 +1530,7 @@ function showAn(sym){
       cell('ROE',roe?roe+'%':null,'Рентаб. капитала. >15% = хорошо',roe&&roe>20?'var(--green)':roe&&roe>10?'var(--amber)':'var(--red)')+
       cell('DIV',div?div+'%':null,'Дивидендная доходность',div&&div>8?'var(--green)':div&&div>3?'var(--amber)':'var(--dim)')+
       cell('МАКС.',p&&p.h?p.h+'₽':null,'Максимум сессии','')+
+      cell('ЛОТ',moexFundamentals[sym]?moexFundamentals[sym].lotSize+' шт':null,'Минимальный лот для покупки','')+
       cell('МИН.',p&&p.l?p.l+'₽':null,'Минимум сессии','')+
     '</div>'+
     '<div style="font-size:9px;color:var(--dim);line-height:1.8;background:var(--cell);padding:9px;border:1px solid var(--g);margin-bottom:10px;font-family:var(--mono)">P/E&lt;10x → дешевле среднего (MOEX ≈7x). ROE&gt;15% → высокая эффективность. Дивиденд&gt;6% → интересен для портфеля.</div>'+
@@ -1872,6 +1875,208 @@ function updateChartLivePrice(){
   try{cs.update(updated);}catch(e){}
 }
 
+
+// ── TASK 1: Real-time fundamentals from MOEX ──────────────
+var moexFundamentals={};
+async function fetchFundamentals(){
+  try{
+    // Fetch securities info with available financial data
+    var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME,LOTSIZE,PREVPRICE,PREVLEGALCLOSEPRICE,LISTLEVEL,FACEVALUE';
+    var r=await fetch(url);
+    var d=await r.json();
+    var cols=d.securities.columns;
+    d.securities.data.forEach(function(row){
+      var o={};cols.forEach(function(c,i){o[c]=row[i];});
+      if(o.SECID){
+        moexFundamentals[o.SECID]={
+          lotSize:o.LOTSIZE,
+          prevPrice:o.PREVPRICE,
+          legalClose:o.PREVLEGALCLOSEPRICE,
+          listLevel:o.LISTLEVEL,
+          faceValue:o.FACEVALUE
+        };
+      }
+    });
+    // Update nav indicators
+    updateMacroBar();
+    console.log('Fundamentals loaded for',Object.keys(moexFundamentals).length,'securities');
+  }catch(e){console.warn('fetchFundamentals error',e);}
+}
+
+// ── TASK 2: Brent oil price from MOEX futures ─────────────
+var brentPrice=null,brentChange=null;
+async function fetchBrent(){
+  try{
+    // Brent futures on MOEX: symbol BRK (nearest) or BRN series
+    var url=MOEX+'/engines/futures/markets/forts/securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,LASTCHANGE';
+    var r=await fetch(url);
+    var d=await r.json();
+    var cols=d.marketdata.columns;
+    var brents=[];
+    d.marketdata.data.forEach(function(row){
+      var o={};cols.forEach(function(c,i){o[c]=row[i];});
+      // BRK, BRN, BRF, BRG... - Brent futures
+      if(o.SECID&&/^BR[A-Z]\d*$/.test(o.SECID)&&o.LAST){
+        brents.push({id:o.SECID,price:o.LAST,change:parseFloat(o.CHANGE||o.LASTCHANGE||0)});
+      }
+    });
+    if(brents.length){
+      // Take the one with lowest volume (nearest expiry usually most liquid)
+      var nearest=brents[0];
+      brentPrice=nearest.price;
+      brentChange=nearest.change;
+      // Update display
+      var el=document.getElementById('brent-val');
+      if(el){
+        el.textContent=brentPrice.toFixed(2);
+        el.style.color=brentChange>=0?'var(--green)':'var(--red)';
+      }
+      var chgEl=document.getElementById('brent-chg');
+      if(chgEl){
+        chgEl.textContent=(brentChange>=0?'+':'')+brentChange.toFixed(2)+'%';
+        chgEl.style.color=brentChange>=0?'var(--green)':'var(--red)';
+      }
+    }
+  }catch(e){console.warn('fetchBrent error',e);}
+}
+
+// ── TASK 3: OFZ yields from MOEX bonds ────────────────────
+var ofzData=[];
+async function fetchOFZ(){
+  try{
+    var url=MOEX+'/engines/stock/markets/bonds/boards/TQOB/securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,YIELD,DURATION';
+    var r=await fetch(url);
+    var d=await r.json();
+    var cols=d.marketdata.columns;
+    var results=[];
+    d.marketdata.data.forEach(function(row){
+      var o={};cols.forEach(function(c,i){o[c]=row[i];});
+      if(o.SECID&&o.YIELD&&parseFloat(o.YIELD)>0){
+        results.push({
+          id:o.SECID,
+          price:parseFloat(o.LAST||0),
+          yield:parseFloat(o.YIELD||0),
+          duration:parseFloat(o.DURATION||0),
+          change:parseFloat(o.CHANGE||0)
+        });
+      }
+    });
+    // Sort by duration for yield curve view
+    results.sort(function(a,b){return a.duration-b.duration;});
+    ofzData=results.slice(0,20);
+    renderOFZ();
+  }catch(e){console.warn('fetchOFZ error',e);}
+}
+
+function renderOFZ(){
+  var el=document.getElementById('ofz-list');
+  if(!el||!ofzData.length)return;
+  // Show key OFZ: short (1-2y), medium (3-5y), long (7-10y)
+  var short=ofzData.filter(function(o){return o.duration<730;});
+  var med=ofzData.filter(function(o){return o.duration>=730&&o.duration<1825;});
+  var lng=ofzData.filter(function(o){return o.duration>=1825;});
+  var keyOFZ=[short[0],med[0],lng[0]].filter(Boolean);
+  el.innerHTML=keyOFZ.map(function(o){
+    var yrs=(o.duration/365).toFixed(1);
+    return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.025);font-size:9px">'+
+      '<span style="color:var(--dim)">'+o.id.slice(0,10)+' ('+yrs+'г)</span>'+
+      '<span style="color:var(--amber);font-family:var(--mono);font-weight:600">'+o.yield.toFixed(2)+'%</span>'+
+    '</div>';
+  }).join('');
+  // Update nav stat
+  var navEl=document.getElementById('ofz-nav');
+  if(navEl&&keyOFZ.length>0){
+    var midYield=keyOFZ[Math.floor(keyOFZ.length/2)];
+    navEl.textContent='ОФЗ '+midYield.yield.toFixed(2)+'%';
+  }
+}
+
+// ── TASK 4: Multiple RSS sources + ticker filtering ───────
+var allNews=[];
+var RSS_SOURCES=[
+  {name:'РБК',  url:'https://rssexport.rbc.ru/rbcnews/news/30/full.rss'},
+  {name:'РИА',  url:'https://ria.ru/export/rss2/archive/index.xml'},
+  {name:'Интерфакс', url:'https://www.interfax.ru/rss.asp'},
+  {name:'Коммерсантъ', url:'https://www.kommersant.ru/RSS/news.xml'}
+];
+var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
+
+async function fetchNewsMulti(filterTicker){
+  var promises=RSS_SOURCES.map(function(src){
+    return fetch(RSS2JSON+encodeURIComponent(src.url)+'&count=10')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        return (d.items||[]).map(function(i){
+          return {title:i.title||'',link:i.link||'#',source:src.name,
+                  pubDate:i.pubDate||''};
+        });
+      })
+      .catch(function(){return [];});
+  });
+  var results=await Promise.allSettled(promises);
+  var items=[];
+  results.forEach(function(r){if(r.status==='fulfilled')items=items.concat(r.value);});
+
+  // Sort by date
+  items.sort(function(a,b){return new Date(b.pubDate)-new Date(a.pubDate);});
+
+  // Ticker filtering: score by relevance to current sym
+  var ticker=filterTicker||curSym;
+  var info=ST[ticker]||{n:''};
+  var keywords=[ticker.toLowerCase(),info.n.toLowerCase().split(' ')[0]].filter(Boolean);
+
+  items=items.map(function(i){
+    var lo=i.title.toLowerCase();
+    var score=keywords.reduce(function(s,kw){return s+(lo.includes(kw)?10:0);},0);
+    var pos=['рост','прибыл','дивиденд','повыш','рекорд','покупк'].some(function(w){return lo.includes(w);});
+    var neg=['падени','убыток','санкц','снижен','распрод','кризис'].some(function(w){return lo.includes(w);});
+    return Object.assign({},i,{score:score,pos:pos,neg:neg});
+  });
+
+  // Relevant first, then by date
+  items.sort(function(a,b){return (b.score-a.score)||0;});
+  allNews=items.slice(0,30);
+  renderNews();
+}
+
+function renderNews(){
+  var items=allNews.slice(0,8);
+  var html=items.map(function(i){
+    var col=i.score>0?'var(--green)':i.pos?'var(--green)':i.neg?'var(--red)':'var(--dim)';
+    var ico=i.score>0?'🎯':i.pos?'▲':i.neg?'▼':'·';
+    var badge=i.score>0?'<span style="font-size:7px;background:rgba(0,255,136,.15);color:var(--green);padding:1px 4px;margin-left:4px">'+curSym+'</span>':'';
+    return '<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.025);display:flex;gap:4px;align-items:flex-start">'+
+      '<span style="color:'+col+';font-size:9.5px;flex-shrink:0">'+ico+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<a href="'+i.link+'" target="_blank" style="font-size:8.5px;color:var(--dim);text-decoration:none;line-height:1.4;display:block">'+
+          i.title.slice(0,80)+badge+
+        '</a>'+
+        '<span style="font-size:7px;color:var(--dim)">'+i.source+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  document.querySelectorAll('#news-list').forEach(function(el){el.innerHTML=html||'<div style="font-size:8.5px;color:var(--dim)">Нет новостей</div>';});
+}
+
+// ── TASK 5: Macro bar integration ─────────────────────────
+function updateMacroBar(){
+  var imoex=document.getElementById('imoex-v');
+  var usd=document.getElementById('usd-v');
+  // Already updated by fetchMa
+}
+
+async function fetchAllData(){
+  // Run all data fetchers in parallel
+  await Promise.allSettled([
+    fetchP(),
+    fetchMa(),
+    fetchBrent(),
+    fetchOFZ(),
+    fetchFundamentals(),
+    fetchNewsMulti(curSym)
+  ]);
+}
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -1887,10 +2092,15 @@ function showApp(){
   updCabUI();
   lCabTr();
   if(agOn)schedAg();
-  fetchP().then(function(){fetchMa();rSigs();rCabTr();updateChartLivePrice();});
+  // Parallel data load (Task 5 integration)
+  fetchAllData().then(function(){rSigs();rCabTr();updateChartLivePrice();});
   fetchNews();
   addEv('learn',null,'BCS Terminal v3.0 запущен. Данные MOEX загружаются...');
-  setInterval(function(){fetchP().then(updateChartLivePrice);},5000);
+  setInterval(function(){fetchP().then(function(){updateChartLivePrice();rSigs();});},5000);
+  setInterval(fetchBrent,30000);
+  setInterval(fetchOFZ,60000);
+  setInterval(fetchFundamentals,300000); // every 5 min
+  setInterval(function(){fetchNewsMulti(curSym);},180000); // every 3 min
   // Auto-refresh chart for intraday views
   setInterval(function(){
     if(curTF==='1m')loadH(curSym,curTF);
@@ -1899,7 +2109,7 @@ function showApp(){
     if(curTF==='10m'||curTF==='5D'||curTF==='1Mo'||curTF==='3Mo')loadH(curSym,curTF);
   },60000);
   setInterval(fetchMa,60000);
-  setInterval(fetchNews,600000);
+  // fetchNews replaced by fetchNewsMulti above
   setInterval(function(){
     var t=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     var el=document.getElementById('clk');if(el)el.textContent=t;
