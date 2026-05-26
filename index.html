@@ -3683,7 +3683,7 @@ function renderSignalHistory(){
             '<div style="flex:1;height:3px;background:rgba(255,255,255,.06)">'+
               '<div style="height:3px;background:'+r.col+';width:'+g.wr+'%"></div></div>'+
             '<span style="font-family:var(--mono);font-weight:700;color:'+r.col+';width:36px">'+g.wr+'%</span>'+
-            '<span style="font-family:var(--mono);font-size:8px;color:'+(g.avg>=0?'var(--green)':'var(--red)');width:48px">'+
+            '<span style="font-family:var(--mono);font-size:8px;color:'+(g.avg>=0?'var(--green)':'var(--red)')+';width:48px">'+
               (g.avg>=0?'+':'')+g.avg+'%</span>'+
           '</div>';
         }).join('')+
@@ -4668,8 +4668,9 @@ function removeImoexOverlay(){
   }
   // Hide left scale
   if(chart){
-
-
+    try{chart.priceScale('imoex').applyOptions({visible:false});}catch(e){}
+  }
+}
 
 // ═══════════════════════════════════════════════════
 // TASK 11: MULTI-CHART 2×2 GRID
