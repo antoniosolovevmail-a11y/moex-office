@@ -82,7 +82,7 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
 .pr-dir.long{background:rgba(0,255,136,.12);color:var(--green)}
 .pr-dir.short{background:rgba(255,45,85,.12);color:var(--red)}
 /* CHART */
-.chart-col{display:flex;flex-direction:column;overflow:hidden}
+.chart-col{display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .chart-hdr{height:44px;border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 12px;gap:10px;background:var(--panel);flex-shrink:0;overflow:hidden}
 .c-sym{font-family:var(--display);font-size:14px;font-weight:800;color:var(--bright);letter-spacing:.03em}
 .c-name{font-size:8.5px;color:var(--dim);white-space:nowrap}
@@ -247,6 +247,10 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
     <div class="nav-stat"><span style="color:var(--dim)">USD</span>&nbsp;<span id="usd-v" style="color:var(--text)">—</span></div>
     <div class="nav-stat"><span style="color:var(--dim)">Сигналов</span>&nbsp;<span id="sig-cnt" style="color:var(--amber)">0</span></div>
     <button class="nb audit" onclick="runAudit()">⚡ АУДИТ</button>
+    <button onclick="toggleHotkeyHelp()"
+      style="height:30px;padding:0 12px;background:transparent;border:none;border-left:1px solid var(--g);
+      color:var(--dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:color .15s"
+      title="Горячие клавиши">⌨</button>
     <div class="nav-user" onclick="if(confirm('Выйти?'))doLogout()">
       <div class="nav-av" id="nav-av">А</div>
       <span id="nav-nm">—</span>
@@ -265,7 +269,19 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
           <div class="mr"><span class="ml">АВТО-СДЕЛОК</span><span class="mv bl" id="ag-cnt">0</span></div>
           <div class="mr"><span class="ml">АГЕНТ IQ</span><span class="mv" id="ag-iq" style="color:var(--purple)">—</span></div>
         </div>
-        <div class="ph"><span class="ph-t">Секторы</span></div>
+        <div style="padding:7px 10px 5px;border-bottom:1px solid var(--g);flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">ТОП СИГНАЛЫ</span>
+            <div id="scan-status" style="font-size:8px;color:var(--dim)">—</div>
+          </div>
+          <button id="scan-btn" onclick="runAutoScan()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:8px;font-weight:700;cursor:pointer;letter-spacing:.06em">🔍 СКАН</button>
+        </div>
+        <div id="scan-results">
+          <div style="font-size:8.5px;color:var(--dim)">Нажмите скан...</div>
+        </div>
+      </div>
+      <div class="ph"><span class="ph-t">Секторы</span></div>
         <div class="sp-grid" id="sectors"></div>
         <div class="ph"><span class="ph-t">Позиции</span><button class="btn" onclick="showPage('cab');showCab('open')" style="font-size:7.5px;padding:1px 7px">+ НОВАЯ</button></div>
         <div style="overflow-y:auto;flex:1" id="pos-list"></div>
@@ -289,10 +305,106 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
             <button class="tf" onclick="setTF('MAX')" data-tf="MAX">МАКС</button>
           </div>
           <select class="ch-sel" id="ch-sel" onchange="selSym(this.value)"></select>
+          <div id="week52-header" style="display:flex;align-items:center;gap:4px;margin-left:8px"></div>
+          <div id="imoex-perf" style="display:flex;align-items:center;gap:4px;margin-left:6px"></div>
+          <button id="multi-btn" onclick="toggleMultiChart()"
+            style="padding:2px 8px;font-family:var(--display);font-size:8.5px;font-weight:700;
+            letter-spacing:.06em;cursor:pointer;margin-left:4px;
+            background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+            color:var(--dim);transition:all .2s">⊞ 2×2</button>
+          <button id="imoex-toggle-btn" onclick="toggleImoex()"
+            style="padding:2px 8px;font-family:var(--display);font-size:8.5px;font-weight:700;
+            letter-spacing:.06em;cursor:pointer;margin-left:4px;
+            background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+            color:var(--dim);transition:all .2s">≡ IMOEX</button>
           <button class="btn" onclick="showAn(curSym)" style="font-size:8px;padding:2px 8px;margin-left:4px">📊</button>
+          <button onclick="openAlertModal(curSym)" style="position:relative;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:var(--amber);padding:2px 10px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;cursor:pointer;margin-left:4px">
+            🔔
+            <span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--red);color:white;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
+          </button>
         </div>
-        <div id="chart-container"></div>
-        <div class="ind-bar" id="ind-bar"><span style="font-size:9px;color:var(--dim)">Загрузка...</span></div>
+        
+          <!-- MULTI-CHART GRID -->
+          <div id="multichart-grid" class="hidden" style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--g);min-height:0">
+            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
+              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
+                <div id="mc-hdr-0" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">SBER</div>
+                <select id="mc-sym-0" onchange="loadMultiChart(0,this.value,document.getElementById('mc-tf-0').value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
+                <select id="mc-tf-0" onchange="loadMultiChart(0,document.getElementById('mc-sym-0').value,this.value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
+                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
+                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
+                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
+                </select>
+                <button onclick="focusMultiChart(0)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
+              </div>
+              <div id="mc-0" style="flex:1;min-height:0"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
+              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
+                <div id="mc-hdr-1" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">LKOH</div>
+                <select id="mc-sym-1" onchange="loadMultiChart(1,this.value,document.getElementById('mc-tf-1').value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
+                <select id="mc-tf-1" onchange="loadMultiChart(1,document.getElementById('mc-sym-1').value,this.value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
+                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
+                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
+                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
+                </select>
+                <button onclick="focusMultiChart(1)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
+              </div>
+              <div id="mc-1" style="flex:1;min-height:0"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
+              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
+                <div id="mc-hdr-2" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">YNDX</div>
+                <select id="mc-sym-2" onchange="loadMultiChart(2,this.value,document.getElementById('mc-tf-2').value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
+                <select id="mc-tf-2" onchange="loadMultiChart(2,document.getElementById('mc-sym-2').value,this.value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
+                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
+                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
+                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
+                </select>
+                <button onclick="focusMultiChart(2)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
+              </div>
+              <div id="mc-2" style="flex:1;min-height:0"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
+              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
+                <div id="mc-hdr-3" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">GMKN</div>
+                <select id="mc-sym-3" onchange="loadMultiChart(3,this.value,document.getElementById('mc-tf-3').value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
+                <select id="mc-tf-3" onchange="loadMultiChart(3,document.getElementById('mc-sym-3').value,this.value)"
+                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
+                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
+                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
+                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
+                </select>
+                <button onclick="focusMultiChart(3)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
+              </div>
+              <div id="mc-3" style="flex:1;min-height:0"></div>
+            </div>
+          </div>
+          <!-- SINGLE CHART -->
+          <div id="single-chart-wrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div id="chart-container" style="flex:1;min-height:0"></div>
+          <div style="height:50px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
+            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:var(--dim);z-index:2;font-family:var(--mono);pointer-events:none">VOL</span>
+            <div id="vol-container" style="height:100%;width:100%"></div>
+          </div>
+          <div style="height:72px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
+            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:rgba(167,139,250,.8);z-index:2;font-family:var(--mono);pointer-events:none">RSI(14)</span>
+            <div id="rsi-container" style="height:100%;width:100%"></div>
+          </div>
+          <div style="height:72px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
+            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:rgba(96,165,250,.8);z-index:2;font-family:var(--mono);pointer-events:none">MACD(12,26,9)</span>
+            <div id="macd-container" style="height:100%;width:100%"></div>
+          </div>
+          <div id="week52-bar" style="padding:5px 12px;border-top:1px solid var(--g);background:var(--panel);flex-shrink:0"></div>
+          <div class="chart-ind" id="ind-bar"><span style="font-size:9px;color:var(--dim)">Загрузка...</span></div>
+          </div><!-- /single-chart-wrap -->
       </div>
       <!-- RIGHT -->
       <div class="right-col">
@@ -347,9 +459,21 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
 
   <!-- SIGNALS PAGE -->
   <div class="page hidden" id="page-sig">
-    <div style="display:grid;grid-template-columns:1fr 1fr 260px;flex:1;overflow:hidden">
+    <div style="display:flex;border-bottom:1px solid var(--g);flex-shrink:0;background:var(--panel)">
+        <button class="etab on" id="sig-tab-signals" onclick="switchSigTab('signals')">СИГНАЛЫ</button>
+        <button class="etab" id="sig-tab-backtest" onclick="switchSigTab('backtest')">📊 БЭКТЕСТ</button>
+      </div>
+      <div id="sig-view-signals" style="display:grid;grid-template-columns:1fr 1fr 260px;flex:1;overflow:hidden;min-height:0">
       <div style="border-right:1px solid var(--g);overflow-y:auto;padding:10px">
         <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">ТОРГОВЫЕ СИГНАЛЫ</div>
+        <div style="margin-bottom:10px">
+          <div style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+            ТОП ПО СИЛЕ СИГНАЛА
+            <button onclick="runAutoScan()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:8px;cursor:pointer">🔍 ПЕРЕСКАНИРОВАТЬ</button>
+          </div>
+          <div id="scan-results-sig"></div>
+        </div>
+        <div style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">ДВИЖЕНИЕ ≥ 1.5%</div>
         <div id="sig-full"></div>
       </div>
       <div style="border-right:1px solid var(--g);overflow-y:auto;padding:10px">
@@ -370,6 +494,57 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
     </div>
   </div>
 
+      <!-- BACKTEST VIEW -->
+      <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:14px">
+        <!-- Controls -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
+          <div>
+            <label class="fl">Акция</label>
+            <select id="bt-sym" class="sel" style="width:100%"></select>
+          </div>
+          <div>
+            <label class="fl">Период</label>
+            <select id="bt-period" class="sel" style="width:100%">
+              <option value="6M">6 месяцев</option>
+              <option value="1Y" selected>1 год</option>
+              <option value="2Y">2 года</option>
+              <option value="3Y">3 года</option>
+              <option value="5Y">5 лет</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">Порог сигнала (%)</label>
+            <select id="bt-thresh" class="sel" style="width:100%">
+              <option value="55">55% (агрессивный)</option>
+              <option value="60" selected>60% (стандарт)</option>
+              <option value="65">65% (умеренный)</option>
+              <option value="70">70% (консервативный)</option>
+            </select>
+          </div>
+          <div>
+            <button id="bt-run-btn" onclick="runBacktest()"
+              style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);'+
+              'color:var(--green);padding:8px 16px;font-family:var(--display);font-size:9px;'+
+              'font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase;height:100%">
+              ▶ ЗАПУСТИТЬ
+            </button>
+          </div>
+        </div>
+        <div id="bt-status" style="font-size:9px;color:var(--dim);font-family:var(--mono);margin-bottom:10px">
+          Выберите параметры и запустите бэктест
+        </div>
+        <div id="bt-results">
+          <div style="text-align:center;padding:40px;color:var(--dim)">
+            <div style="font-size:32px;margin-bottom:8px">📊</div>
+            <div style="font-size:11px">Нажмите «Запустить» для тестирования стратегии на исторических данных</div>
+            <div style="font-size:9px;margin-top:6px;color:var(--dim)">
+              Алгоритм: RSI + MA + паттерны → сигнал → вход с ATR-стопом
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   <!-- CABINET PAGE -->
   <div class="page hidden" id="page-cab">
     <div id="page-cab-inner" style="padding:14px;overflow-y:auto;flex:1">
@@ -385,9 +560,13 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
             <div class="stat-row"><span class="sl">СДЕЛОК</span><span class="sv" id="st-tr">0</span></div>
             <div class="stat-row"><span class="sl">WIN RATE</span><span class="sv up" id="st-wr">—</span></div>
             <div class="stat-row"><span class="sl">AVG P&L</span><span class="sv" id="st-pnl">—</span></div>
+            <div class="stat-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px"><span class="sl" style="color:var(--purple)">CIO СИГНАЛОВ</span><span class="sv" id="hist-sig-count">0</span></div>
+            <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO WIN RATE</span><span class="sv" id="hist-sig-wr">—</span></div>
+            <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO AVG P&L</span><span class="sv" id="hist-sig-pnl">—</span></div>
             <div class="stat-row"><span class="sl">АВТО-СДЕЛОК</span><span class="sv" style="color:var(--amber)" id="st-ag">0</span></div>
           </div>
           <button class="btn" style="width:100%;margin-bottom:4px" onclick="showCab('open')">+ ОТКРЫТЬ СДЕЛКУ</button>
+          <button class="btn" style="width:100%;margin-bottom:4px;border-color:rgba(167,139,250,.3);color:var(--purple)" onclick="showCab('history');renderSignalHistory()">📊 СИГНАЛЫ CIO</button>
           <button class="btn" style="width:100%;margin-bottom:4px" onclick="showCab('settings')">НАСТРОЙКИ</button>
           <button class="btn d" style="width:100%" onclick="doLogout()">ВЫЙТИ</button>
         </div>
@@ -398,6 +577,11 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
             <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px">ИСТОРИЯ</div>
             <div id="hist-list"></div>
           </div>
+          <div id="cab-history" class="hidden" style="max-height:calc(100vh-280px);overflow-y:auto">
+            <!-- rendered by renderSignalHistory() -->
+            <div style="font-size:9px;color:var(--dim);padding:8px">Загрузка истории...</div>
+          </div>
+
           <div id="cab-open" class="hidden">
             <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">НОВАЯ СДЕЛКА</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px">
@@ -438,6 +622,153 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
   <div class="mbox">
     <div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div>
     <div class="mbody" id="an-body"></div>
+  </div>
+</div>
+
+<!-- TOAST NOTIFICATIONS -->
+<div id="toast-wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none">
+  <!-- toasts injected here -->
+</div>
+<style>
+  #toast-wrap > div { pointer-events:all; }
+</style>
+
+
+<!-- JOURNAL EXECUTION MODAL -->
+<div class="mbg hidden" id="journal-modal">
+  <div class="mbox" style="max-width:500px">
+    <div class="mhdr">
+      <span class="mt">▶ ИСПОЛНИТЬ СИГНАЛ —
+        <span id="jm-dir" style="font-size:11px">LONG</span>
+        <span id="jm-sym" style="color:var(--bright)">—</span>
+      </span>
+      <button class="mc" onclick="closeJournalModal()">✕</button>
+    </div>
+    <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
+      <!-- AI signal recap -->
+      <div style="background:var(--cell);border:1px solid var(--g);padding:10px;font-size:9px">
+        <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);margin-bottom:6px">СИГНАЛ AI</div>
+        <div style="display:flex;gap:16px;font-family:var(--mono)">
+          <span>Вход: <b id="jm-ai-entry" style="color:var(--text)">—</b></span>
+          <span>Стоп: <b id="jm-ai-stop" style="color:var(--red)">—</b></span>
+          <span>Цель: <b id="jm-ai-tg1" style="color:var(--green)">—</b></span>
+          <span>AI: <b id="jm-ai-conf" style="color:var(--purple)">—</b></span>
+        </div>
+      </div>
+      <!-- Execution details -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label class="fl">Фактическая цена входа ₽</label>
+          <input type="number" id="jm-exec-price" class="inp" style="width:100%" step="0.01"/>
+        </div>
+        <div>
+          <label class="fl">Объём сделки ₽</label>
+          <input type="number" id="jm-volume" class="inp" style="width:100%" placeholder="10000"/>
+        </div>
+      </div>
+      <div>
+        <label class="fl">Как выполнили сигнал?</label>
+        <select id="jm-tag" class="sel" style="width:100%">
+          <option value="exact">✅ Точно по рекомендации AI</option>
+          <option value="modified">⚠️ Изменил цену входа</option>
+          <option value="partial">½ Зашёл частичным объёмом</option>
+        </select>
+      </div>
+      <div>
+        <label class="fl">Заметка (необязательно)</label>
+        <input type="text" id="jm-note" class="inp" style="width:100%" placeholder="Почему именно сейчас..."/>
+      </div>
+      <input type="hidden" id="jm-signal-id"/>
+      <div style="display:flex;gap:6px">
+        <button class="btn p" onclick="submitExecution()" style="flex:1">▶ ЗАПИСАТЬ ИСПОЛНЕНИЕ</button>
+        <button class="btn" onclick="closeJournalModal()">ОТМЕНА</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOURNAL CLOSE MODAL -->
+<div class="mbg hidden" id="journal-close-modal">
+  <div class="mbox" style="max-width:500px">
+    <div class="mhdr">
+      <span class="mt">■ ЗАКРЫТЬ СДЕЛКУ —
+        <span id="jcm-dir" style="font-size:11px">LONG</span>
+        <span id="jcm-sym" style="color:var(--bright)">—</span>
+      </span>
+      <button class="mc" onclick="closeJournalCloseModal()">✕</button>
+    </div>
+    <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:var(--cell);border:1px solid var(--g);padding:10px;font-size:9px;font-family:var(--mono)">
+        <div style="display:flex;gap:16px">
+          <span>Вход: <b id="jcm-entry" style="color:var(--text)">—</b></span>
+          <span id="jcm-cur" style="color:var(--green)"></span>
+        </div>
+      </div>
+      <div>
+        <label class="fl">Цена закрытия ₽</label>
+        <input type="number" id="jcm-close-price" class="inp" style="width:100%" step="0.01"/>
+      </div>
+      <div>
+        <label class="fl">Причина закрытия / итоговая заметка</label>
+        <textarea id="jcm-result-note" class="inp" style="width:100%;height:70px;resize:none"
+          placeholder="Почему закрыли здесь? Что сработало / не сработало?"></textarea>
+      </div>
+      <input type="hidden" id="jcm-signal-id2"/>
+      <div style="display:flex;gap:6px">
+        <button class="btn p" onclick="submitClose()" style="flex:1">■ ЗАКРЫТЬ И ЗАПИСАТЬ</button>
+        <button class="btn" onclick="closeJournalCloseModal()">ОТМЕНА</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="mbg hidden" id="alert-modal">
+  <div class="mbox" style="max-width:480px">
+    <div class="mhdr">
+      <span class="mt">🔔 АЛЕРТЫ — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--green);font-size:11px"></span></span>
+      <button class="mc" onclick="closeAlertModal()">✕</button>
+    </div>
+    <div class="mbody" style="display:flex;flex-direction:column;gap:12px">
+      <!-- Create alert -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);padding:10px">
+          <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--green);margin-bottom:6px">ВЫШЕ ЦЕНЫ ▲</div>
+          <input type="number" id="al-price-above" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/>
+          <button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)"
+            style="width:100%;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--green);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
+            + АЛЕРТ ВЫШЕ
+          </button>
+        </div>
+        <div style="background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.2);padding:10px">
+          <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--red);margin-bottom:6px">НИЖЕ ЦЕНЫ ▼</div>
+          <input type="number" id="al-price-below" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/>
+          <button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)"
+            style="width:100%;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--red);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
+            + АЛЕРТ НИЖЕ
+          </button>
+        </div>
+      </div>
+      <div style="background:var(--cell,#0a1628);border:1px solid var(--g);padding:10px">
+        <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--amber);margin-bottom:6px">ИЗМЕНЕНИЕ НА % ~</div>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/>
+          <span style="font-size:10px;color:var(--dim);padding:5px">%</span>
+          <button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)"
+            style="flex:1;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
+            + АЛЕРТ НА ДВИЖЕНИЕ
+          </button>
+        </div>
+      </div>
+      <!-- Active alerts list -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-family:var(--display);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)">АКТИВНЫЕ АЛЕРТЫ</span>
+          <button onclick="clearTriggered()" style="background:transparent;border:1px solid rgba(255,255,255,.08);color:var(--dim);padding:2px 8px;font-family:var(--mono);font-size:8px;cursor:pointer">ОЧИСТИТЬ СРАБОТАВШИЕ</button>
+        </div>
+        <div id="alerts-list-modal"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -828,112 +1159,9 @@ function calcRSI(cls){
 // ── Chart ─────────────────────────────────────
 var chart=null,cs=null;
 
-function initCh(){
-  var el=document.getElementById('chart-container');
-  if(!el||chart)return;
-  chart=LightweightCharts.createChart(el,{
-    width:el.offsetWidth,
-    height:el.offsetHeight||280,
-    layout:{background:{type:'solid',color:'#030810'},textColor:'#3d5a7a'},
-    grid:{vertLines:{color:'rgba(0,255,136,.04)'},horzLines:{color:'rgba(0,255,136,.04)'}},
-    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-    rightPriceScale:{borderColor:'rgba(0,255,136,.08)'},
-    timeScale:{borderColor:'rgba(0,255,136,.08)',timeVisible:true,secondsVisible:false}
-  });
-  cs=chart.addCandlestickSeries({
-    upColor:'#00ff88',downColor:'#ff2d55',
-    borderUpColor:'#00ff88',borderDownColor:'#ff2d55',
-    wickUpColor:'#00ff88',wickDownColor:'#ff2d55'
-  });
-  // Volume histogram in bottom 20%
-  window.volSeries=chart.addHistogramSeries({
-    color:'rgba(0,255,136,0.25)',
-    priceFormat:{type:'volume'},
-    priceScaleId:'vol'
-  });
-  chart.priceScale('vol').applyOptions({
-    scaleMargins:{top:0.82,bottom:0},
-    borderVisible:false
-  });
-  new ResizeObserver(function(){
-    chart.applyOptions({width:el.offsetWidth,height:el.offsetHeight});
-  }).observe(el);
-  loadH(curSym,curTF);
-}
 
-async function loadH(sym,tf){
-  curSym=sym; curTF=tf;
-  var cfg=TFM[tf]||TFM['1Y'];
-  var today=new Date();
-  var tomorrow=new Date(today.getTime()+86400000);
-  var tillStr=tomorrow.toISOString().split('T')[0];
-  // For MAX use fixed far-back date
-  var fromDate;
-  if(tf==='MAX'){
-    fromDate=new Date('2010-01-01');
-  } else {
-    fromDate=new Date(today.getTime()-cfg.d*86400000);
-  }
-  var fromStr=fromDate.toISOString().split('T')[0];
 
-  // Show loading state
-  var indEl=document.getElementById('ind-bar');
-  if(indEl)indEl.innerHTML='<span style="font-size:9px;color:var(--dim)">Загрузка '+sym+' '+tf+'...</span>';
 
-  var all=[],start=0,maxPages=(tf==='MAX'||tf==='5Y'||tf==='3Y')?20:4;
-  var pagesDone=0;
-  while(pagesDone<maxPages){
-    try{
-      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
-        '/candles.json?interval='+cfg.iv+'&from='+fromStr+'&till='+tillStr+
-        '&start='+start+'&iss.meta=off';
-      var r=await fetch(url);
-      if(!r.ok)break;
-      var d=await r.json();
-      var cols=d.candles.columns;
-      var rows=d.candles.data;
-      if(!rows||!rows.length)break;
-      rows.forEach(function(row){
-        var o={};
-        cols.forEach(function(c,i){o[c]=row[i];});
-        var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
-        if(t&&parseFloat(o.open)&&parseFloat(o.close)){
-          var vol=parseFloat(o.volume)||0;
-          all.push({time:t,open:parseFloat(o.open),high:parseFloat(o.high),
-                    low:parseFloat(o.low),close:parseFloat(o.close),volume:vol});
-        }
-      });
-      start+=rows.length;
-      pagesDone++;
-      if(rows.length<500)break; // last page
-    }catch(e){console.warn('loadH page error',e);break;}
-  }
-
-  // Sort and deduplicate
-  all.sort(function(a,b){return a.time-b.time;});
-  var seen={};
-  all=all.filter(function(c){if(seen[c.time])return false;seen[c.time]=1;return true;});
-
-  chartData=all;
-  if(all.length&&cs){
-    cs.setData(all);
-    cs.setMarkers(calcMrk(all));
-    // Set volume data
-    if(window.volSeries){
-      // Calculate 20-bar average volume for color coding
-      var volData=all.map(function(c,i){
-        var avg20=all.slice(Math.max(0,i-20),i).reduce(function(s,x){return s+(x.volume||0);},0)/20;
-        var isHigh=(c.volume||0)>avg20*1.5&&avg20>0;
-        return{time:c.time,value:c.volume||0,
-          color:isHigh?'rgba(255,45,85,0.45)':(c.close>=c.open?'rgba(0,255,136,0.25)':'rgba(255,45,85,0.25)')};
-      });
-      window.volSeries.setData(volData);
-    }
-    chart.timeScale().fitContent();
-  }
-  rInd(all); rPats(); updCH(); renderConsensusPanel(curSym);
-  console.log('loadH',sym,tf,': loaded',all.length,'candles');
-}
 
 function calcMrk(data){
   if(data.length<5)return[];
@@ -1026,7 +1254,11 @@ function updCH(){
 function setTF(tf){
   curTF=tf;
   document.querySelectorAll('.tf').forEach(function(b){b.classList.toggle('on',b.dataset.tf===tf);});
+  // Reset IMOEX overlay on TF change (data needs reload)
+  removeImoexOverlay();
+  var perfEl=document.getElementById('imoex-perf');if(perfEl)perfEl.innerHTML='';
   loadH(curSym,tf);
+  if(imoexEnabled) setTimeout(renderImoexOverlay, 1500);
 }
 
 function sSym(sym){
@@ -1036,10 +1268,13 @@ function sSym(sym){
   var sel=document.getElementById('ch-sel');
   if(sel)sel.value=sym;
   fetchNewsMulti(sym);
-  // Update consensus panel
   var symEl=document.getElementById('consensus-sym');
   if(symEl)symEl.textContent=sym;
   renderConsensusPanel(sym);
+  // Reset IMOEX overlay — will reload for new symbol
+  removeImoexOverlay();
+  var perfEl=document.getElementById('imoex-perf');if(perfEl)perfEl.innerHTML='';
+  if(imoexEnabled) setTimeout(renderImoexOverlay, 1500);
 }
 
 function rSectors(){
@@ -1733,6 +1968,9 @@ async function _rCIO(sym, resEl, btnEl){
     }
 
     renderSignalCard(sym, data, resEl);
+    // Auto-save to history
+    autoSaveSignal(sym, data.direction, data.entry, data.stop,
+                   data.target1, data.target2, data.confidence, data.reasoning);
 
     // Update CIO status
     var st = document.getElementById('cio-st');
@@ -1851,9 +2089,13 @@ function swEvo(t){
 }
 
 function showCab(t){
-  ['trades','open','settings'].forEach(function(x){
+  ['trades','history','open','settings'].forEach(function(x){
     var el=document.getElementById('cab-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active',
+      ['trades','history','open','settings'][i]===t);
   });
 }
 
@@ -1978,6 +2220,10 @@ function updCabUI(){
   var ap=s.trades>0?(s.total_pnl/s.trades).toFixed(2):null;
   var ape=document.getElementById('st-pnl');
   if(ape){ape.textContent=ap!==null?(ap>=0?'+':'')+ap+'%':'—';ape.style.color=ap>=0?'var(--green)':'var(--red)';}
+  // Refresh history if visible
+  if(document.getElementById('cab-history')&&!document.getElementById('cab-history').classList.contains('hidden')){
+    renderSignalHistory();
+  }
   var gk=localStorage.getItem('groq_key')||'';
   if(gk){['groq-key','groq-key2','s-gk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=gk;});}
 }
@@ -1995,6 +2241,14 @@ function popSels(){
   ['cio-sym','cio-sym2','ot-sym','ch-sel'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.innerHTML=opts;
   });
+  // Multi-chart symbol selects
+  for(var i=0;i<4;i++){
+    var el=document.getElementById('mc-sym-'+i);
+    if(el){
+      el.innerHTML=opts;
+      el.value=MULTI_DEFAULTS[i].sym;
+    }
+  }
 }
 
 
@@ -2605,6 +2859,2196 @@ function renderConsensusPanel(sym){
   el.innerHTML = html;
 }
 
+
+// ═══════════════════════════════════════════════════
+// TASK 3: AUTO-SCANNER — ALL 50 STOCKS
+// ═══════════════════════════════════════════════════
+
+var scanResults   = [];
+var scanRunning   = false;
+var scanLastAt    = null;
+var scanCandles   = {}; // cache: sym → candles[]
+
+async function fetchCandlesForScan(sym){
+  // Use cached or fetch 5-day hourly
+  if(scanCandles[sym] && scanCandles[sym].ts > Date.now()-5*60000){
+    return scanCandles[sym].data;
+  }
+  try{
+    var today  = new Date();
+    var from   = new Date(today.getTime() - 5*86400000);
+    var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+              '/candles.json?interval=60&from='+from.toISOString().split('T')[0]+
+              '&till='+new Date(today.getTime()+86400000).toISOString().split('T')[0]+
+              '&iss.meta=off';
+    var r = await fetch(url);
+    var d = await r.json();
+    var cols = d.candles.columns;
+    var data = d.candles.data.map(function(row){
+      var o={}; cols.forEach(function(c,i){o[c]=row[i];});
+      return {time:new Date(o.begin.replace(' ','T')).getTime()/1000,
+              open:parseFloat(o.open),high:parseFloat(o.high),
+              low:parseFloat(o.low),close:parseFloat(o.close)};
+    }).filter(function(c){return c.open&&c.close;});
+    scanCandles[sym] = {data:data, ts:Date.now()};
+    return data;
+  }catch(e){ return []; }
+}
+
+function scoreSym(sym, candles){
+  var p    = prices[sym]||{p:0,c:0,h:0,l:0};
+  var info = ST[sym]||{};
+  if(!p.p) return null;
+
+  var rsi   = calcRSI(candles.map(function(c){return c.close;}))||50;
+  var pats  = dPats(candles.slice(-20));
+  var bullP = pats.filter(function(p){return p.t==='bull';}).length;
+  var bearP = pats.filter(function(p){return p.t==='bear';}).length;
+  var n     = candles.length;
+  var ma20  = n>=20 ? candles.slice(-20).reduce(function(s,c){return s+c.close;},0)/20 : p.p;
+  var ma50  = n>=50 ? candles.slice(-50).reduce(function(s,c){return s+c.close;},0)/50 : p.p;
+  var chg   = p.c||0;
+
+  // ── Bull score (0–100) ─────────────────────────
+  var bull = 50;
+  // RSI
+  if(rsi < 30) bull += 25;
+  else if(rsi < 40) bull += 12;
+  else if(rsi > 70) bull -= 20;
+  else if(rsi > 60) bull -= 8;
+  // MA
+  if(p.p > ma20) bull += 8;
+  if(ma20 > ma50) bull += 8;
+  // Patterns
+  bull += bullP * 12;
+  bull -= bearP * 12;
+  // Fundamentals
+  if(info.pe && info.pe < 7)  bull += 10;
+  if(info.roe && info.roe > 20) bull += 8;
+  if(info.div && info.div > 8) bull += 6;
+  // Momentum
+  if(chg > 0.5) bull += 5;
+  if(chg < -0.5) bull -= 5;
+
+  bull = Math.max(0, Math.min(100, bull));
+
+  // ── Direction & confidence ─────────────────────
+  var dir, conf;
+  if(bull >= 60){
+    dir  = 'LONG';
+    conf = bull;
+  } else if(bull <= 40){
+    dir  = 'SHORT';
+    conf = 100 - bull;
+  } else {
+    dir  = 'HOLD';
+    conf = 50 + Math.abs(bull-50);
+  }
+
+  // ── Signal strength (0–100): filters noise ─────
+  var strength = 0;
+  strength += (conf - 50) * 1.5;           // confidence above 50
+  strength += bullP * 8 + bearP * 8;       // patterns found
+  strength += (rsi<35||rsi>65) ? 15 : 0;  // RSI extreme
+  strength += Math.abs(chg) * 3;           // momentum
+  strength += (dir!=='HOLD') ? 10 : 0;    // clear direction
+  if(info.pe && info.pe < 8 && dir==='LONG') strength += 8;
+  strength = Math.max(0, Math.min(100, strength));
+
+  // ── ATR-based levels ───────────────────────────
+  var atr  = Math.max((p.h-p.l)/4, p.p*0.005);
+  var stop = parseFloat((p.p - (dir==='SHORT'?-1:1)*atr*1.5).toFixed(2));
+  var tg1  = parseFloat((p.p + (dir==='SHORT'?-1:1)*atr*2.0).toFixed(2));
+  var rr   = atr>0 ? (atr*2.0)/(atr*1.5) : 1.33;
+
+  // ── Top pattern name ───────────────────────────
+  var topPat = pats.length ? pats[0].n : (rsi<35?'Перепродан':rsi>65?'Перекуплен':'Нет паттерна');
+
+  return {
+    sym:sym, dir:dir, conf:conf, strength:strength,
+    rsi:rsi, pats:pats, topPat:topPat,
+    entry:p.p, stop:stop, tg1:tg1, rr:rr,
+    chg:chg, info:info
+  };
+}
+
+async function runAutoScan(){
+  if(scanRunning) return;
+  scanRunning = true;
+  scanLastAt  = new Date();
+
+  // Update UI: scanning state
+  var el   = document.getElementById('scan-results');
+  var btn  = document.getElementById('scan-btn');
+  var status = document.getElementById('scan-status');
+  if(btn)btn.textContent='⏳ СКАН...';
+  if(status)status.textContent='Сканирование...';
+
+  var symsWithPrice = SYMS.filter(function(s){return prices[s]&&prices[s].p;});
+  var results = [];
+
+  // Scan in batches of 5 to avoid rate limits
+  for(var i=0; i<symsWithPrice.length; i+=5){
+    var batch = symsWithPrice.slice(i, i+5);
+    var batchResults = await Promise.allSettled(
+      batch.map(async function(sym){
+        var candles = await fetchCandlesForScan(sym);
+        return scoreSym(sym, candles);
+      })
+    );
+    batchResults.forEach(function(r){
+      if(r.status==='fulfilled' && r.value && r.value.dir!=='HOLD' && r.value.strength>=25){
+        results.push(r.value);
+      }
+    });
+    // Small delay between batches to respect API
+    if(i+5 < symsWithPrice.length){
+      await new Promise(function(resolve){setTimeout(resolve,300);});
+    }
+    // Update progress
+    if(status) status.textContent='Скан: '+Math.min(i+5,symsWithPrice.length)+'/'+symsWithPrice.length;
+  }
+
+  // Sort by strength desc
+  results.sort(function(a,b){return b.strength - a.strength;});
+  scanResults = results;
+  scanRunning = false;
+  if(btn)btn.textContent='🔍 СКАН';
+  if(status) status.textContent='Обновлено: '+scanLastAt.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+  renderScanResults();
+  addEv('learn',
+    AGs.filter(function(a){return a.id==='13';})[0],
+    'Скан завершён: '+results.length+' сигналов из '+symsWithPrice.length+' акций'
+  );
+}
+
+function renderScanResults(){
+  var el = document.getElementById('scan-results');
+  if(!el) return;
+  // Also update signals page
+  var el2 = document.getElementById('scan-results-sig');
+  if(el2) el2.innerHTML = el ? el.innerHTML : '';
+  if(!scanResults.length){
+    el.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px 0">Нет сильных сигналов</div>';
+    return;
+  }
+  var top = scanResults.slice(0,5);
+  el.innerHTML = top.map(function(r,idx){
+    var isLong = r.dir==='LONG';
+    var dc = isLong?'var(--green)':'var(--red)';
+    var db = isLong?'rgba(0,255,136,.08)':'rgba(255,45,85,.08)';
+    var chgStr = (r.chg>=0?'+':'')+r.chg.toFixed(2)+'%';
+    return '<div onclick="sSym(\''+r.sym+'\')" style="'+
+      'cursor:pointer;padding:6px 8px;margin-bottom:4px;'+
+      'background:'+db+';border-left:2px solid '+dc+';'+
+      'transition:background .15s" '+
+      'onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" '+
+      'onmouseout="this.style.background=\''+db+'\'">'+
+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<span style="font-size:10px;font-weight:700;color:var(--bright);font-family:var(--mono)">'+
+            (idx+1)+'. '+r.sym+'</span>'+
+          '<span style="font-size:7.5px;font-weight:700;padding:1px 5px;'+
+            'background:'+db+';color:'+dc+'">'+r.dir+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<span style="font-size:8.5px;color:'+dc+';font-family:var(--mono)">'+chgStr+'</span>'+
+          '<span style="font-size:10px;font-weight:700;color:'+dc+';font-family:var(--mono)">'+
+            Math.round(r.conf)+'%</span>'+
+        '</div>'+
+      '</div>'+
+
+      '<div style="display:flex;align-items:center;justify-content:space-between">'+
+        '<span style="font-size:8px;color:var(--dim)">'+r.topPat+' · RSI '+r.rsi+'</span>'+
+        '<div style="display:flex;align-items:center;gap:4px">'+
+          '<span style="font-size:7.5px;color:var(--dim)">Сила:</span>'+
+          '<div style="width:40px;height:3px;background:rgba(255,255,255,.08)">'+
+            '<div style="height:3px;background:'+dc+';width:'+r.strength+'%"></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function scheduleAutoScan(){
+  // Run now + every 5 min
+  setTimeout(runAutoScan, 3000); // 3s after init
+  setInterval(runAutoScan, 5*60*1000);
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 4: ALERTS — PRICE + SIGNAL STRENGTH
+// ═══════════════════════════════════════════════════
+
+function loadAlerts(){ try{return JSON.parse(localStorage.getItem('bcs_alerts')||'[]');}catch(e){return[];} }
+function saveAlerts(a){ localStorage.setItem('bcs_alerts',JSON.stringify(a)); }
+
+function requestNotifPermission(cb){
+  if(!('Notification' in window)){cb&&cb(false);return;}
+  if(Notification.permission==='granted'){cb&&cb(true);return;}
+  Notification.requestPermission().then(function(p){cb&&cb(p==='granted');});
+}
+
+function sendNotif(title, body, sym){
+  // Browser notification
+  if(Notification.permission==='granted'){
+    var n = new Notification('BCS Terminal — '+title,{
+      body: body,
+      icon: 'https://raw.githubusercontent.com/antoniosolovevmail-a11y/moex-office/main/favicon.ico',
+      tag: 'bcs_'+sym,
+      requireInteraction: false
+    });
+    n.onclick = function(){ window.focus(); if(sym)sSym(sym); n.close(); };
+    setTimeout(function(){n.close();},8000);
+  }
+  // Also show in-app toast
+  showToast(title, body, sym);
+  // Add to event log
+  addEv('audit', null, '🔔 '+title+': '+body);
+}
+
+function showToast(title, body, sym){
+  var wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  var t = document.createElement('div');
+  t.style.cssText =
+    'background:var(--bg4,#0d1828);border:1px solid rgba(0,255,136,.4);'+
+    'padding:10px 14px;margin-bottom:6px;cursor:pointer;'+
+    'animation:fadeIn .3s ease;max-width:300px;'+
+    'box-shadow:0 4px 20px rgba(0,0,0,.5)';
+  t.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+      '<span style="font-family:var(--display,sans-serif);font-size:10px;font-weight:700;color:var(--green,#00ff88)">'+
+        '🔔 '+title+'</span>'+
+      '<button onclick="this.parentElement.parentElement.remove()" '+
+        'style="background:transparent;border:none;color:var(--dim,#4a5568);cursor:pointer;font-size:12px;padding:0 0 0 8px">✕</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:#94b3cc;line-height:1.4">'+body+'</div>'+
+    (sym?'<div style="font-size:8.5px;color:var(--dim,#4a5568);margin-top:4px">Нажмите для перехода к '+sym+'</div>':'');
+  t.onclick = function(e){
+    if(e.target.tagName==='BUTTON')return;
+    if(sym){sSym(sym);}
+    t.remove();
+  };
+  wrap.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.remove();}, 8000);
+}
+
+function checkAlerts(){
+  var alerts = loadAlerts();
+  var changed = false;
+  var activeCount = 0;
+
+  alerts.forEach(function(al){
+    if(al.triggered||!al.active) return;
+    activeCount++;
+    var p = prices[al.sym];
+    if(!p) return;
+
+    var fired = false;
+    var msg   = '';
+
+    if(al.type==='above' && p.p >= al.price){
+      fired = true;
+      msg = al.sym+' пробил уровень '+al.price+'₽ вверх ('+p.p+'₽)';
+    } else if(al.type==='below' && p.p <= al.price){
+      fired = true;
+      msg = al.sym+' пробил уровень '+al.price+'₽ вниз ('+p.p+'₽)';
+    } else if(al.type==='change' && Math.abs(p.c||0) >= al.pct){
+      fired = true;
+      msg = al.sym+' изменился на '+(p.c>=0?'+':'')+p.c.toFixed(2)+'% (цель: '+al.pct+'%)';
+    }
+
+    if(fired){
+      sendNotif('Алерт сработал!', msg, al.sym);
+      al.triggered  = true;
+      al.triggeredAt = new Date().toISOString();
+      al.triggeredPrice = p.p;
+      changed = true;
+    }
+  });
+
+  // Signal strength alert (from scanner)
+  if(scanResults.length){
+    var strong = scanResults[0];
+    if(strong && strong.strength >= 80 && !sessionStorage.getItem('sig_notif_'+strong.sym)){
+      sendNotif('Сильный сигнал!',
+        strong.dir+' '+strong.sym+' — сила '+Math.round(strong.strength)+'% ('+strong.topPat+')',
+        strong.sym);
+      sessionStorage.setItem('sig_notif_'+strong.sym, '1');
+      setTimeout(function(){sessionStorage.removeItem('sig_notif_'+strong.sym);}, 30*60000);
+    }
+  }
+
+  if(changed) saveAlerts(alerts);
+  updateAlertBadge();
+}
+
+function updateAlertBadge(){
+  var alerts = loadAlerts();
+  var active = alerts.filter(function(a){return a.active&&!a.triggered;}).length;
+  var badge  = document.getElementById('alert-badge');
+  if(badge){
+    badge.textContent = active||'';
+    badge.style.display = active ? 'flex' : 'none';
+  }
+  renderAlertsModal();
+}
+
+// ── Create alert ─────────────────────────────
+function addAlert(sym, type, price, pct){
+  requestNotifPermission(function(granted){
+    if(!granted){
+      showToast('Разрешите уведомления',
+        'Браузер заблокировал уведомления. Разрешите в настройках сайта.', null);
+    }
+  });
+  var alerts = loadAlerts();
+  var al = {
+    id: 'al_'+Date.now(),
+    sym: sym||curSym,
+    type: type||'above',
+    price: parseFloat(price)||0,
+    pct: parseFloat(pct)||2,
+    active: true,
+    triggered: false,
+    createdAt: new Date().toISOString()
+  };
+  alerts.push(al);
+  saveAlerts(alerts);
+  updateAlertBadge();
+  showToast('Алерт создан',
+    (al.sym)+' '+(type==='above'?'выше':'ниже')+' '+al.price+'₽', al.sym);
+  closeAlertModal();
+}
+
+function removeAlert(id){
+  var alerts = loadAlerts().filter(function(a){return a.id!==id;});
+  saveAlerts(alerts);
+  updateAlertBadge();
+}
+
+function clearTriggered(){
+  var alerts = loadAlerts().filter(function(a){return !a.triggered;});
+  saveAlerts(alerts);
+  updateAlertBadge();
+}
+
+// ── Alert Modal ───────────────────────────────
+function openAlertModal(sym){
+  sym = sym||curSym;
+  var p = prices[sym];
+  var price = p?p.p:0;
+  var modal = document.getElementById('alert-modal');
+  if(!modal) return;
+
+  document.getElementById('al-sym').textContent  = sym;
+  document.getElementById('al-price-above').value = price?(price*1.02).toFixed(2):'';
+  document.getElementById('al-price-below').value = price?(price*0.98).toFixed(2):'';
+  document.getElementById('al-pct').value         = '2';
+  document.getElementById('al-cur-price').textContent = price?price+'₽':'—';
+
+  renderAlertsModal();
+  modal.classList.remove('hidden');
+}
+
+function closeAlertModal(){
+  var modal = document.getElementById('alert-modal');
+  if(modal) modal.classList.add('hidden');
+}
+
+function renderAlertsModal(){
+  var el = document.getElementById('alerts-list-modal');
+  if(!el) return;
+  var alerts = loadAlerts();
+  if(!alerts.length){
+    el.innerHTML='<div style="font-size:9px;color:var(--dim);padding:8px 0">Нет активных алертов</div>';
+    return;
+  }
+  el.innerHTML = alerts.slice().reverse().map(function(a){
+    var p  = prices[a.sym];
+    var cur= p?p.p:null;
+    var col= a.triggered?'var(--dim)':a.type==='above'?'var(--green)':'var(--red)';
+    var ico= a.type==='above'?'▲':a.type==='below'?'▼':'~';
+    var dist = (cur&&a.price) ? Math.abs((cur-a.price)/a.price*100).toFixed(1)+'% до цели' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;'+
+      'border-bottom:1px solid rgba(255,255,255,.04);opacity:'+(a.triggered?'.5':'1')+'">'+
+      '<div style="flex:1">'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--bright)">'+a.sym+'</span>'+
+          '<span style="font-size:9px;color:'+col+'">'+ico+' '+a.price+'₽</span>'+
+          (dist&&!a.triggered?'<span style="font-size:8px;color:var(--dim)">'+dist+'</span>':'')+ 
+        '</div>'+
+        (a.triggered
+          ?'<div style="font-size:8px;color:var(--green)">✓ Сработал: '+a.triggeredPrice+'₽</div>'
+          :'<div style="font-size:8px;color:var(--dim)">Текущая: '+(cur||'—')+'₽</div>')+
+      '</div>'+
+      '<button onclick="removeAlert(\''+a.id+'\')" '+
+        'style="background:transparent;border:1px solid rgba(255,255,255,.08);'+
+        'color:var(--dim);padding:2px 7px;font-family:var(--mono);font-size:9px;cursor:pointer">'+
+        '✕</button>'+
+    '</div>';
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 5: SIGNAL HISTORY & ACCURACY TRACKING
+// ═══════════════════════════════════════════════════
+
+function getSignalHistory(){ try{return JSON.parse(localStorage.getItem('sig_hist')||'[]');}catch(e){return[];} }
+function setSignalHistory(h){ localStorage.setItem('sig_hist',JSON.stringify(h)); }
+
+// Auto-save every CIO signal to history
+function autoSaveSignal(sym, dir, entry, stop, tg1, tg2, conf, reasoning){
+  var h = getSignalHistory();
+  // Avoid duplicates within 5 minutes
+  var recent = h.filter(function(s){
+    return s.sym===sym && Date.now()-new Date(s.createdAt).getTime() < 5*60000;
+  });
+  if(recent.length) return;
+  h.unshift({
+    id: 'sig_'+Date.now(),
+    sym:sym, dir:dir, entry:entry, stop:stop, tg1:tg1, tg2:tg2,
+    conf:conf||0, reasoning:reasoning||'',
+    date: new Date().toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'2-digit'}),
+    time: new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),
+    createdAt: new Date().toISOString(),
+    status: 'new',       // new | executed | closed
+    execPrice: null,
+    closePrice: null,
+    pnl: null
+  });
+  if(h.length>200) h=h.slice(0,200);
+  setSignalHistory(h);
+  updateHistoryStats();
+}
+
+function execSignal(id, execPrice){
+  var h = getSignalHistory();
+  h = h.map(function(s){
+    if(s.id!==id) return s;
+    return Object.assign({},s,{status:'executed', execPrice:parseFloat(execPrice)||s.entry});
+  });
+  setSignalHistory(h);
+  renderSignalHistory();
+}
+
+function closeSignal(id, closePrice){
+  var h = getSignalHistory();
+  h = h.map(function(s){
+    if(s.id!==id) return s;
+    var cp  = parseFloat(closePrice)||0;
+    var ep  = s.execPrice||s.entry;
+    var pnl = s.dir==='LONG' ? (cp-ep)/ep*100 : (ep-cp)/ep*100;
+    return Object.assign({},s,{
+      status:'closed', closePrice:cp,
+      pnl:parseFloat(pnl.toFixed(2)),
+      closedAt:new Date().toISOString()
+    });
+  });
+  setSignalHistory(h);
+  renderSignalHistory();
+  updateHistoryStats();
+}
+
+function deleteSignal(id){
+  if(!confirm('Удалить сигнал?'))return;
+  setSignalHistory(getSignalHistory().filter(function(s){return s.id!==id;}));
+  renderSignalHistory();
+  updateHistoryStats();
+}
+
+function calcHistoryStats(){
+  var h = getSignalHistory();
+  var closed = h.filter(function(s){return s.status==='closed'&&s.pnl!==null;});
+  if(!closed.length) return {total:h.length,closed:0,wins:0,wr:null,avgPnl:null,best:null,worst:null,totalPnl:null};
+  var wins  = closed.filter(function(s){return s.pnl>0;}).length;
+  var pnls  = closed.map(function(s){return s.pnl;});
+  var best  = Math.max.apply(null,pnls);
+  var worst = Math.min.apply(null,pnls);
+  var total = pnls.reduce(function(s,v){return s+v;},0);
+  return {
+    total:h.length, closed:closed.length,
+    wins:wins, wr:Math.round(wins/closed.length*100),
+    avgPnl:(total/closed.length).toFixed(2),
+    best:best.toFixed(2), worst:worst.toFixed(2),
+    totalPnl:total.toFixed(2)
+  };
+}
+
+function updateHistoryStats(){
+  var s = calcHistoryStats();
+  // Update cabinet stats
+  var el=document.getElementById('hist-sig-count');if(el)el.textContent=s.total;
+  var el2=document.getElementById('hist-sig-wr');
+  if(el2){
+    el2.textContent=s.wr!==null?s.wr+'%':'—';
+    el2.style.color=s.wr>=60?'var(--green)':s.wr!==null?'var(--red)':'var(--dim)';
+  }
+  var el3=document.getElementById('hist-sig-pnl');
+  if(el3){
+    el3.textContent=s.avgPnl!==null?(s.avgPnl>=0?'+':'')+s.avgPnl+'%':'—';
+    el3.style.color=s.avgPnl>=0?'var(--green)':'var(--red)';
+  }
+}
+
+function renderSignalHistory(){
+  var container = document.getElementById('cab-history');
+  if(!container) return;
+  var h = getSignalHistory();
+  var s = calcHistoryStats();
+
+  // Stats bar
+  var statsHtml =
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">'+
+      _statBox('ВСЕГО',s.total,'var(--text)')+
+      _statBox('ЗАКРЫТО',s.closed,'var(--text)')+
+      _statBox('WIN RATE',s.wr!==null?s.wr+'%':'—',s.wr>=60?'var(--green)':s.wr!==null?'var(--red)':'var(--dim)')+
+      _statBox('AVG P&L',s.avgPnl!==null?(s.avgPnl>=0?'+':'')+s.avgPnl+'%':'—',
+               s.avgPnl>=0?'var(--green)':'var(--red)')+
+    '</div>'+
+    (s.closed>0?
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'+
+        _statBox('ЛУЧШИЙ','+'+s.best+'%','var(--green)')+
+        _statBox('ХУДШИЙ',s.worst+'%','var(--red)')+
+      '</div>':'')+
+    // Accuracy chart (bar per 10 signals)
+    (s.closed>=3?renderAccuracyBar(getSignalHistory()):'');
+
+  if(!h.length){
+    container.innerHTML=statsHtml+
+      '<div style="font-size:9px;color:var(--dim);padding:12px 0">'+
+        'Нажмите «В ЖУРНАЛ» в карточке CIO-сигнала, чтобы добавить сигналы.'+
+      '</div>';
+    return;
+  }
+
+  var rows = h.map(function(sig){
+    var isLong = sig.dir==='LONG';
+    var dc = isLong?'var(--green)':'var(--red)';
+    var statusBadge = sig.status==='closed'
+      ? (sig.pnl>=0
+          ?'<span style="background:rgba(0,255,136,.12);color:var(--green);padding:1px 6px;font-size:8px">✓ +'+sig.pnl+'%</span>'
+          :'<span style="background:rgba(255,45,85,.12);color:var(--red);padding:1px 6px;font-size:8px">✗ '+sig.pnl+'%</span>')
+      : sig.status==='executed'
+          ?'<span style="background:rgba(251,191,36,.1);color:var(--amber);padding:1px 6px;font-size:8px">▶ ИСПОЛ.</span>'
+          :'<span style="background:rgba(255,255,255,.06);color:var(--dim);padding:1px 6px;font-size:8px">NEW</span>';
+
+    var curP = prices[sig.sym]&&prices[sig.sym].p;
+    var unrealized = (curP&&sig.status==='executed')
+      ? (sig.dir==='LONG'?(curP-sig.execPrice)/sig.execPrice*100:(sig.execPrice-curP)/sig.execPrice*100)
+      : null;
+
+    var actions = '';
+    if(sig.status==='new'){
+      actions=
+        '<button onclick="execSignalPrompt(\''+sig.id+'\','+sig.entry+')" '+
+          'style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);'+
+          'color:var(--green);padding:2px 7px;font-family:var(--mono);font-size:8px;cursor:pointer">'+
+          '▶ ИСПОЛНЕН</button>';
+    } else if(sig.status==='executed'){
+      actions=
+        '<button onclick="closeSignalPrompt(\''+sig.id+'\','+sig.execPrice+')" '+
+          'style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);'+
+          'color:var(--amber);padding:2px 7px;font-family:var(--mono);font-size:8px;cursor:pointer">'+
+          '■ ЗАКРЫТЬ</button>';
+    }
+
+    return '<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,.04);'+
+      (sig.status==='new'?'opacity:.8':'')+'">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+        '<span style="font-size:9px;color:var(--dim);font-family:var(--mono);width:36px">'+sig.date+'</span>'+
+        '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--bright)">'+sig.sym+'</span>'+
+        '<span style="font-size:9px;font-weight:700;padding:1px 6px;background:'+(isLong?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)')+';color:'+dc+'">'+sig.dir+'</span>'+
+        statusBadge+
+        '<div style="flex:1"></div>'+
+        (sig.conf?'<span style="font-size:8px;color:var(--dim)">AI: '+sig.conf+'%</span>':'')+
+        '<button onclick="deleteSignal(\''+sig.id+'\')" '+
+          'style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:0 2px">✕</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:12px;align-items:center">'+
+        '<span style="font-size:9px;color:var(--dim)">'+
+          'Вход: <b style="color:var(--bright);font-family:var(--mono)">'+(sig.execPrice||sig.entry)+'₽</b>'+
+        '</span>'+
+        '<span style="font-size:9px;color:var(--dim)">'+
+          'Стоп: <b style="color:var(--red);font-family:var(--mono)">'+sig.stop+'₽</b>'+
+        '</span>'+
+        '<span style="font-size:9px;color:var(--dim)">'+
+          'Цель: <b style="color:var(--green);font-family:var(--mono)">'+sig.tg1+'₽</b>'+
+        '</span>'+
+        (unrealized!==null?
+          '<span style="font-family:var(--mono);font-size:9px;font-weight:700;color:'+(unrealized>=0?'var(--green)':'var(--red)')+'">'+
+            'Сейчас: '+(unrealized>=0?'+':'')+unrealized.toFixed(2)+'%</span>':'')+
+        '<div style="flex:1"></div>'+
+        actions+
+      '</div>'+
+      (sig.reasoning?'<div style="font-size:8px;color:var(--dim);margin-top:3px">'+sig.reasoning.slice(0,80)+'</div>':'')+
+    '</div>';
+  }).join('');
+
+  container.innerHTML = statsHtml + rows;
+}
+
+function _statBox(label, val, col){
+  return '<div style="background:var(--cell,#0a1628);border:1px solid rgba(255,255,255,.06);padding:8px 10px">'+
+    '<div style="font-size:8px;color:var(--dim);font-family:var(--display,sans-serif);text-transform:uppercase;letter-spacing:.08em">'+label+'</div>'+
+    '<div style="font-family:var(--mono,monospace);font-size:16px;font-weight:700;color:'+col+';margin-top:2px">'+val+'</div>'+
+  '</div>';
+}
+
+function renderAccuracyBar(h){
+  var closed = h.filter(function(s){return s.status==='closed'&&s.pnl!==null;}).slice(0,20).reverse();
+  if(!closed.length) return '';
+  return '<div style="margin-bottom:12px">'+
+    '<div style="font-size:8px;color:var(--dim);margin-bottom:4px;font-family:var(--display,sans-serif);text-transform:uppercase;letter-spacing:.08em">Последние '+closed.length+' закрытых</div>'+
+    '<div style="display:flex;gap:2px;height:24px;align-items:flex-end">'+
+    closed.map(function(s){
+      var col=s.pnl>=0?'var(--green)':'var(--red)';
+      var h=Math.min(24,Math.max(4,Math.abs(s.pnl)*4));
+      return '<div title="'+s.sym+' '+s.dir+': '+(s.pnl>=0?'+':'')+s.pnl+'%" '+
+        'style="flex:1;background:'+col+';height:'+h+'px;opacity:.8;cursor:default"></div>';
+    }).join('')+
+    '</div>'+
+  '</div>';
+}
+
+function execSignalPrompt(id, suggestedPrice){
+  var price = prompt('Цена исполнения:', suggestedPrice||'');
+  if(!price) return;
+  execSignal(id, price);
+}
+
+function closeSignalPrompt(id, suggestedPrice){
+  var p = prices[getSignalHistory().filter(function(s){return s.id===id;})[0]?.sym];
+  var suggested = p?p.p:(suggestedPrice||'');
+  var price = prompt('Цена закрытия (текущая: '+(p?p.p+'₽':'—')+')', suggested);
+  if(!price) return;
+  closeSignal(id, price);
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 6: DETAILED JOURNAL — SIGNAL → EXECUTION → RESULT
+// ═══════════════════════════════════════════════════
+
+// Extended execute: track deviation + tag + notes
+function execSignalFull(id){
+  var h = getSignalHistory();
+  var sig = h.filter(function(s){return s.id===id;})[0];
+  if(!sig) return;
+
+  var p = prices[sig.sym];
+  var suggested = p ? p.p : sig.entry;
+
+  // Show journal form
+  var modal = document.getElementById('journal-modal');
+  if(!modal) return;
+
+  document.getElementById('jm-sym').textContent   = sig.sym;
+  document.getElementById('jm-dir').textContent   = sig.dir;
+  document.getElementById('jm-dir').style.color   = sig.dir==='LONG'?'var(--green)':'var(--red)';
+  document.getElementById('jm-ai-entry').textContent = sig.entry+'₽';
+  document.getElementById('jm-ai-stop').textContent  = sig.stop+'₽';
+  document.getElementById('jm-ai-tg1').textContent   = sig.tg1+'₽';
+  document.getElementById('jm-ai-conf').textContent  = (sig.conf||0)+'%';
+  document.getElementById('jm-exec-price').value  = suggested||'';
+  document.getElementById('jm-volume').value      = '';
+  document.getElementById('jm-tag').value         = 'exact';
+  document.getElementById('jm-note').value        = '';
+  document.getElementById('jm-signal-id').value   = id;
+
+  modal.classList.remove('hidden');
+}
+
+function submitExecution(){
+  var id       = document.getElementById('jm-signal-id').value;
+  var execP    = parseFloat(document.getElementById('jm-exec-price').value)||0;
+  var volume   = parseFloat(document.getElementById('jm-volume').value)||0;
+  var tag      = document.getElementById('jm-tag').value;
+  var note     = document.getElementById('jm-note').value.trim();
+  if(!execP){ alert('Введите цену исполнения'); return; }
+
+  var h = getSignalHistory();
+  h = h.map(function(s){
+    if(s.id!==id) return s;
+    var deviation = s.entry>0 ? ((execP-s.entry)/s.entry*100).toFixed(2) : 0;
+    return Object.assign({},s,{
+      status:'executed',
+      execPrice:execP,
+      volume:volume,
+      tag:tag,        // exact | modified | partial
+      deviation:parseFloat(deviation),
+      execNote:note,
+      execAt:new Date().toISOString()
+    });
+  });
+  setSignalHistory(h);
+  closeJournalModal();
+  renderSignalHistory();
+  showToast('Исполнение записано',
+    document.getElementById('jm-sym').textContent+' @ '+execP+'₽', null);
+}
+
+function closeSignalFull(id){
+  var h = getSignalHistory();
+  var sig = h.filter(function(s){return s.id===id;})[0];
+  if(!sig) return;
+
+  var p   = prices[sig.sym];
+  var cur = p ? p.p : '';
+
+  var modal = document.getElementById('journal-close-modal');
+  if(!modal) return;
+
+  document.getElementById('jcm-sym').textContent  = sig.sym;
+  document.getElementById('jcm-entry').textContent= (sig.execPrice||sig.entry)+'₽';
+  document.getElementById('jcm-dir').textContent  = sig.dir;
+  document.getElementById('jcm-dir').style.color  = sig.dir==='LONG'?'var(--green)':'var(--red)';
+  document.getElementById('jcm-cur').textContent  = cur?cur+'₽ (текущая)':'';
+  document.getElementById('jcm-close-price').value= cur||'';
+  document.getElementById('jcm-result-note').value= '';
+  document.getElementById('jcm-signal-id2').value = id;
+
+  modal.classList.remove('hidden');
+}
+
+function submitClose(){
+  var id      = document.getElementById('jcm-signal-id2').value;
+  var closeP  = parseFloat(document.getElementById('jcm-close-price').value)||0;
+  var note    = document.getElementById('jcm-result-note').value.trim();
+  if(!closeP){ alert('Введите цену закрытия'); return; }
+
+  var h = getSignalHistory();
+  h = h.map(function(s){
+    if(s.id!==id) return s;
+    var ep   = s.execPrice||s.entry;
+    var pnl  = s.dir==='LONG'?(closeP-ep)/ep*100:(ep-closeP)/ep*100;
+    var vsTarget = s.tg1>0 ? (pnl - Math.abs((s.tg1-s.entry)/s.entry*100)) : null;
+    return Object.assign({},s,{
+      status:'closed',
+      closePrice:closeP,
+      pnl:parseFloat(pnl.toFixed(2)),
+      vsTarget: vsTarget ? parseFloat(vsTarget.toFixed(2)) : null,
+      closeNote:note,
+      closedAt:new Date().toISOString()
+    });
+  });
+  setSignalHistory(h);
+  closeJournalCloseModal();
+  renderSignalHistory();
+  updateHistoryStats();
+
+  var sig = h.filter(function(s){return s.id===id;})[0];
+  if(sig){
+    var pnlStr = (sig.pnl>=0?'+':'')+sig.pnl+'%';
+    sendNotif('Сделка закрыта',
+      sig.sym+' '+sig.dir+' → '+pnlStr, sig.sym);
+    addEv(sig.pnl>=0?'trade':'loss', null,
+      'Журнал: '+sig.sym+' '+sig.dir+' закрыт @ '+closeP+'₽ → '+pnlStr);
+  }
+}
+
+function closeJournalModal(){ document.getElementById('journal-modal').classList.add('hidden'); }
+function closeJournalCloseModal(){ document.getElementById('journal-close-modal').classList.add('hidden'); }
+
+// ── Analytics: followed vs ignored ─────────────
+function calcJournalAnalytics(){
+  var h = getSignalHistory().filter(function(s){return s.status==='closed'&&s.pnl!==null;});
+  if(!h.length) return null;
+
+  var groups = {exact:[],modified:[],partial:[]};
+  h.forEach(function(s){
+    var tag = s.tag||'exact';
+    if(groups[tag]) groups[tag].push(s);
+    else groups.exact.push(s);
+  });
+
+  function groupStats(arr){
+    if(!arr.length) return null;
+    var wins = arr.filter(function(s){return s.pnl>0;}).length;
+    var avg  = arr.reduce(function(a,s){return a+s.pnl;},0)/arr.length;
+    return {n:arr.length, wr:Math.round(wins/arr.length*100), avg:avg.toFixed(2)};
+  }
+
+  // "Ignored" signals: signals that stayed 'new' for > 24h with no execution
+  var now  = Date.now();
+  var ignored = getSignalHistory().filter(function(s){
+    return s.status==='new' && now-new Date(s.createdAt).getTime() > 86400000;
+  });
+
+  return {
+    exact:    groupStats(groups.exact),
+    modified: groupStats(groups.modified),
+    partial:  groupStats(groups.partial),
+    ignored:  ignored.length
+  };
+}
+
+// ── Override renderSignalHistory with journal view ──
+function renderSignalHistory(){
+  var container = document.getElementById('cab-history');
+  if(!container) return;
+
+  var h = getSignalHistory();
+  var s = calcHistoryStats();
+  var an= calcJournalAnalytics();
+
+  // Stats
+  var statsHtml =
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">'+
+      _statBox('СИГНАЛОВ', s.total, 'var(--text)')+
+      _statBox('ЗАКРЫТО',  s.closed, 'var(--text)')+
+      _statBox('WIN RATE', s.wr!==null?s.wr+'%':'—', s.wr>=60?'var(--green)':s.wr!==null?'var(--red)':'var(--dim)')+
+      _statBox('AVG P&L',  s.avgPnl!==null?(s.avgPnl>=0?'+':'')+s.avgPnl+'%':'—',
+               s.avgPnl>=0?'var(--green)':'var(--red)')+
+    '</div>';
+
+  // Analytics: followed vs modified
+  var analyticsHtml = '';
+  if(an && (an.exact||an.modified)){
+    analyticsHtml =
+      '<div style="background:var(--cell,#0a1628);border:1px solid rgba(167,139,250,.2);padding:10px;margin-bottom:10px">'+
+        '<div style="font-family:var(--display,sans-serif);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--purple);margin-bottom:8px">'+
+          '🤖 ЦЕННОСТЬ СЛЕДОВАНИЯ AI</div>'+
+        '<div style="display:flex;flex-direction:column;gap:5px">'+
+        [
+          {tag:'exact',    label:'✅ Следовал точно', col:'var(--green)'},
+          {tag:'modified', label:'⚠️ Изменил вход',   col:'var(--amber)'},
+          {tag:'partial',  label:'½ Частично',         col:'var(--blue)'}
+        ].filter(function(r){return an[r.tag];}).map(function(r){
+          var g = an[r.tag];
+          return '<div style="display:flex;align-items:center;gap:8px;font-size:9px">'+
+            '<span style="width:120px;color:'+r.col+'">'+r.label+'</span>'+
+            '<span style="color:var(--dim);font-family:var(--mono)">'+g.n+' сигн.</span>'+
+            '<div style="flex:1;height:3px;background:rgba(255,255,255,.06)">'+
+              '<div style="height:3px;background:'+r.col+';width:'+g.wr+'%"></div></div>'+
+            '<span style="font-family:var(--mono);font-weight:700;color:'+r.col+';width:36px">'+g.wr+'%</span>'+
+            '<span style="font-family:var(--mono);font-size:8px;color:'+(g.avg>=0?'var(--green)':'var(--red)');width:48px">'+
+              (g.avg>=0?'+':'')+g.avg+'%</span>'+
+          '</div>';
+        }).join('')+
+        (an.ignored?'<div style="font-size:8.5px;color:var(--dim);margin-top:4px">'+
+          '❌ Проигнорировано: '+an.ignored+' сигналов (результат неизвестен)</div>':'')+
+        '</div>'+
+      '</div>';
+  }
+
+  // Accuracy bar
+  var barHtml = s.closed>=3 ? renderAccuracyBar(h) : '';
+
+  // Signal cards
+  if(!h.length){
+    container.innerHTML=statsHtml+
+      '<div style="font-size:9px;color:var(--dim);padding:12px;border:1px solid rgba(255,255,255,.05);text-align:center">'+
+        'CIO сигналы появятся здесь автоматически после нажатия «Анализ»</div>';
+    return;
+  }
+
+  var rows = h.map(function(sig){
+    var isLong = sig.dir==='LONG';
+    var dc     = isLong?'var(--green)':'var(--red)';
+    var db     = isLong?'rgba(0,255,136,.06)':'rgba(255,45,85,.06)';
+    var ep     = sig.execPrice||sig.entry;
+
+    // Status pill
+    var statusPill =
+      sig.status==='closed'
+        ? '<span style="background:'+(sig.pnl>=0?'rgba(0,255,136,.12)':'rgba(255,45,85,.12)')+
+            ';color:'+(sig.pnl>=0?'var(--green)':'var(--red)')+';padding:2px 7px;font-size:8px;font-weight:700">'+
+            (sig.pnl>=0?'✓ +':' ✗ ')+sig.pnl+'%</span>'
+        : sig.status==='executed'
+          ? '<span style="background:rgba(251,191,36,.1);color:var(--amber);padding:2px 7px;font-size:8px">▶ ОТКРЫТА</span>'
+          : '<span style="background:rgba(255,255,255,.06);color:var(--dim);padding:2px 7px;font-size:8px">NEW</span>';
+
+    // Tag badge
+    var tagBadge = sig.tag==='modified'
+      ? '<span style="font-size:7.5px;color:var(--amber);background:rgba(251,191,36,.08);padding:1px 5px">⚠️ изменён</span>'
+      : sig.tag==='partial'
+        ? '<span style="font-size:7.5px;color:var(--blue);background:rgba(96,165,250,.08);padding:1px 5px">½ частично</span>'
+        : '';
+
+    // Real-time P&L for open
+    var curP     = prices[sig.sym]&&prices[sig.sym].p;
+    var unrealPnl= (curP&&sig.status==='executed')
+      ? (sig.dir==='LONG'?(curP-ep)/ep*100:(ep-curP)/ep*100) : null;
+
+    // Deviation display
+    var devHtml = (sig.deviation&&Math.abs(sig.deviation)>0.05)
+      ? '<span style="font-size:8px;color:var(--amber)">Откл: '+(sig.deviation>=0?'+':'')+sig.deviation+'%</span>'
+      : '';
+
+    // vsTarget display
+    var vsHtml = (sig.status==='closed'&&sig.vsTarget!==null)
+      ? '<span style="font-size:8px;color:'+(sig.vsTarget>=0?'var(--green)':'var(--red)')+'">'+
+          'vs цель: '+(sig.vsTarget>=0?'+':'')+sig.vsTarget+'%</span>'
+      : '';
+
+    // Action buttons
+    var actions = '';
+    if(sig.status==='new'){
+      actions='<button onclick="execSignalFull(\''+sig.id+'\')" '+
+        'style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);'+
+        'color:var(--green);padding:3px 9px;font-family:var(--mono);font-size:8.5px;cursor:pointer;font-weight:700">'+
+        '▶ ИСПОЛНИТЬ</button>';
+    } else if(sig.status==='executed'){
+      actions='<button onclick="closeSignalFull(\''+sig.id+'\')" '+
+        'style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);'+
+        'color:var(--amber);padding:3px 9px;font-family:var(--mono);font-size:8.5px;cursor:pointer;font-weight:700">'+
+        '■ ЗАКРЫТЬ</button>';
+    }
+
+    return '<div style="border-left:2px solid '+(sig.status==='closed'?(sig.pnl>=0?'var(--green)':'var(--red)'):'var(--dim)')+
+      ';padding:8px 10px;margin-bottom:5px;background:'+
+      (sig.status==='closed'?'var(--cell,#0a1628)':db)+';opacity:'+(sig.status==='new'?.75:1)+'">'+
+
+      // Row 1: header
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'+
+        '<span style="font-size:8.5px;color:var(--dim);font-family:var(--mono)">'+sig.date+' '+sig.time+'</span>'+
+        '<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--bright)">'+sig.sym+'</span>'+
+        '<span style="font-size:9px;font-weight:700;padding:1px 6px;background:'+db+';color:'+dc+'">'+sig.dir+'</span>'+
+        statusPill+tagBadge+
+        '<span style="flex:1"></span>'+
+        (sig.conf?'<span style="font-size:8px;color:var(--purple)">AI '+sig.conf+'%</span>':'')+
+        '<button onclick="deleteSignal(\''+sig.id+'\')" '+
+          'style="background:transparent;border:none;color:var(--dim);cursor:pointer;padding:0 3px;font-size:11px">✕</button>'+
+      '</div>'+
+
+      // Row 2: price chain
+      '<div style="display:flex;align-items:center;gap:0;margin-bottom:5px;font-size:9px;font-family:var(--mono)">'+
+        '<div style="padding:4px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)">'+
+          '<div style="font-size:7.5px;color:var(--dim)">AI ВХОД</div>'+
+          '<div style="color:var(--text)">'+sig.entry+'₽</div>'+
+        '</div>'+
+        '<span style="color:var(--dim);padding:0 4px">→</span>'+
+        (sig.execPrice?
+          '<div style="padding:4px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)">'+
+            '<div style="font-size:7.5px;color:var(--dim)">ФАКТ ВХОД</div>'+
+            '<div style="color:var(--bright)">'+sig.execPrice+'₽</div>'+
+          '</div><span style="color:var(--dim);padding:0 4px">→</span>':'')+
+        '<div style="padding:4px 8px;background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.1)">'+
+          '<div style="font-size:7.5px;color:var(--dim)">СТОП</div>'+
+          '<div style="color:var(--red)">'+sig.stop+'₽</div>'+
+        '</div>'+
+        '<span style="color:var(--dim);padding:0 4px">→</span>'+
+        '<div style="padding:4px 8px;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.1)">'+
+          '<div style="font-size:7.5px;color:var(--dim)">ЦЕЛЬ</div>'+
+          '<div style="color:var(--green)">'+sig.tg1+'₽</div>'+
+        '</div>'+
+        (sig.closePrice?
+          '<span style="color:var(--dim);padding:0 4px">→</span>'+
+          '<div style="padding:4px 8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)">'+
+            '<div style="font-size:7.5px;color:var(--dim)">ВЫХОД</div>'+
+            '<div style="color:var(--bright)">'+sig.closePrice+'₽</div>'+
+          '</div>':'')+
+      '</div>'+
+
+      // Row 3: meta + actions
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+        (unrealPnl!==null?
+          '<span style="font-family:var(--mono);font-size:10px;font-weight:700;'+
+            'color:'+(unrealPnl>=0?'var(--green)':'var(--red)')+'">'+
+            'Сейчас: '+(unrealPnl>=0?'+':'')+unrealPnl.toFixed(2)+'%</span>':'')+
+        devHtml+vsHtml+
+        (sig.execNote?'<span style="font-size:8px;color:var(--dim);font-style:italic">«'+sig.execNote.slice(0,40)+'»</span>':'')+
+        (sig.closeNote?'<span style="font-size:8px;color:var(--dim);font-style:italic">«'+sig.closeNote.slice(0,40)+'»</span>':'')+
+        '<span style="flex:1"></span>'+
+        actions+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  container.innerHTML = statsHtml + analyticsHtml + barHtml + rows;
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 7: BACKTEST — STRATEGY ON HISTORICAL DATA
+// ═══════════════════════════════════════════════════
+
+var btResults = null;
+
+async function runBacktest(){
+  var sym    = document.getElementById('bt-sym').value;
+  var period = document.getElementById('bt-period').value;
+  var thresh = parseInt(document.getElementById('bt-thresh').value)||60;
+
+  var btn   = document.getElementById('bt-run-btn');
+  var status= document.getElementById('bt-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ ЗАГРУЗКА...';
+  if(status) status.textContent = 'Загрузка исторических данных...';
+
+  try{
+    // Load historical daily candles
+    var today  = new Date();
+    var days   = {'6M':183,'1Y':365,'2Y':730,'3Y':1095,'5Y':1825}[period]||365;
+    var from   = new Date(today.getTime() - days*86400000);
+    var fromStr= from.toISOString().split('T')[0];
+    var tillStr= new Date(today.getTime()+86400000).toISOString().split('T')[0];
+
+    if(status) status.textContent = 'Загружаю '+sym+' c '+fromStr+'...';
+
+    var allCandles = [];
+    var start = 0;
+    while(true){
+      var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+        '/candles.json?interval=24&from='+fromStr+'&till='+tillStr+
+        '&start='+start+'&iss.meta=off';
+      var r = await fetch(url);
+      var d = await r.json();
+      var cols = d.candles.columns, rows = d.candles.data;
+      if(!rows.length) break;
+      rows.forEach(function(row){
+        var o={}; cols.forEach(function(c,i){o[c]=row[i];});
+        allCandles.push({
+          time: new Date(o.begin.replace(' ','T')).getTime(),
+          open: parseFloat(o.open), high: parseFloat(o.high),
+          low:  parseFloat(o.low),  close: parseFloat(o.close)
+        });
+      });
+      start += rows.length;
+      if(rows.length < 500) break;
+    }
+
+    if(allCandles.length < 30){
+      if(status) status.textContent = 'Недостаточно данных ('+allCandles.length+' свечей)';
+      btn.disabled = false; btn.textContent = '▶ ЗАПУСТИТЬ';
+      return;
+    }
+
+    if(status) status.textContent = 'Загружено '+allCandles.length+' свечей. Тестирую стратегию...';
+
+    // ── RUN BACKTEST ────────────────────────────────
+    var trades    = [];
+    var openTrade = null;
+    var equity    = [100]; // start with 100%
+    var equityDates = [allCandles[0].time];
+
+    for(var i = 20; i < allCandles.length; i++){
+      var c     = allCandles[i];
+      var slice = allCandles.slice(Math.max(0,i-50), i);
+
+      // ── Check if open trade should close ──
+      if(openTrade){
+        var pnl = openTrade.dir==='LONG'
+          ? (c.close - openTrade.entry) / openTrade.entry * 100
+          : (openTrade.entry - c.close) / openTrade.entry * 100;
+
+        var hitStop   = openTrade.dir==='LONG' ? c.low  <= openTrade.stop : c.high >= openTrade.stop;
+        var hitTarget = openTrade.dir==='LONG' ? c.high >= openTrade.tg1  : c.low  <= openTrade.tg1;
+        var maxDays   = 20; // max hold period
+
+        if(hitStop || hitTarget || (i - openTrade.iEntry) >= maxDays){
+          var closeP = hitStop   ? openTrade.stop
+                     : hitTarget ? openTrade.tg1
+                     : c.close;
+          var finalPnl = openTrade.dir==='LONG'
+            ? (closeP - openTrade.entry) / openTrade.entry * 100
+            : (openTrade.entry - closeP) / openTrade.entry * 100;
+
+          openTrade.close  = closeP;
+          openTrade.pnl    = parseFloat(finalPnl.toFixed(2));
+          openTrade.closeI = i;
+          openTrade.reason = hitStop?'СТОП':hitTarget?'ЦЕЛЬ':'ВРЕМЯ';
+          openTrade.daysHeld = i - openTrade.iEntry;
+          trades.push(openTrade);
+          openTrade = null;
+        }
+      }
+
+      // ── Score current candle ──
+      if(!openTrade){
+        var closes = slice.map(function(x){return x.close;});
+        var rsi    = calcRSI(closes)||50;
+        var pats   = dPats(slice.slice(-20));
+        var n      = slice.length;
+        var ma20   = n>=20 ? closes.slice(-20).reduce(function(a,b){return a+b;},0)/20 : c.close;
+        var ma50   = n>=50 ? closes.slice(-50).reduce(function(a,b){return a+b;},0)/50 : c.close;
+        var chgPct = slice.length>1 ? (c.close-slice[slice.length-1].close)/slice[slice.length-1].close*100 : 0;
+
+        // Bull score
+        var bull = 50;
+        if(rsi < 35) bull += 22;
+        else if(rsi < 42) bull += 10;
+        else if(rsi > 68) bull -= 18;
+        if(c.close > ma20) bull += 8;
+        if(ma20 > ma50)    bull += 8;
+        bull += pats.filter(function(p){return p.t==='bull';}).length * 12;
+        bull -= pats.filter(function(p){return p.t==='bear';}).length * 12;
+        if(chgPct > 0.5)  bull += 4;
+        if(chgPct < -0.5) bull -= 4;
+        bull = Math.max(0, Math.min(100, bull));
+
+        // Determine signal
+        var dir = bull >= thresh ? 'LONG' : bull <= (100-thresh) ? 'SHORT' : null;
+        if(dir){
+          var atr   = Math.max((c.high-c.low)*0.5, c.close*0.008);
+          var stop  = dir==='LONG' ? c.close - atr*1.5 : c.close + atr*1.5;
+          var tg1   = dir==='LONG' ? c.close + atr*2.0 : c.close - atr*2.0;
+          openTrade = {
+            sym:sym, dir:dir,
+            entry:c.close, stop:stop, tg1:tg1,
+            iEntry:i, entryTime:c.time,
+            score:bull, rsi:rsi
+          };
+        }
+      }
+
+      // Track equity
+      var lastEq = equity[equity.length-1];
+      if(openTrade){
+        var floatPnl = openTrade.dir==='LONG'
+          ? (c.close-openTrade.entry)/openTrade.entry*2 // 2% risk sizing
+          : (openTrade.entry-c.close)/openTrade.entry*2;
+        equity.push(parseFloat((lastEq*(1+floatPnl/100)).toFixed(4)));
+      } else {
+        equity.push(lastEq);
+      }
+      equityDates.push(c.time);
+    }
+
+    // Close any open trade at end
+    if(openTrade && allCandles.length > 0){
+      var last = allCandles[allCandles.length-1];
+      var endPnl = openTrade.dir==='LONG'
+        ? (last.close-openTrade.entry)/openTrade.entry*100
+        : (openTrade.entry-last.close)/openTrade.entry*100;
+      openTrade.close=last.close; openTrade.pnl=parseFloat(endPnl.toFixed(2));
+      openTrade.reason='КОНЕЦ'; openTrade.daysHeld=allCandles.length-1-openTrade.iEntry;
+      trades.push(openTrade);
+    }
+
+    // ── STATISTICS ────────────────────────────────
+    var closed    = trades.filter(function(t){return t.pnl!==null;});
+    var wins      = closed.filter(function(t){return t.pnl>0;});
+    var pnlArr    = closed.map(function(t){return t.pnl;});
+    var totalPnl  = pnlArr.reduce(function(a,b){return a+b;},0);
+    var winRate   = closed.length?Math.round(wins.length/closed.length*100):0;
+    var avgWin    = wins.length?wins.reduce(function(a,t){return a+t.pnl;},0)/wins.length:0;
+    var losses    = closed.filter(function(t){return t.pnl<=0;});
+    var avgLoss   = losses.length?Math.abs(losses.reduce(function(a,t){return a+t.pnl;},0)/losses.length):0;
+    var profitFactor = avgLoss>0?(avgWin*wins.length)/(avgLoss*losses.length):null;
+    var bestTrade = pnlArr.length?Math.max.apply(null,pnlArr):0;
+    var worstTrade= pnlArr.length?Math.min.apply(null,pnlArr):0;
+
+    // Max drawdown
+    var peak=100,maxDD=0;
+    equity.forEach(function(e){peak=Math.max(peak,e);maxDD=Math.max(maxDD,(peak-e)/peak*100);});
+
+    // Buy & hold
+    var bhReturn = allCandles.length>1
+      ? (allCandles[allCandles.length-1].close-allCandles[0].close)/allCandles[0].close*100 : 0;
+
+    btResults = {
+      sym:sym, period:period, thresh:thresh,
+      trades:closed, equity:equity, equityDates:equityDates,
+      totalCandles:allCandles.length, totalTrades:closed.length,
+      winRate:winRate, totalPnl:parseFloat(totalPnl.toFixed(2)),
+      avgWin:parseFloat(avgWin.toFixed(2)), avgLoss:parseFloat(avgLoss.toFixed(2)),
+      profitFactor:profitFactor?parseFloat(profitFactor.toFixed(2)):null,
+      bestTrade:parseFloat(bestTrade.toFixed(2)), worstTrade:parseFloat(worstTrade.toFixed(2)),
+      maxDD:parseFloat(maxDD.toFixed(2)), bhReturn:parseFloat(bhReturn.toFixed(2)),
+      finalEquity:parseFloat(equity[equity.length-1].toFixed(2))
+    };
+
+    renderBacktestResults(btResults);
+    if(status) status.textContent = 'Бэктест завершён: '+closed.length+' сделок за '+allCandles.length+' дней';
+
+    addEv('learn', AGs.filter(function(a){return a.id==='4';})[0],
+      'Бэктест '+sym+' '+period+': '+closed.length+' сделок, Win '+winRate+'%, итог '+(totalPnl>=0?'+':'')+totalPnl+'%');
+
+  }catch(e){
+    if(status) status.textContent = 'Ошибка: '+e.message;
+    console.error('Backtest error:', e);
+  }
+  btn.disabled = false;
+  btn.textContent = '▶ ЗАПУСТИТЬ';
+}
+
+function renderBacktestResults(r){
+  var el = document.getElementById('bt-results');
+  if(!el) return;
+
+  var stratColor = r.totalPnl>=0?'var(--green)':'var(--red)';
+  var vsColor    = (r.totalPnl-r.bhReturn)>=0?'var(--green)':'var(--red)';
+
+  // Equity sparkline (SVG)
+  var eqSvg = renderEquityCurve(r.equity, r.equityDates, 480, 100);
+
+  el.innerHTML =
+    // ── Stats grid ──
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">'+
+      _statBox('ИТОГО P&L',    (r.totalPnl>=0?'+':'')+r.totalPnl+'%', stratColor)+
+      _statBox('WIN RATE',      r.winRate+'%', r.winRate>=55?'var(--green)':r.winRate>=45?'var(--amber)':'var(--red)')+
+      _statBox('СДЕЛОК',        r.totalTrades, 'var(--text)')+
+      _statBox('MAX ПРОСАДКА', '-'+r.maxDD+'%', r.maxDD<10?'var(--green)':r.maxDD<20?'var(--amber)':'var(--red)')+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">'+
+      _statBox('AVG WIN',   '+'+r.avgWin+'%',   'var(--green)')+
+      _statBox('AVG LOSS',  '-'+r.avgLoss+'%',  'var(--red)')+
+      _statBox('PROF. FACTOR', r.profitFactor||'—', r.profitFactor>=1.5?'var(--green)':r.profitFactor>=1?'var(--amber)':'var(--red)')+
+      _statBox('ЛУЧШАЯ', '+'+r.bestTrade+'%', 'var(--green)')+
+    '</div>'+
+
+    // ── Strategy vs B&H ──
+    '<div style="background:var(--cell);border:1px solid var(--g);padding:10px;margin-bottom:10px">'+
+      '<div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:8px">'+
+        r.sym+' — '+r.period+' — СТРАТЕГИЯ vs КУПИТЬ И ДЕРЖАТЬ</div>'+
+      '<div style="display:flex;gap:20px;font-size:11px;font-family:var(--mono)">'+
+        '<div>'+
+          '<div style="font-size:8px;color:var(--dim)">AI СТРАТЕГИЯ</div>'+
+          '<div style="font-size:18px;font-weight:700;color:'+stratColor+'">'+(r.totalPnl>=0?'+':'')+r.totalPnl+'%</div>'+
+          '<div style="font-size:8.5px;color:var(--dim)">'+r.totalTrades+' сделок · Win '+r.winRate+'%</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;color:var(--dim);font-size:18px">vs</div>'+
+        '<div>'+
+          '<div style="font-size:8px;color:var(--dim)">КУПИТЬ И ДЕРЖАТЬ</div>'+
+          '<div style="font-size:18px;font-weight:700;color:'+(r.bhReturn>=0?'var(--green)':'var(--red))')+'">'+(r.bhReturn>=0?'+':'')+r.bhReturn+'%</div>'+
+          '<div style="font-size:8.5px;color:var(--dim)">за весь период</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;font-size:14px;font-weight:700;color:'+vsColor+'">'+
+          (r.totalPnl-r.bhReturn>=0?'▲ +':'▼ ')+(r.totalPnl-r.bhReturn).toFixed(2)+'%'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+    // ── Equity curve ──
+    '<div style="margin-bottom:10px">'+
+      '<div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px">КРИВАЯ ДОХОДНОСТИ</div>'+
+      eqSvg+
+    '</div>'+
+
+    // ── Trade list ──
+    '<div>'+
+      '<div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:6px">СДЕЛКИ (последние 20)</div>'+
+      (r.trades.length?
+        '<div style="max-height:220px;overflow-y:auto">'+
+        r.trades.slice(-20).reverse().map(function(t){
+          var col = t.pnl>=0?'var(--green)':'var(--red)';
+          var dc  = t.dir==='LONG'?'var(--green)':'var(--red)';
+          var dt  = new Date(t.entryTime).toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'2-digit'});
+          return '<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.03);font-size:9px">'+
+            '<span style="color:var(--dim);font-family:var(--mono);width:42px">'+dt+'</span>'+
+            '<span style="font-family:var(--mono);font-weight:700;padding:1px 5px;background:'+(t.dir==='LONG'?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)')+';color:'+dc+'">'+t.dir+'</span>'+
+            '<span style="font-family:var(--mono);color:var(--dim)">@'+t.entry.toFixed(2)+'₽</span>'+
+            '<span style="font-family:var(--mono);font-size:8px;color:var(--dim)">'+t.daysHeld+' дн.</span>'+
+            '<span style="font-size:8px;color:var(--dim)">'+t.reason+'</span>'+
+            '<span style="flex:1"></span>'+
+            '<span style="font-family:var(--mono);font-weight:700;color:'+col+'">'+(t.pnl>=0?'+':'')+t.pnl+'%</span>'+
+          '</div>';
+        }).join('')+
+        '</div>'
+        :'<div style="font-size:9px;color:var(--dim);padding:8px">Нет завершённых сделок в этом периоде</div>')+
+    '</div>';
+}
+
+function renderEquityCurve(equity, dates, w, h){
+  if(equity.length < 2) return '';
+  var mn = Math.min.apply(null,equity);
+  var mx = Math.max.apply(null,equity);
+  var rng = mx - mn || 1;
+  var pts = equity.map(function(v,i){
+    var x = (i/(equity.length-1))*w;
+    var y = h - ((v-mn)/rng)*(h-10) - 2;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  var col = equity[equity.length-1] >= equity[0] ? '#00ff88' : '#ff2d55';
+  var zero = h - ((100-mn)/rng)*(h-10) - 2;
+  return '<svg width="'+w+'" height="'+(h+20)+'" style="width:100%;display:block">'+
+    '<defs><linearGradient id="eqGrad" x1="0" x2="0" y1="0" y2="1">'+
+      '<stop offset="0%" stop-color="'+col+'" stop-opacity=".25"/>'+
+      '<stop offset="100%" stop-color="'+col+'" stop-opacity=".02"/>'+
+    '</linearGradient></defs>'+
+    // Zero/start line
+    '<line x1="0" y1="'+zero.toFixed(1)+'" x2="'+w+'" y2="'+zero.toFixed(1)+
+      '" stroke="rgba(255,255,255,.1)" stroke-dasharray="3,3"/>'+
+    // Fill area
+    '<polygon points="0,'+h+' '+pts+' '+w+','+h+'" fill="url(#eqGrad)"/>'+
+    // Line
+    '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5"/>'+
+    // Start/end labels
+    '<text x="4" y="'+(h+16)+'" font-size="8" fill="#3d5a7a" font-family="monospace">100%</text>'+
+    '<text x="'+(w-50)+'" y="'+(h+16)+'" font-size="8" fill="'+col+'" font-family="monospace">'+
+      equity[equity.length-1].toFixed(1)+'%</text>'+
+    // Max/min
+    '<text x="4" y="10" font-size="8" fill="#3d5a7a" font-family="monospace">'+mx.toFixed(1)+'%</text>'+
+    '<text x="4" y="'+(h-2)+'" font-size="8" fill="#3d5a7a" font-family="monospace">'+mn.toFixed(1)+'%</text>'+
+  '</svg>';
+}
+
+
+function switchSigTab(tab){
+  document.getElementById('sig-view-signals').classList.toggle('hidden', tab!=='signals');
+  document.getElementById('sig-view-backtest').classList.toggle('hidden', tab!=='backtest');
+  document.getElementById('sig-tab-signals').classList.toggle('on', tab==='signals');
+  document.getElementById('sig-tab-backtest').classList.toggle('on', tab==='backtest');
+  // Populate backtest sym select
+  if(tab==='backtest'){
+    var btSym = document.getElementById('bt-sym');
+    if(btSym && !btSym.options.length){
+      var opts = SYMS.map(function(s){return '<option value="'+s+'">'+s+' — '+ST[s].n+'</option>';}).join('');
+      btSym.innerHTML = opts;
+      btSym.value = curSym;
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 8: SUBCHARTS — VOLUME + RSI + MACD
+// ═══════════════════════════════════════════════════
+
+// Chart instances
+var chart=null, cs=null;           // main candles
+var volChart=null, volSer=null;    // volume
+var rsiChart=null, rsiLine=null, rsiOB=null, rsiOS=null; // RSI
+var macdChart=null, macdHist=null, macdLine=null, macdSignal=null; // MACD
+
+var syncingCharts = false;         // prevent infinite sync loops
+
+// ── EMA helper ───────────────────────────────────
+function calcEMA(data, period){
+  var k = 2/(period+1), prev=null, result=[];
+  data.forEach(function(v){
+    if(prev===null){prev=v;result.push(v);}
+    else{prev=v*k+prev*(1-k);result.push(prev);}
+  });
+  return result;
+}
+
+// ── MACD ─────────────────────────────────────────
+function calcMACDFull(closes){
+  var e12=calcEMA(closes,12);
+  var e26=calcEMA(closes,26);
+  var macd=e12.map(function(v,i){return v-e26[i];});
+  var sig=calcEMA(macd,9);
+  var hist=macd.map(function(v,i){return v-sig[i];});
+  return {macd:macd, signal:sig, hist:hist};
+}
+
+// ── Full RSI series ───────────────────────────────
+function calcRSIFull(closes){
+  if(closes.length<15)return closes.map(function(){return 50;});
+  var result=closes.map(function(){return null;});
+  for(var i=14;i<closes.length;i++){
+    var sl=closes.slice(i-14,i+1);
+    var g=[],l=[];
+    for(var j=1;j<sl.length;j++){
+      var d=sl[j]-sl[j-1];
+      if(d>0)g.push(d);else l.push(Math.abs(d));
+    }
+    var ag=g.length?g.reduce(function(a,b){return a+b;},0)/14:0;
+    var al=l.length?l.reduce(function(a,b){return a+b;},0)/14:0.0001;
+    result[i]=Math.round(100-(100/(1+ag/al)));
+  }
+  return result;
+}
+
+// ── Common chart options ──────────────────────────
+function commonChartOpts(el, height){
+  return {
+    width: el.offsetWidth,
+    height: height||el.offsetHeight||70,
+    layout:{ background:{type:'solid',color:'#030810'}, textColor:'rgba(255,255,255,0)' },
+    grid:{ vertLines:{color:'rgba(0,255,136,.03)'}, horzLines:{color:'rgba(0,255,136,.03)'} },
+    crosshair:{ mode:LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale:{ borderColor:'rgba(0,255,136,.06)', scaleMargins:{top:.05,bottom:.05} },
+    timeScale:{ borderColor:'rgba(0,255,136,.06)', timeVisible:true, secondsVisible:false, visible:true },
+    handleScroll:true, handleScale:true
+  };
+}
+
+function initCh(){
+  var mainEl = document.getElementById('chart-container');
+  var volEl  = document.getElementById('vol-container');
+  var rsiEl  = document.getElementById('rsi-container');
+  var macdEl = document.getElementById('macd-container');
+  if(!mainEl||chart) return;
+
+  // ── Main chart ──
+  var mainOpts = commonChartOpts(mainEl);
+  mainOpts.height = mainEl.offsetHeight||280;
+  mainOpts.layout.textColor = '#3d5a7a';
+  mainOpts.timeScale.visible = false; // hide time on main, show on bottom
+  chart = LightweightCharts.createChart(mainEl, mainOpts);
+  cs = chart.addCandlestickSeries({
+    upColor:'#00ff88', downColor:'#ff2d55',
+    borderUpColor:'#00ff88', borderDownColor:'#ff2d55',
+    wickUpColor:'#00ff88', wickDownColor:'#ff2d55'
+  });
+
+  // ── Volume chart ──
+  if(volEl){
+    var volOpts = commonChartOpts(volEl, volEl.offsetHeight||50);
+    volOpts.timeScale.visible = false;
+    volChart = LightweightCharts.createChart(volEl, volOpts);
+    volSer = volChart.addHistogramSeries({
+      priceFormat:{type:'volume'},
+      priceScaleId:'volume',
+      scaleMargins:{top:0,bottom:0}
+    });
+  }
+
+  // ── RSI chart ──
+  if(rsiEl){
+    var rsiOpts = commonChartOpts(rsiEl, rsiEl.offsetHeight||72);
+    rsiOpts.timeScale.visible = false;
+    rsiChart = LightweightCharts.createChart(rsiEl, rsiOpts);
+    // RSI line
+    rsiLine = rsiChart.addLineSeries({
+      color:'#a78bfa', lineWidth:1.5,
+      priceScaleId:'rsi',
+      scaleMargins:{top:.1,bottom:.1}
+    });
+    // Overbought line
+    rsiOB = rsiChart.addLineSeries({
+      color:'rgba(255,45,85,.4)', lineWidth:1,
+      lineStyle:LightweightCharts.LineStyle.Dashed,
+      priceScaleId:'rsi', crosshairMarkerVisible:false,
+      lastValueVisible:false, priceLineVisible:false
+    });
+    // Oversold line
+    rsiOS = rsiChart.addLineSeries({
+      color:'rgba(0,255,136,.4)', lineWidth:1,
+      lineStyle:LightweightCharts.LineStyle.Dashed,
+      priceScaleId:'rsi', crosshairMarkerVisible:false,
+      lastValueVisible:false, priceLineVisible:false
+    });
+    rsiChart.priceScale('rsi').applyOptions({
+      scaleMargins:{top:.05,bottom:.05},
+      mode:0
+    });
+  }
+
+  // ── MACD chart ──
+  if(macdEl){
+    var macdOpts = commonChartOpts(macdEl, macdEl.offsetHeight||72);
+    macdOpts.layout.textColor = '#3d5a7a';
+    macdChart = LightweightCharts.createChart(macdEl, macdOpts);
+    // Histogram
+    macdHist = macdChart.addHistogramSeries({
+      priceScaleId:'macd',
+      scaleMargins:{top:.1,bottom:.1}
+    });
+    // MACD line
+    macdLine = macdChart.addLineSeries({
+      color:'#60a5fa', lineWidth:1.5,
+      priceScaleId:'macd',
+      lastValueVisible:false, priceLineVisible:false
+    });
+    // Signal line
+    macdSignal = macdChart.addLineSeries({
+      color:'#f97316', lineWidth:1,
+      priceScaleId:'macd',
+      lastValueVisible:false, priceLineVisible:false
+    });
+  }
+
+  // ── Sync time scales ──
+  function onRangeChange(range, source){
+    if(syncingCharts||!range)return;
+    syncingCharts=true;
+    [chart,volChart,rsiChart,macdChart].forEach(function(c){
+      if(c&&c!==source){
+        try{c.timeScale().setVisibleLogicalRange(range);}catch(e){}
+      }
+    });
+    syncingCharts=false;
+  }
+  [chart,volChart,rsiChart,macdChart].forEach(function(c){
+    if(!c)return;
+    c.timeScale().subscribeVisibleLogicalRangeChange(function(r){
+      onRangeChange(r,c);
+    });
+  });
+
+  // ── Resize observer ──
+  var ro=new ResizeObserver(function(){
+    if(mainEl&&chart)  chart.applyOptions({width:mainEl.offsetWidth,height:mainEl.offsetHeight});
+    if(volEl&&volChart)   volChart.applyOptions({width:volEl.offsetWidth,height:volEl.offsetHeight});
+    if(rsiEl&&rsiChart)   rsiChart.applyOptions({width:rsiEl.offsetWidth,height:rsiEl.offsetHeight});
+    if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth,height:macdEl.offsetHeight});
+  });
+  [mainEl,volEl,rsiEl,macdEl].filter(Boolean).forEach(function(el){ro.observe(el);});
+
+  loadH(curSym, curTF);
+}
+
+async function loadH(sym, tf){
+  curSym=sym; curTF=tf;
+  var cfg=TFM[tf]||TFM['1Y'];
+  var today=new Date();
+  var tomorrow=new Date(today.getTime()+86400000);
+  var tillStr=tomorrow.toISOString().split('T')[0];
+  var fromDate=tf==='MAX'?new Date('2010-01-01'):new Date(today.getTime()-cfg.d*86400000);
+  var fromStr=fromDate.toISOString().split('T')[0];
+
+  var el=document.getElementById('ind-bar');
+  if(el)el.innerHTML='<span style="font-size:9px;color:var(--dim)">Загрузка '+sym+' '+tf+'...</span>';
+
+  var all=[],start=0,maxPages=(tf==='MAX'||tf==='5Y'||tf==='3Y')?20:4;
+  var pages=0;
+  while(pages<maxPages){
+    try{
+      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+        '/candles.json?interval='+cfg.iv+'&from='+fromStr+'&till='+tillStr+
+        '&start='+start+'&iss.meta=off';
+      var r=await fetch(url);
+      if(!r.ok)break;
+      var d=await r.json();
+      var cols=d.candles.columns,rows=d.candles.data;
+      if(!rows||!rows.length)break;
+      rows.forEach(function(row){
+        var o={};cols.forEach(function(c,i){o[c]=row[i];});
+        var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
+        if(t&&parseFloat(o.open)&&parseFloat(o.close)){
+          all.push({time:t,open:parseFloat(o.open),high:parseFloat(o.high),
+                    low:parseFloat(o.low),close:parseFloat(o.close),
+                    vol:parseFloat(o.volume||0)});
+        }
+      });
+      start+=rows.length; pages++;
+      if(rows.length<500)break;
+    }catch(e){break;}
+  }
+
+  // Sort + dedup
+  all.sort(function(a,b){return a.time-b.time;});
+  var seen={};
+  all=all.filter(function(c){if(seen[c.time])return false;seen[c.time]=1;return true;});
+  chartData=all;
+
+  if(!all.length){
+    if(el)el.innerHTML='<span style="font-size:9px;color:var(--red)">Нет данных для '+sym+'</span>';
+    updCH(); return;
+  }
+
+  // ── Set main candles ──
+  if(cs){ cs.setData(all); cs.setMarkers(calcMrk(all)); }
+
+  // ── Volume ──
+  if(volSer){
+    volSer.setData(all.map(function(c){
+      return {time:c.time, value:c.vol,
+              color:c.close>=c.open?'rgba(0,255,136,.5)':'rgba(255,45,85,.5)'};
+    }));
+  }
+
+  // ── RSI ──
+  if(rsiLine){
+    var closes=all.map(function(c){return c.close;});
+    var rsiVals=calcRSIFull(closes);
+    var rsiData=[], obData=[], osData=[];
+    all.forEach(function(c,i){
+      if(rsiVals[i]!==null){
+        rsiData.push({time:c.time, value:rsiVals[i]});
+        obData.push({time:c.time, value:70});
+        osData.push({time:c.time, value:30});
+      }
+    });
+    rsiLine.setData(rsiData);
+    if(rsiOB) rsiOB.setData(obData);
+    if(rsiOS) rsiOS.setData(osData);
+  }
+
+  // ── MACD ──
+  if(macdHist){
+    var closesM=all.map(function(c){return c.close;});
+    var m=calcMACDFull(closesM);
+    var histData=[], lineData=[], sigData=[];
+    all.forEach(function(c,i){
+      if(i>=25){ // MACD valid after 26 periods
+        histData.push({time:c.time, value:m.hist[i],
+          color:m.hist[i]>=0?'rgba(0,255,136,.6)':'rgba(255,45,85,.6)'});
+        lineData.push({time:c.time, value:m.macd[i]});
+        sigData.push({time:c.time, value:m.signal[i]});
+      }
+    });
+    macdHist.setData(histData);
+    if(macdLine)   macdLine.setData(lineData);
+    if(macdSignal) macdSignal.setData(sigData);
+  }
+
+  // ── Fit + sync ──
+  if(chart){ chart.timeScale().fitContent(); }
+
+  rInd(all); rPats(); updCH();
+  renderConsensusPanel(sym);
+  update52WeekChart();
+  console.log('loadH',sym,tf,':',all.length,'candles');
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 9: 52-WEEK HIGH / LOW
+// ═══════════════════════════════════════════════════
+
+var week52Lines = []; // chart line series references
+
+function calc52Week(candles){
+  // Use last 252 trading days (~1 year)
+  var slice = candles.slice(-252);
+  if(!slice.length) return null;
+  var high = Math.max.apply(null, slice.map(function(c){return c.high;}));
+  var low  = Math.min.apply(null, slice.map(function(c){return c.low;}));
+  return {high: high, low: low};
+}
+
+function render52WeekBar(price, low52, high52, containerId){
+  var el = document.getElementById(containerId||'week52-bar');
+  if(!el) return;
+  if(!low52||!high52||low52===high52){ el.innerHTML=''; return; }
+
+  var pct  = Math.round((price-low52)/(high52-low52)*100);
+  var col  = pct>80?'var(--red)':pct<20?'var(--green)':'var(--amber)';
+  var zone = pct>80?'У МАКСИМУМА':pct<20?'У МИНИМУМА':'В СЕРЕДИНЕ';
+
+  el.innerHTML =
+    '<div style="margin-bottom:2px;display:flex;justify-content:space-between;font-size:8px;color:var(--dim);font-family:var(--mono)">'+
+      '<span>52Н МИН: <b style="color:var(--green)">'+low52.toFixed(2)+'₽</b></span>'+
+      '<span style="color:'+col+';font-weight:700">'+zone+' '+pct+'%</span>'+
+      '<span>52Н МАКС: <b style="color:var(--red)">'+high52.toFixed(2)+'₽</b></span>'+
+    '</div>'+
+    '<div style="position:relative;height:8px;background:rgba(255,255,255,.06);border-radius:0">'+
+      // gradient bar: green (low) → yellow (mid) → red (high)
+      '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,255,136,.3),rgba(251,191,36,.3),rgba(255,45,85,.3));border-radius:0"></div>'+
+      // current price marker
+      '<div style="position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--bright);border-radius:1px;left:calc('+pct+'% - 1.5px)"></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:7.5px;color:var(--dim);margin-top:2px">'+
+      '<span>'+low52.toFixed(2)+'</span>'+
+      '<span style="color:var(--bright);font-weight:700">▼ '+price.toFixed(2)+'₽</span>'+
+      '<span>'+high52.toFixed(2)+'</span>'+
+    '</div>';
+}
+
+function update52WeekChart(){
+  // Remove old lines
+  week52Lines.forEach(function(l){try{chart.removeSeries(l);}catch(e){}});
+  week52Lines=[];
+  if(!chart||!chartData.length) return;
+
+  var w52 = calc52Week(chartData);
+  if(!w52) return;
+
+  var p = prices[curSym];
+  if(p) render52WeekBar(p.p, w52.low, w52.high, 'week52-bar');
+  if(p) render52WeekBar(p.p, w52.low, w52.high, 'week52-bar-modal');
+
+  // Add horizontal lines on main chart
+  var hiLine = chart.addLineSeries({
+    color:'rgba(255,45,85,.45)', lineWidth:1,
+    lineStyle:LightweightCharts.LineStyle.Dashed,
+    lastValueVisible:true, priceLineVisible:false,
+    crosshairMarkerVisible:false,
+    title:'52Н MAX'
+  });
+  var loLine = chart.addLineSeries({
+    color:'rgba(0,255,136,.45)', lineWidth:1,
+    lineStyle:LightweightCharts.LineStyle.Dashed,
+    lastValueVisible:true, priceLineVisible:false,
+    crosshairMarkerVisible:false,
+    title:'52Н MIN'
+  });
+
+  var firstTime = chartData[0].time;
+  var lastTime  = chartData[chartData.length-1].time;
+  hiLine.setData([{time:firstTime,value:w52.high},{time:lastTime,value:w52.high}]);
+  loLine.setData([{time:firstTime,value:w52.low}, {time:lastTime,value:w52.low}]);
+  week52Lines = [hiLine, loLine];
+
+  // Update chart header
+  update52Header(w52, p);
+}
+
+function update52Header(w52, p){
+  var el = document.getElementById('week52-header');
+  if(!el||!w52) return;
+  var pct = w52.high>w52.low?Math.round((p.p-w52.low)/(w52.high-w52.low)*100):50;
+  var col = pct>75?'var(--red)':pct<25?'var(--green)':'var(--amber)';
+  el.innerHTML =
+    '<span style="font-size:8px;color:var(--dim)">52Н:</span>'+
+    '<span style="font-size:8.5px;color:var(--green);font-family:var(--mono)">'+w52.low.toFixed(1)+'</span>'+
+    '<span style="font-size:8px;color:var(--dim)">—</span>'+
+    '<span style="font-size:8.5px;color:var(--red);font-family:var(--mono)">'+w52.high.toFixed(1)+'</span>'+
+    '<span style="font-size:8px;font-weight:700;color:'+col+';background:rgba(255,255,255,.06);padding:1px 5px;margin-left:2px">'+pct+'%</span>';
+}
+
+// Extend showAn to include 52W data
+var _origShowAn = showAn;
+function showAn(sym){
+  _origShowAn(sym);
+  // Add 52W section to modal after render
+  setTimeout(function(){
+    var body = document.getElementById('an-body');
+    if(!body) return;
+    var w52 = calc52Week(sym===curSym ? chartData : []);
+    var p = prices[sym];
+    if(!w52||!p) return;
+
+    var pct = Math.round((p.p-w52.low)/(w52.high-w52.low)*100);
+    var week52Html =
+      '<div style="margin-bottom:10px">'+
+        '<div style="font-family:var(--display);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">52-НЕДЕЛЬНЫЙ ДИАПАЗОН</div>'+
+        '<div id="week52-bar-modal"></div>'+
+      '</div>';
+
+    // Insert before the description text
+    var descIdx = body.innerHTML.indexOf('P/E&lt;10x');
+    if(descIdx>0){
+      body.innerHTML = body.innerHTML.slice(0,descIdx) + week52Html + body.innerHTML.slice(descIdx);
+    } else {
+      body.innerHTML += week52Html;
+    }
+    render52WeekBar(p.p, w52.low, w52.high, 'week52-bar-modal');
+  }, 50);
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 10: COMPARE WITH IMOEX — OVERLAY LINE
+// ═══════════════════════════════════════════════════
+
+var imoexLine    = null;   // line series on main chart
+var imoexEnabled = false;  // toggle state
+var imoexCache   = {};     // {tf: [{time, close}]}
+
+async function loadImoexData(tf){
+  if(imoexCache[tf]) return imoexCache[tf];
+  var cfg = TFM[tf]||TFM['1Y'];
+  var today  = new Date();
+  var from   = tf==='MAX'?new Date('2010-01-01'):new Date(today.getTime()-cfg.d*86400000);
+  var fromStr= from.toISOString().split('T')[0];
+  var tillStr= new Date(today.getTime()+86400000).toISOString().split('T')[0];
+  var all=[], start=0;
+  while(true){
+    try{
+      var url=MOEX+'/engines/stock/markets/index/boards/SNDX/securities/IMOEX/candles.json'+
+        '?interval='+cfg.iv+'&from='+fromStr+'&till='+tillStr+
+        '&start='+start+'&iss.meta=off';
+      var r=await fetch(url);var d=await r.json();
+      var cols=d.candles.columns,rows=d.candles.data;
+      if(!rows||!rows.length)break;
+      rows.forEach(function(row){
+        var o={};cols.forEach(function(c,i){o[c]=row[i];});
+        var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
+        if(t&&parseFloat(o.close))all.push({time:t,close:parseFloat(o.close)});
+      });
+      start+=rows.length;if(rows.length<500)break;
+    }catch(e){break;}
+  }
+  all.sort(function(a,b){return a.time-b.time;});
+  imoexCache[tf]=all;
+  return all;
+}
+
+async function toggleImoex(){
+  imoexEnabled=!imoexEnabled;
+  var btn=document.getElementById('imoex-toggle-btn');
+  if(btn){
+    btn.style.background=imoexEnabled?'rgba(96,165,250,.15)':'rgba(255,255,255,.04)';
+    btn.style.borderColor=imoexEnabled?'rgba(96,165,250,.4)':'rgba(255,255,255,.1)';
+    btn.style.color=imoexEnabled?'var(--blue)':'var(--dim)';
+    btn.textContent=imoexEnabled?'≡ IMOEX ✓':'≡ IMOEX';
+  }
+  if(imoexEnabled){
+    await renderImoexOverlay();
+  }else{
+    removeImoexOverlay();
+    var perfEl=document.getElementById('imoex-perf');
+    if(perfEl)perfEl.innerHTML='';
+  }
+}
+
+async function renderImoexOverlay(){
+  if(!chart||!chartData.length)return;
+  var imoexData=await loadImoexData(curTF);
+  if(!imoexData.length)return;
+
+  // Remove old overlay
+  removeImoexOverlay();
+
+  // Build time-aligned normalized % series
+  // Both normalized to 0% at the first common candle
+  var stockStart=chartData[0].close;
+  var imoexMap={};
+  imoexData.forEach(function(d){imoexMap[d.time]=d.close;});
+  var imoexStart=null;
+  chartData.forEach(function(c){if(!imoexStart&&imoexMap[c.time])imoexStart=imoexMap[c.time];});
+  if(!imoexStart)imoexStart=imoexData[0].close;
+
+  // Stock normalized line
+  var stockNorm=chartData.map(function(c){
+    return{time:c.time,value:parseFloat(((c.close-stockStart)/stockStart*100).toFixed(2))};
+  });
+
+  // IMOEX normalized line (only where time matches stock period)
+  var firstStockTime=chartData[0].time;
+  var lastStockTime=chartData[chartData.length-1].time;
+  var imoexNorm=imoexData
+    .filter(function(d){return d.time>=firstStockTime&&d.time<=lastStockTime;})
+    .map(function(d){
+      return{time:d.time,value:parseFloat(((d.close-imoexStart)/imoexStart*100).toFixed(2))};
+    });
+
+  if(!imoexNorm.length)return;
+
+  // Add IMOEX line on left scale
+  imoexLine=chart.addLineSeries({
+    color:'rgba(96,165,250,.55)',
+    lineWidth:1.5,
+    priceScaleId:'imoex',
+    lastValueVisible:true,
+    priceLineVisible:false,
+    crosshairMarkerVisible:true,
+    title:'IMOEX %'
+  });
+  chart.priceScale('imoex').applyOptions({
+    scaleMargins:{top:.05,bottom:.05},
+    mode:0,
+    visible:true,
+    position:'left',
+    borderColor:'rgba(96,165,250,.15)'
+  });
+  imoexLine.setData(imoexNorm);
+
+  // Add stock % line too (faint, just for reference)
+  // Calculate performance vs IMOEX
+  var stockFinal=stockNorm[stockNorm.length-1]&&stockNorm[stockNorm.length-1].value||0;
+  var imoexFinal=imoexNorm[imoexNorm.length-1]&&imoexNorm[imoexNorm.length-1].value||0;
+  var outperf=parseFloat((stockFinal-imoexFinal).toFixed(2));
+
+  // Update performance badge
+  var perfEl=document.getElementById('imoex-perf');
+  if(perfEl){
+    var col=outperf>=0?'var(--green)':'var(--red)';
+    var ico=outperf>=0?'▲':'▼';
+    perfEl.innerHTML=
+      '<span style="font-size:8px;color:var(--dim)">vs IMOEX:</span>'+
+      '<span style="font-size:9px;font-weight:700;color:'+col+';font-family:var(--mono)">'+
+        ico+(outperf>=0?'+':'')+outperf+'%</span>'+
+      '<span style="font-size:8px;color:var(--dim)">('+curTF+')</span>';
+  }
+}
+
+function removeImoexOverlay(){
+  if(imoexLine){
+    try{chart.removeSeries(imoexLine);}catch(e){}
+    imoexLine=null;
+  }
+  // Hide left scale
+  if(chart){
+    try{chart.priceScale('imoex').applyOptions({visible:false});}catch(e){}
+  }
+}
+
+// Re-render overlay when chart data changes
+var _origRenderInd = rInd;
+function rInd(data){
+  _origRenderInd(data);
+  if(imoexEnabled) renderImoexOverlay();
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 11: MULTI-CHART 2×2 GRID
+// ═══════════════════════════════════════════════════
+
+var multiMode   = false;
+var multiCharts = []; // [{chart, cs, sym, tf, container}]
+
+var MULTI_DEFAULTS = [
+  {sym:'SBER',  tf:'1Y'},
+  {sym:'LKOH',  tf:'1Y'},
+  {sym:'YNDX',  tf:'1Y'},
+  {sym:'GMKN',  tf:'1Y'}
+];
+
+function toggleMultiChart(){
+  multiMode = !multiMode;
+  var btn = document.getElementById('multi-btn');
+
+  if(multiMode){
+    // Show multi grid, hide single chart panels
+    document.getElementById('single-chart-wrap').classList.add('hidden');
+    document.getElementById('multichart-grid').classList.remove('hidden');
+    if(btn){
+      btn.textContent='⊡ 1×1';
+      btn.style.background='rgba(0,255,136,.12)';
+      btn.style.borderColor='rgba(0,255,136,.35)';
+      btn.style.color='var(--green)';
+    }
+    initMultiCharts();
+  } else {
+    document.getElementById('single-chart-wrap').classList.remove('hidden');
+    document.getElementById('multichart-grid').classList.add('hidden');
+    if(btn){
+      btn.textContent='⊞ 2×2';
+      btn.style.background='rgba(255,255,255,.04)';
+      btn.style.borderColor='rgba(255,255,255,.1)';
+      btn.style.color='var(--dim)';
+    }
+    // Destroy multi charts to free memory
+    destroyMultiCharts();
+  }
+}
+
+function destroyMultiCharts(){
+  multiCharts.forEach(function(mc){
+    try{ mc.chart.remove(); }catch(e){}
+  });
+  multiCharts=[];
+}
+
+function initMultiCharts(){
+  if(multiCharts.length) return; // already init
+  for(var i=0;i<4;i++){
+    var container = document.getElementById('mc-'+i);
+    if(!container) continue;
+    var cfg = MULTI_DEFAULTS[i];
+
+    var c = LightweightCharts.createChart(container,{
+      width:  container.offsetWidth,
+      height: container.offsetHeight||200,
+      layout:{ background:{type:'solid',color:'#030810'}, textColor:'#3d5a7a'},
+      grid:{   vertLines:{color:'rgba(0,255,136,.03)'}, horzLines:{color:'rgba(0,255,136,.03)'}},
+      crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+      rightPriceScale:{borderColor:'rgba(0,255,136,.06)',scaleMargins:{top:.05,bottom:.05}},
+      timeScale:{borderColor:'rgba(0,255,136,.06)',timeVisible:true,secondsVisible:false},
+      handleScroll:true, handleScale:true
+    });
+    var candleSer = c.addCandlestickSeries({
+      upColor:'#00ff88', downColor:'#ff2d55',
+      borderUpColor:'#00ff88', borderDownColor:'#ff2d55',
+      wickUpColor:'#00ff88', wickDownColor:'#ff2d55'
+    });
+
+    multiCharts.push({chart:c, cs:candleSer, sym:cfg.sym, tf:cfg.tf, idx:i});
+
+    // Resize observer
+    (function(mc){
+      new ResizeObserver(function(){
+        mc.chart.applyOptions({
+          width:  mc.chart._private__container.offsetWidth,
+          height: mc.chart._private__container.offsetHeight
+        });
+      }).observe(container);
+    })(multiCharts[multiCharts.length-1]);
+
+    // Load data
+    loadMultiChart(i, cfg.sym, cfg.tf);
+  }
+}
+
+async function loadMultiChart(idx, sym, tf){
+  var mc = multiCharts[idx];
+  if(!mc) return;
+  mc.sym=sym; mc.tf=tf;
+
+  // Update header
+  var hdr = document.getElementById('mc-hdr-'+idx);
+  if(hdr){
+    var p=prices[sym];
+    var col=(p&&p.c>=0)?'var(--green)':'var(--red)';
+    hdr.innerHTML=
+      '<span style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">'+sym+'</span>'+
+      (p?'<span style="font-family:var(--mono);font-size:10px;color:'+col+'"> '+p.p+'₽</span>'+
+         '<span style="font-size:8.5px;color:'+col+'"> '+(p.c>=0?'+':'')+p.c.toFixed(2)+'%</span>':'')+
+      ' <span style="font-size:8px;color:var(--dim)">'+tf+'</span>';
+  }
+
+  var cfg=TFM[tf]||TFM['1Y'];
+  var today=new Date(),tomorrow=new Date(today.getTime()+86400000);
+  var fromDate=tf==='MAX'?new Date('2010-01-01'):new Date(today.getTime()-cfg.d*86400000);
+  var all=[],start=0;
+
+  while(true){
+    try{
+      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+        '/candles.json?interval='+cfg.iv+
+        '&from='+fromDate.toISOString().split('T')[0]+
+        '&till='+tomorrow.toISOString().split('T')[0]+
+        '&start='+start+'&iss.meta=off';
+      var r=await fetch(url);var d=await r.json();
+      var cols=d.candles.columns,rows=d.candles.data;
+      if(!rows||!rows.length)break;
+      rows.forEach(function(row){
+        var o={};cols.forEach(function(c,i){o[c]=row[i];});
+        var t=new Date(o.begin.replace(' ','T')).getTime()/1000;
+        if(t&&parseFloat(o.open)&&parseFloat(o.close)){
+          all.push({time:t,open:parseFloat(o.open),high:parseFloat(o.high),
+                    low:parseFloat(o.low),close:parseFloat(o.close)});
+        }
+      });
+      start+=rows.length;if(rows.length<500)break;
+    }catch(e){break;}
+  }
+  all.sort(function(a,b){return a.time-b.time;});
+  var seen={};all=all.filter(function(c){if(seen[c.time])return false;seen[c.time]=1;return true;});
+  if(all.length&&mc.cs){
+    mc.cs.setData(all);
+    mc.chart.timeScale().fitContent();
+  }
+}
+
+// Click on a multi-chart panel → load in main chart
+function focusMultiChart(idx){
+  var mc=multiCharts[idx];
+  if(!mc)return;
+  toggleMultiChart(); // back to single view
+  sSym(mc.sym);
+  setTF(mc.tf);
+}
+
+// Refresh multi charts when prices update
+function refreshMultiChartHeaders(){
+  if(!multiMode)return;
+  multiCharts.forEach(function(mc){
+    var hdr=document.getElementById('mc-hdr-'+mc.idx);
+    if(!hdr)return;
+    var p=prices[mc.sym];
+    if(!p)return;
+    var col=p.c>=0?'var(--green)':'var(--red)';
+    hdr.innerHTML=
+      '<span style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">'+mc.sym+'</span>'+
+      '<span style="font-family:var(--mono);font-size:10px;color:'+col+'"> '+p.p+'₽</span>'+
+      '<span style="font-size:8.5px;color:'+col+'"> '+(p.c>=0?'+':'')+p.c.toFixed(2)+'%</span>'+
+      ' <span style="font-size:8px;color:var(--dim)">'+mc.tf+'</span>';
+  });
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 12: KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════
+
+var HOTKEYS = {
+  'b':       {fn: function(){ kbBuy();          }, label: 'B',     desc: 'Открыть LONG по текущей акции'},
+  's':       {fn: function(){ kbSell();         }, label: 'S',     desc: 'Открыть SHORT по текущей акции'},
+  ' ':       {fn: function(){ kbRefresh();      }, label: 'SPACE', desc: 'Обновить все данные'},
+  'escape':  {fn: function(){ kbCloseModals();  }, label: 'ESC',   desc: 'Закрыть модальное окно'},
+  '1':       {fn: function(){ setTF('1m');      }, label: '1',     desc: 'Таймфрейм 1 минута'},
+  '2':       {fn: function(){ setTF('10m');     }, label: '2',     desc: 'Таймфрейм 10 минут'},
+  '3':       {fn: function(){ setTF('5D');      }, label: '3',     desc: 'Таймфрейм 5 дней'},
+  '4':       {fn: function(){ setTF('1Mo');     }, label: '4',     desc: 'Таймфрейм 1 месяц'},
+  '5':       {fn: function(){ setTF('3Mo');     }, label: '5',     desc: 'Таймфрейм 3 месяца'},
+  '6':       {fn: function(){ setTF('1Y');      }, label: '6',     desc: 'Таймфрейм 1 год'},
+  '7':       {fn: function(){ setTF('3Y');      }, label: '7',     desc: 'Таймфрейм 3 года'},
+  '8':       {fn: function(){ setTF('5Y');      }, label: '8',     desc: 'Таймфрейм 5 лет'},
+  '9':       {fn: function(){ setTF('MAX');     }, label: '9',     desc: 'МАКС история'},
+  'arrowup':   {fn: function(){ kbNavSym(-1); }, label: '↑',     desc: 'Предыдущая акция в списке'},
+  'arrowdown': {fn: function(){ kbNavSym(+1); }, label: '↓',     desc: 'Следующая акция в списке'},
+  'c':       {fn: function(){ kbCIO();          }, label: 'C',     desc: 'Запустить CIO анализ'},
+  'a':       {fn: function(){ openAlertModal(curSym); }, label: 'A', desc: 'Алерты для текущей акции'},
+  'i':       {fn: function(){ toggleImoex();    }, label: 'I',     desc: 'Toggle IMOEX overlay'},
+  'm':       {fn: function(){ toggleMultiChart();}, label: 'M',    desc: 'Мультиграфик 2×2'},
+  '?':       {fn: function(){ toggleHotkeyHelp();}, label: '?',   desc: 'Показать горячие клавиши'}
+};
+
+function isTypingContext(){
+  var tag = document.activeElement && document.activeElement.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+function initHotkeys(){
+  document.addEventListener('keydown', function(e){
+    if(isTypingContext()) return;
+    var key = e.key.toLowerCase();
+    // Prevent space scrolling page
+    if(key === ' ') e.preventDefault();
+    var hk = HOTKEYS[key];
+    if(hk){
+      hk.fn();
+      showHotkeyFlash(hk.label);
+    }
+  });
+}
+
+function showHotkeyFlash(key){
+  var el = document.getElementById('hotkey-flash');
+  if(!el) return;
+  el.textContent = key;
+  el.style.opacity = '1';
+  el.style.transform = 'scale(1)';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){
+    el.style.opacity = '0';
+    el.style.transform = 'scale(1.3)';
+  }, 600);
+}
+
+// ── Hotkey actions ─────────────────────────────
+
+function kbBuy(){
+  showPage('cab');
+  showCab('open');
+  var dirEl = document.getElementById('ot-dir');
+  var symEl = document.getElementById('ot-sym');
+  var enEl  = document.getElementById('ot-en');
+  if(dirEl) dirEl.value = 'LONG';
+  if(symEl) symEl.value = curSym;
+  var p = prices[curSym];
+  if(enEl && p) enEl.value = p.p;
+  showToast('LONG '+curSym, 'Форма открытия в Кабинете', null);
+}
+
+function kbSell(){
+  showPage('cab');
+  showCab('open');
+  var dirEl = document.getElementById('ot-dir');
+  var symEl = document.getElementById('ot-sym');
+  var enEl  = document.getElementById('ot-en');
+  if(dirEl) dirEl.value = 'SHORT';
+  if(symEl) symEl.value = curSym;
+  var p = prices[curSym];
+  if(enEl && p) enEl.value = p.p;
+  showToast('SHORT '+curSym, 'Форма открытия в Кабинете', null);
+}
+
+function kbRefresh(){
+  fetchAllData().then(function(){
+    rSigs(); rCabTr(); updateChartLivePrice();
+    renderConsensusPanel(curSym);
+    if(chartData.length){ var w52=calc52Week(chartData); var p=prices[curSym]; if(w52&&p) render52WeekBar(p.p,w52.low,w52.high,'week52-bar'); }
+  });
+  showToast('Обновление', 'Данные обновляются...', null);
+}
+
+function kbCloseModals(){
+  ['an-modal','audit-modal','alert-modal','journal-modal','journal-close-modal'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && !el.classList.contains('hidden')) el.classList.add('hidden');
+  });
+  var help = document.getElementById('hotkey-help');
+  if(help && !help.classList.contains('hidden')) help.classList.add('hidden');
+}
+
+function kbNavSym(dir){
+  var symsWithPrice = SYMS.filter(function(s){ return prices[s]; });
+  var idx = symsWithPrice.indexOf(curSym);
+  var next = (idx + dir + symsWithPrice.length) % symsWithPrice.length;
+  sSym(symsWithPrice[next]);
+}
+
+function kbCIO(){
+  var gk = localStorage.getItem('groq_key')||'';
+  if(!gk){ showToast('Нет Groq API ключа','Добавьте в Настройках',null); return; }
+  var selEl = document.getElementById('cio-sym');
+  if(selEl) selEl.value = curSym;
+  runCIO();
+  showToast('CIO анализ', 'Запущен для '+curSym, null);
+}
+
+function toggleHotkeyHelp(){
+  var el = document.getElementById('hotkey-help');
+  if(!el) return;
+  el.classList.toggle('hidden');
+}
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -2632,9 +5076,12 @@ function showApp(){
     fetchP().then(function(){
       updateChartLivePrice();rSigs();
       renderConsensusPanel(curSym);
+      if(chartData.length){var w52=calc52Week(chartData);var p=prices[curSym];if(w52&&p){render52WeekBar(p.p,w52.low,w52.high,'week52-bar');update52Header(w52,p);}}
+      checkAlerts();
     });
   },5000);
   setInterval(fetchBrent,30000);
+  scheduleAutoScan();
   setInterval(fetchOFZ,60000);
   setInterval(fetchFundamentals,300000); // every 5 min
   setInterval(function(){fetchNewsMulti(curSym);},180000); // every 3 min
@@ -2647,6 +5094,10 @@ function showApp(){
   },60000);
   setInterval(fetchMa,60000);
   // fetchNews replaced by fetchNewsMulti above
+  requestNotifPermission(function(){});
+  updateAlertBadge();
+  updateHistoryStats();
+  initHotkeys();
   setInterval(function(){
     var t=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     var el=document.getElementById('clk');if(el)el.textContent=t;
@@ -2655,5 +5106,46 @@ function showApp(){
 
 showApp();
 </script>
+
+<!-- HOTKEY FLASH INDICATOR -->
+<div id="hotkey-flash" style="
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) scale(1.3);
+  background:rgba(0,255,136,.15);border:1px solid rgba(0,255,136,.4);
+  color:var(--green);font-family:var(--mono);font-size:18px;font-weight:700;
+  padding:8px 16px;z-index:9998;opacity:0;
+  transition:opacity .3s,transform .3s;pointer-events:none">
+</div>
+
+<!-- HOTKEY HELP MODAL -->
+<div id="hotkey-help" class="hidden" style="
+  position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.8)" onclick="this.classList.add('hidden')">
+  <div style="background:var(--panel);border:1px solid var(--g2);padding:24px;min-width:400px;max-width:560px" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--green)">⌨ ГОРЯЧИЕ КЛАВИШИ</span>
+      <button onclick="document.getElementById('hotkey-help').classList.add('hidden')"
+        style="background:transparent;border:1px solid var(--g);color:var(--dim);width:24px;height:24px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);margin-bottom:2px">ТОРГОВЛЯ</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">B</kbd><span style="font-size:9px;color:var(--text)">Открыть LONG</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.3);color:var(--red);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">S</kbd><span style="font-size:9px;color:var(--text)">Открыть SHORT</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:var(--purple);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">C</kbd><span style="font-size:9px;color:var(--text)">CIO анализ</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">A</kbd><span style="font-size:9px;color:var(--text)">Алерты</span></div>
+      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);border-top:1px solid var(--g);margin:4px 0 2px">ТАЙМФРЕЙМЫ</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">1</kbd><span style="font-size:9px;color:var(--dim)">1 минута</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">2</kbd><span style="font-size:9px;color:var(--dim)">10 мин</span></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">3</kbd><span style="font-size:9px;color:var(--dim)">5 дней</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">4</kbd><span style="font-size:9px;color:var(--dim)">1 мес</span></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">5</kbd><span style="font-size:9px;color:var(--dim)">3 мес</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">6</kbd><span style="font-size:9px;color:var(--text);font-weight:600">1 год</span></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">7</kbd><span style="font-size:9px;color:var(--dim)">3 года</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">8</kbd><span style="font-size:9px;color:var(--dim)">5 лет</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">9</kbd><span style="font-size:9px;color:var(--dim)">МАКС</span></div>
+      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);border-top:1px solid var(--g);margin:4px 0 2px">НАВИГАЦИЯ</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">↑↓</kbd><span style="font-size:9px;color:var(--text)">Следующая / предыдущая акция</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">M</kbd><span style="font-size:9px;color:var(--text)">Мультиграфик 2×2</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">I</kbd><span style="font-size:9px;color:var(--text)">IMOEX overlay</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">SPACE</kbd><span style="font-size:9px;color:var(--text)">Обновить данные</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">ESC</kbd><span style="font-size:9px;color:var(--text)">Закрыть окно</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">?</kbd><span style="font-size:9px;color:var(--text)">Эта справка</span></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
