@@ -3,812 +3,757 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>BCS Trading Terminal</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<title>BCS Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap");
+:root{
+  --bg:      #0d0f14;
+  --bg2:     #111318;
+  --bg3:     #171b23;
+  --bg4:     #1e2330;
+  --border:  rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.12);
+  --green:   #34d399;
+  --red:     #f87171;
+  --amber:   #fbbf24;
+  --blue:    #60a5fa;
+  --purple:  #a78bfa;
+  --indigo:  #818cf8;
+  --text:    #e2e8f0;
+  --muted:   #94a3b8;
+  --dim:     #4a5568;
+  --mono:    'JetBrains Mono',monospace;
+  --sans:    'Inter',sans-serif;
+  --r:       6px;
+  --r2:      8px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--ink:#030810;--panel:#060f1e;--cell:#0a1628;--cell2:#0d1c34;--g:rgba(0,255,136,.07);--g2:rgba(0,255,136,.14);--g3:rgba(0,255,136,.28);--green:#00ff88;--red:#ff2d55;--amber:#fbbf24;--blue:#60a5fa;--purple:#a78bfa;--dim:#3d5a7a;--mid:#5a7da0;--text:#94b3cc;--bright:#d4e5f5;--mono:"JetBrains Mono",monospace;--display:"Syne",sans-serif}
 html,body{height:100%;overflow:hidden}
-body{background:var(--ink);color:var(--text);font-family:var(--mono);font-size:11px}
-body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:9999}
-::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:rgba(0,255,136,.2)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:12px}
+body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9999}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
 .hidden{display:none!important}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes rtl{to{transform:translateX(-50%)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-/* AUTH */
-#auth{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--ink)}
-#auth::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(0,255,136,.04) 0%,transparent 65%)}
-.auth-box{position:relative;z-index:1;background:var(--panel);border:1px solid var(--g2);padding:2.5rem;width:360px;animation:fadeIn .4s ease}
-.auth-box h1{font-family:var(--display);font-size:14px;font-weight:800;color:var(--green);letter-spacing:.2em;margin-bottom:3px}
-.auth-box p{font-size:9px;color:var(--dim);margin-bottom:1.75rem;letter-spacing:.08em;text-transform:uppercase}
-.auth-tabs{display:flex;border-bottom:1px solid var(--g);margin-bottom:1.5rem}
-.atab{flex:1;padding:7px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;background:transparent;border:none;color:var(--dim);font-family:var(--display);font-weight:600;border-bottom:2px solid transparent;transition:all .2s}
-.atab.on{color:var(--green);border-bottom-color:var(--green)}
-.fl{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:4px;font-family:var(--display)}
-.fi{width:100%;background:var(--cell);border:1px solid var(--g);padding:9px 11px;color:var(--text);font-family:var(--mono);font-size:11.5px;outline:none;transition:border .15s;margin-bottom:.875rem}
-.fi:focus{border-color:var(--g3)}
-.fi::placeholder{color:var(--dim)}
-.bts{width:100%;background:var(--green);color:#000;border:none;padding:10px;font-family:var(--display);font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;margin-top:2px}
-.bts:hover{opacity:.85}
-.ae{background:rgba(255,45,85,.08);border-left:2px solid var(--red);padding:6px 10px;font-size:9px;color:var(--red);margin-bottom:10px;font-family:var(--mono)}
-/* APP */
+/* ── SHELL ─────────────────────────────── */
 #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-/* TICKER */
-.tick-bar{height:26px;min-height:26px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;overflow:hidden;flex-shrink:0}
-.tick-logo{padding:0 14px;font-family:var(--display);font-size:10px;font-weight:800;color:var(--green);letter-spacing:.22em;border-right:1px solid var(--g);height:100%;display:flex;align-items:center;white-space:nowrap}
-.tick-scroll{flex:1;overflow:hidden}
-.tick-inner{display:inline-flex;animation:rtl 55s linear infinite;white-space:nowrap}
-.tick-item{display:flex;align-items:center;gap:6px;padding:0 14px;height:26px;border-right:1px solid var(--g);font-size:9.5px}
-.tick-sym{color:var(--dim);letter-spacing:.04em}
-.tick-p{color:var(--bright);font-weight:500}
-.tick-c.up{color:var(--green)}.tick-c.dn{color:var(--red)}
-.tick-meta{display:flex;align-items:center;border-left:1px solid var(--g);flex-shrink:0}
-.tick-badge{padding:0 12px;height:26px;display:flex;align-items:center;gap:5px;font-size:8.5px;border-right:1px solid var(--g);color:var(--mid)}
-.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
-/* NAV */
-.nav-bar{height:30px;min-height:30px;border-bottom:1px solid var(--g);display:flex;align-items:center;background:var(--ink);flex-shrink:0}
-.nb{padding:0 14px;height:30px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;background:transparent;border:none;color:var(--dim);border-right:1px solid var(--g);transition:all .2s;display:flex;align-items:center}
-.nb:hover{color:var(--text);background:rgba(255,255,255,.02)}
-.nb.on{color:var(--green);background:rgba(0,255,136,.04)}
-.nb.audit{color:var(--amber)}.nb.audit:hover{background:rgba(251,191,36,.04)}
-.nav-sep{flex:1}
-.nav-stat{padding:0 12px;height:30px;display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);border-right:1px solid var(--g)}
-.nav-user{padding:0 10px;height:30px;display:flex;align-items:center;gap:6px;font-size:9px;color:var(--mid);border-left:1px solid var(--g);cursor:pointer}
-.nav-av{width:20px;height:20px;background:rgba(0,255,136,.12);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--green);font-weight:700;flex-shrink:0}
-/* PAGES */
-.page{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.page.hidden{display:none}
-/* MAIN 3-COLUMN */
-.term-grid{flex:1;display:grid;grid-template-columns:185px 1fr 220px;grid-template-rows:1fr 185px;overflow:hidden;min-height:0}
-/* LEFT */
-.left-col{border-right:1px solid var(--g);display:flex;flex-direction:column;overflow:hidden}
-.ph{padding:5px 10px;border-bottom:1px solid var(--g);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--panel)}
-.ph-t{font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
-.ph-v{font-size:9px;color:var(--green)}
-.sect{border-bottom:1px solid var(--g);padding:7px 10px;flex-shrink:0}
-.mr{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
-.ml{font-size:8.5px;color:var(--dim)}.mv{font-size:10.5px;font-weight:500;color:var(--bright)}
-.mv.up{color:var(--green)}.mv.dn{color:var(--red)}.mv.am{color:var(--amber)}.mv.bl{color:var(--blue)}
-.sp-grid{display:flex;flex-wrap:wrap;gap:3px;padding:6px 8px;border-bottom:1px solid var(--g);flex-shrink:0}
-.sp{padding:2px 7px;font-size:7.5px;letter-spacing:.06em;color:var(--mid);border:1px solid var(--g);cursor:pointer;transition:all .15s;font-family:var(--display);font-weight:600}
-.sp:hover,.sp.on{color:var(--green);border-color:var(--g3);background:rgba(0,255,136,.06)}
-.pr{display:flex;align-items:center;gap:5px;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.025);cursor:pointer;font-size:10px}
-.pr:hover{background:rgba(255,255,255,.015)}
-.pr-sym{font-weight:700;color:var(--bright);width:44px}
-.pr-dir{font-size:7.5px;font-weight:700;padding:1px 5px;font-family:var(--display)}
-.pr-dir.long{background:rgba(0,255,136,.12);color:var(--green)}
-.pr-dir.short{background:rgba(255,45,85,.12);color:var(--red)}
-/* CHART */
+/* ── TOP BAR ───────────────────────────── */
+.topbar{height:44px;min-height:44px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0}
+.logo{font-size:14px;font-weight:700;letter-spacing:.14em;color:#fff;padding-right:16px;border-right:1px solid var(--border)}
+.market-strip{display:flex;gap:5px;padding:0 14px;flex:1;overflow:hidden}
+.mpill{display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(255,255,255,.05);border-radius:var(--r);font-size:11px;white-space:nowrap;flex-shrink:0}
+.mpill .lbl{color:var(--dim)}
+.mpill .val{font-weight:500;font-family:var(--mono);color:var(--text)}
+.mpill .chg{font-size:10px}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.topbar-r{display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--border)}
+.tb-clk{font-size:11px;color:var(--dim);font-family:var(--mono)}
+.tb-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer}
+.tb-nm{font-size:12px;color:var(--muted);cursor:pointer}
+.tb-kb{height:44px;padding:0 12px;background:transparent;border:none;color:var(--dim);font-size:14px;cursor:pointer;border-left:1px solid var(--border)}
+.tb-kb:hover{color:var(--text)}
+/* ── NAV TABS ──────────────────────────── */
+.navtabs{height:40px;min-height:40px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:stretch;padding:0 14px;gap:1px;flex-shrink:0}
+.ntab{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;font-weight:500;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;background:transparent;border-top:none;border-left:none;border-right:none}
+.ntab:hover{color:var(--muted)}
+.ntab.on{color:var(--text);border-bottom-color:#6366f1}
+.ntab .ico{font-size:14px}
+.nt-sep{flex:1}
+.nt-audit{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;font-weight:600;color:var(--amber);cursor:pointer;border:none;background:transparent}
+.nt-audit:hover{color:#fde68a}
+/* ── PAGES ─────────────────────────────── */
+.page{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+/* ── TERMINAL GRID ─────────────────────── */
+.term-grid{flex:1;display:grid;grid-template-columns:200px 1fr 248px;grid-template-rows:1fr 90px;overflow:hidden;min-height:0}
+/* ── LEFT SIDEBAR ──────────────────────── */
+.left-col{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.sb-block{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sc{background:var(--bg3);border-radius:var(--r);padding:7px 9px;border:1px solid var(--border)}
+.sc-lbl{font-size:10px;color:var(--dim);margin-bottom:2px}
+.sc-val{font-size:15px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.sb-block .sb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sector-wrap{display:flex;flex-wrap:wrap;gap:4px}
+.sec-chip{font-size:10px;padding:2px 8px;background:rgba(255,255,255,.05);border-radius:4px;cursor:pointer;color:var(--muted);transition:all .15s;border:1px solid transparent}
+.sec-chip:hover,.sec-chip.on{background:rgba(99,102,241,.15);color:#818cf8;border-color:rgba(99,102,241,.25)}
+.scan-block{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.scan-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.scan-btn-sm{padding:2px 9px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.scan-btn-sm:hover{background:rgba(52,211,153,.18)}
+#scan-status{font-size:9px;color:var(--dim)}
+.sig-item{display:flex;align-items:center;gap:6px;padding:5px 14px;cursor:pointer;transition:background .1s}
+.sig-item:hover{background:rgba(255,255,255,.03)}
+.si-sym{font-size:11px;font-weight:600;color:var(--text);width:42px;font-family:var(--mono)}
+.si-dir{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px}
+.si-long{background:rgba(52,211,153,.12);color:var(--green)}
+.si-short{background:rgba(248,113,113,.12);color:var(--red)}
+.si-name{flex:1;font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-pct{font-size:11px;font-family:var(--mono);font-weight:500}
+.pos-block{flex:1;overflow-y:auto;min-height:0}
+/* ── CHART COLUMN ──────────────────────── */
 .chart-col{display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.chart-hdr{height:44px;border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 12px;gap:10px;background:var(--panel);flex-shrink:0;overflow:hidden}
-.c-sym{font-family:var(--display);font-size:14px;font-weight:800;color:var(--bright);letter-spacing:.03em}
-.c-name{font-size:8.5px;color:var(--dim);white-space:nowrap}
-.c-price{font-size:18px;font-weight:700;letter-spacing:-.02em;font-family:var(--mono)}
-.c-chg{font-size:10px;padding:2px 6px;font-weight:600}
-.c-chg.up{background:rgba(0,255,136,.12);color:var(--green)}
-.c-chg.dn{background:rgba(255,45,85,.12);color:var(--red)}
-.tf-wrap{display:flex;gap:1px;margin-left:auto;flex-shrink:0}
-.tf{padding:3px 8px;font-size:8.5px;letter-spacing:.06em;cursor:pointer;background:transparent;border:1px solid transparent;color:var(--dim);font-family:var(--display);font-weight:700;transition:all .15s}
-.tf:hover{color:var(--text)}.tf.on{border-color:var(--green);color:var(--green)}
-.ch-sel{background:var(--cell);border:1px solid var(--g);color:var(--text);padding:4px 7px;font-family:var(--mono);font-size:9px;outline:none;margin-left:6px;flex-shrink:0}
-.ch-sel:focus{border-color:var(--g3)}
-#chart-container{flex:1;min-height:0;position:relative;background:radial-gradient(ellipse at 50% 0%,rgba(0,255,136,.03) 0%,transparent 60%)}
-.ind-bar{height:26px;border-top:1px solid var(--g);display:flex;align-items:center;gap:5px;padding:0 10px;background:var(--panel);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
-.ind{font-size:8px;padding:2px 7px;border:1px solid transparent;white-space:nowrap;font-weight:600;font-family:var(--display)}
-.ind.bull{border-color:rgba(0,255,136,.25);color:var(--green);background:rgba(0,255,136,.06)}
-.ind.bear{border-color:rgba(255,45,85,.25);color:var(--red);background:rgba(255,45,85,.06)}
-.ind.neut{border-color:var(--g);color:var(--mid)}
-.ind.sig{border-color:rgba(251,191,36,.3);color:var(--amber)}
-/* RIGHT */
-.right-col{border-left:1px solid var(--g);display:flex;flex-direction:column;overflow:hidden}
-.wl-row{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.025);transition:background .1s}
-.wl-row:hover{background:rgba(255,255,255,.015)}
-.wl-row.on{background:rgba(0,255,136,.06)}
-.wl-row.on .wl-sym{color:var(--green)}
-.wl-sym{font-weight:700;font-size:10.5px;color:var(--bright)}
-.wl-name{font-size:8px;color:var(--dim)}
-.wl-p{font-size:10.5px;font-weight:500}
-.wl-c{font-size:8.5px}
-.wl-an{padding:1px 5px;font-size:7px;font-family:var(--display);font-weight:700;background:rgba(96,165,250,.1);color:var(--blue);border:1px solid rgba(96,165,250,.2);cursor:pointer;flex-shrink:0;margin-left:3px}
-.wl-an:hover{background:rgba(96,165,250,.2)}
-.sr{display:flex;align-items:center;gap:5px;padding:4px 8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.025);transition:background .1s}
-.sr:hover{background:rgba(255,255,255,.015)}
-.sr-sym{font-weight:700;font-size:10px;color:var(--bright);width:44px}
-.sr-dir{font-size:7.5px;font-weight:700;padding:1px 5px;font-family:var(--display)}
-.sr-dir.long{background:rgba(0,255,136,.12);color:var(--green)}
-.sr-dir.short{background:rgba(255,45,85,.12);color:var(--red)}
-/* CIO */
-.cio-wrap{padding:8px;border-top:1px solid var(--g)}
-.cio-lbl{font-family:var(--display);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:5px}
-.cio-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite}
-.cio-sel{width:100%;background:var(--cell);border:1px solid var(--g);color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:9.5px;outline:none;margin-bottom:5px}
-.cio-sel:focus{border-color:var(--g3)}
-.cio-btn{width:100%;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:var(--purple);padding:7px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-bottom:5px}
-.cio-btn:hover{background:rgba(167,139,250,.18)}
+.chart-hdr{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
+.c-sym{font-size:15px;font-weight:700;color:#fff}
+.c-name{font-size:11px;color:var(--dim)}
+.c-price{font-size:20px;font-weight:700;font-family:var(--mono)}
+.c-chg{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
+.c-chg.up{background:rgba(52,211,153,.12);color:var(--green)}
+.c-chg.dn{background:rgba(248,113,113,.12);color:var(--red)}
+.c52-info{font-size:10px;color:var(--dim)}
+.tf-wrap{display:flex;gap:2px;margin-left:auto}
+.tf{padding:3px 8px;font-size:10px;font-weight:600;border-radius:4px;cursor:pointer;color:var(--dim);background:transparent;border:1px solid transparent;transition:all .15s;font-family:var(--sans)}
+.tf:hover{color:var(--muted)}
+.tf.on{background:rgba(99,102,241,.15);color:#818cf8;border-color:rgba(99,102,241,.2)}
+.hdr-btns{display:flex;gap:4px;padding-left:8px;border-left:1px solid var(--border)}
+.hbtn{padding:4px 9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);border-radius:5px;font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.hbtn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.hbtn.on{background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:#818cf8}
+.hbtn.amber{color:var(--amber);border-color:rgba(251,191,36,.2)}
+.hbtn.amber:hover{background:rgba(251,191,36,.08)}
+.chart-hdr .week52-inline{display:flex;align-items:center;gap:4px}
+#single-chart-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
+#chart-container{flex:1;min-height:0;background:var(--bg)}
+.subchart-wrap{flex-shrink:0;position:relative;background:var(--bg);border-top:1px solid var(--border)}
+.subchart-label{position:absolute;top:4px;left:10px;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);z-index:2;pointer-events:none}
+.subchart-val{position:absolute;top:4px;right:10px;font-size:10px;font-family:var(--mono);z-index:2;pointer-events:none}
+.ind-bar{height:30px;min-height:30px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;padding:0 12px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.ind-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.it-bull{background:rgba(52,211,153,.1);color:var(--green)}
+.it-bear{background:rgba(248,113,113,.1);color:var(--red)}
+.it-neut{background:rgba(255,255,255,.06);color:var(--muted)}
+.it-sig{background:rgba(251,191,36,.1);color:var(--amber)}
+#week52-bar{padding:4px 12px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+/* ── RIGHT PANEL ───────────────────────── */
+.right-col{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.rp-head{padding:8px 12px 5px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.rp-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.rp-sub{font-size:11px;font-weight:600;color:var(--indigo)}
+.consensus-panel{padding:6px 12px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+#consensus-panel .cons-summary{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cons-dir-big{font-size:15px;font-weight:700}
+.cons-votes{font-size:10px;color:var(--muted)}
+.cons-pct{margin-left:auto;font-size:13px;font-weight:600;font-family:var(--mono)}
+.cbar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px}
+.cbar-lbl{color:var(--muted);width:50px;flex-shrink:0}
+.cbar-track{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.cbar-fill{height:4px;border-radius:2px;transition:width .8s}
+.cbar-num{width:24px;text-align:right;font-family:var(--mono);font-size:10px}
+.wl-block{flex:1;overflow-y:auto;min-height:0}
+.wl-row{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(255,255,255,.03)}
+.wl-row:hover{background:rgba(255,255,255,.03)}
+.wl-row.on{background:rgba(99,102,241,.07)}
+.wl-sym{font-size:11px;font-weight:600;width:38px;color:var(--text);font-family:var(--mono)}
+.wl-name{flex:1;font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wl-p{font-size:11px;font-weight:500;font-family:var(--mono)}
+.wl-c{font-size:10px}
+.wl-an{padding:1px 6px;font-size:9px;font-weight:600;background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
+.wl-an:hover{background:rgba(99,102,241,.2)}
+.signals-mini{max-height:100px;overflow-y:auto;border-bottom:1px solid var(--border);flex-shrink:0}
+/* ── CIO ───────────────────────────────── */
+.cio-section{padding:10px 12px;flex-shrink:0}
+.cio-hdr{display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.cio-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite}
+.cio-title-txt{font-size:11px;font-weight:600;color:var(--purple);letter-spacing:.06em}
+#cio-st{font-size:10px;margin-left:auto}
+.cio-sym-row{display:flex;gap:5px;margin-bottom:6px}
+.cio-sel{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
+.cio-sel:focus{border-color:rgba(99,102,241,.4)}
+.cio-btn{width:100%;background:#6366f1;border:none;color:#fff;padding:7px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;border-radius:var(--r);transition:opacity .15s;margin-bottom:5px}
+.cio-btn:hover{opacity:.85}
 .cio-btn:disabled{opacity:.4;cursor:default}
-.cio-key{width:100%;background:var(--cell);border:1px solid var(--g);color:var(--text);padding:4px 8px;font-family:var(--mono);font-size:9.5px;outline:none}
-.cio-key:focus{border-color:var(--g3)}
-.cio-result{background:#020507;border:1px solid var(--g);padding:8px 10px;font-size:9px;line-height:1.8;color:var(--text);white-space:pre-wrap;max-height:150px;overflow-y:auto;margin-top:6px;font-family:var(--mono)}
-/* BOTTOM AGENTS */
-.bot-row{grid-column:1/4;border-top:1px solid var(--g2);display:flex;overflow:hidden;background:var(--panel);flex-shrink:0}
-.ag-list{flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--g);min-width:0}
-.ag-hdr{padding:5px 10px;border-bottom:1px solid var(--g);display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.3);flex-shrink:0}
-.ag-ht{font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-.ag-sep{flex:1}
-.run-btn{padding:2px 9px;font-family:var(--display);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--green);cursor:pointer}
-.run-btn:hover{background:rgba(0,255,136,.18)}
-.run-btn.off{background:rgba(255,45,85,.08);border-color:rgba(255,45,85,.3);color:var(--red)}
-.ag-scroll{display:flex;gap:5px;padding:7px;overflow-x:auto;scrollbar-width:none;align-items:flex-start}
-.ag-card{background:var(--cell);border:1px solid var(--g);padding:7px;min-width:100px;cursor:pointer;transition:all .2s;position:relative;flex-shrink:0}
-.ag-card:hover{border-color:var(--g2);background:var(--cell2)}
-.ag-card.sel{border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.06)}
-.ag-dot{position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--dim)}
+.cio-key{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
+.cio-key:focus{border-color:rgba(99,102,241,.4)}
+.cio-result{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:10px;line-height:1.7;color:var(--text);max-height:160px;overflow-y:auto;margin-top:6px;font-family:var(--mono)}
+/* ── AGENTS BAR ────────────────────────── */
+.bot-row{grid-column:1/4;border-top:1px solid var(--border);display:flex;overflow:hidden;background:var(--bg2);height:90px;min-height:90px;flex-shrink:0}
+.ag-info{width:140px;padding:12px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:3px;flex-shrink:0}
+.ag-info-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.ag-iq-big{font-size:20px;font-weight:700;color:var(--indigo);font-family:var(--mono)}
+.ag-info-sub{font-size:10px;color:var(--dim)}
+.ag-scroll{display:flex;gap:5px;align-items:center;padding:10px 10px;overflow-x:auto;flex:1;scrollbar-width:thin}
+.ag-card{width:72px;background:var(--bg3);border-radius:var(--r2);padding:6px 8px;flex-shrink:0;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.ag-card:hover{border-color:rgba(99,102,241,.3);background:rgba(99,102,241,.06)}
+.ag-card.sel{border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.1)}
+.ag-e{font-size:16px;display:block;margin-bottom:2px}
+.ag-n{font-size:9px;color:var(--muted);display:block;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-iq-txt{font-size:9px;color:var(--dim);font-family:var(--mono)}
+.ag-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:3px}
+.ag-fill{height:3px;border-radius:2px;transition:width 1.5s}
+.ag-dot{width:5px;height:5px;border-radius:50%;background:var(--dim);display:inline-block;margin-right:3px}
 .ag-dot.on{background:var(--green);animation:pulse 2s infinite}
-.ag-e{font-size:16px;display:block;margin-bottom:3px}
-.ag-n{font-family:var(--display);font-size:9px;font-weight:700;color:var(--bright)}
-.ag-r{font-size:7.5px;color:var(--dim);margin-top:1px}
-.ag-bar{height:2px;background:var(--g);margin-top:5px}
-.ag-fill{height:2px;transition:width 1.5s}
-.ag-st{display:flex;gap:6px;margin-top:3px;font-size:7.5px;color:var(--dim)}
-/* EVO TERMINAL */
-.evo-term{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:280px}
-.evo-tabs{display:flex;border-bottom:1px solid var(--g);flex-shrink:0;background:rgba(0,0,0,.2)}
-.etab{padding:5px 13px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;background:transparent;border:none;color:var(--dim);font-family:var(--display);font-weight:700;border-bottom:2px solid transparent;transition:all .15s}
-.etab.on{color:var(--green);border-bottom-color:var(--green)}
-.evo-body{flex:1;overflow-y:auto;padding:4px 8px;scrollbar-width:thin}
-.ei{display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.025);animation:fadeIn .3s ease}
-.et{color:var(--dim);font-size:8px;flex-shrink:0;width:44px}
-.eb{font-size:7.5px;font-family:var(--display);font-weight:700;padding:1px 5px;flex-shrink:0;text-transform:uppercase}
-.eb.trade{background:rgba(0,255,136,.12);color:var(--green)}.eb.learn{background:rgba(96,165,250,.12);color:var(--blue)}
-.eb.loss{background:rgba(255,45,85,.12);color:var(--red)}.eb.skill{background:rgba(167,139,250,.12);color:var(--purple)}
-.eb.audit{background:rgba(251,191,36,.1);color:var(--amber)}
-.etxt{flex:1;font-size:8.5px;color:var(--text);line-height:1.4}
-.e-ag{color:var(--bright);font-weight:500}
-/* SKILL GRID */
-.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px}
-.sk-card{background:var(--cell);border:1px solid var(--g);padding:7px 9px}
-.sk-n{font-size:7.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-family:var(--display);margin-bottom:4px}
-.sk-v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)}
-.sk-bar{height:2px;background:var(--cell2);margin-top:5px;overflow:hidden}
+.ag-evo{width:220px;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.ag-evo-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.etab{flex:1;padding:5px 0;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border:none;background:transparent;cursor:pointer;transition:color .15s;border-bottom:2px solid transparent}
+.etab.on{color:var(--indigo);border-bottom-color:var(--indigo)}
+.evo-body{flex:1;overflow-y:auto;padding:4px 8px}
+.ev-item{display:flex;align-items:flex-start;gap:5px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);animation:fadeIn .3s}
+.ev-t{font-size:9px;color:var(--dim);flex-shrink:0;width:36px}
+.ev-badge{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;flex-shrink:0}
+.ev-trade{background:rgba(52,211,153,.1);color:var(--green)}
+.ev-learn{background:rgba(96,165,250,.1);color:var(--blue)}
+.ev-loss{background:rgba(248,113,113,.1);color:var(--red)}
+.ev-skill{background:rgba(167,139,250,.1);color:var(--purple)}
+.ev-audit{background:rgba(251,191,36,.1);color:var(--amber)}
+.ev-txt{font-size:9px;color:var(--muted);line-height:1.4}
+.ev-ag{color:var(--text);font-weight:500}
+.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px}
+.sk-card{background:var(--bg3);border-radius:var(--r);padding:7px 9px}
+.sk-n{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:3px}
+.sk-v{font-size:15px;font-weight:700;color:var(--green);font-family:var(--mono)}
+.sk-bar{height:2px;background:var(--bg4);margin-top:4px;border-radius:1px;overflow:hidden}
 .sk-fill{height:2px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1.5s}
-/* TRADES */
-.tr{display:flex;align-items:center;gap:7px;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.025);font-size:9.5px}
-.tr:hover{background:rgba(255,255,255,.015)}
-.tr-sym{font-weight:700;color:var(--bright);width:44px}
-.tr-dir{font-size:7.5px;font-weight:700;padding:1px 5px;font-family:var(--display)}
-.tr-dir.long{background:rgba(0,255,136,.12);color:var(--green)}
-.tr-dir.short{background:rgba(255,45,85,.12);color:var(--red)}
-.tr-info{flex:1;font-size:8.5px;color:var(--dim)}
-.tr-pnl{font-family:var(--mono);font-weight:700}
-/* MODALS */
-.mbg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px}
-.mbox{background:var(--panel);border:1px solid var(--g2);width:100%;max-width:740px;max-height:88vh;display:flex;flex-direction:column;animation:fadeIn .25s ease}
-.mhdr{padding:11px 16px;border-bottom:1px solid var(--g);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.mt{font-family:var(--display);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--green)}
-.mc{background:transparent;border:1px solid var(--g);color:var(--dim);width:24px;height:24px;cursor:pointer;font-size:12px}
-.mbody{overflow-y:auto;padding:14px;flex:1}
-/* AUDIT */
-.am{display:flex;gap:9px;margin-bottom:9px;opacity:0;transition:opacity .4s;align-items:flex-start}
-.am.show{opacity:1}
-.am-av{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid var(--g)}
-.am-nm{font-family:var(--display);font-size:8.5px;color:var(--dim);margin-bottom:2px;letter-spacing:.05em}
-.am-bl{background:var(--cell);border-left:2px solid var(--dim);padding:6px 9px;font-size:9.5px;line-height:1.6}
-.am-bl.ok{border-left-color:var(--green)}.am-bl.warn{border-left-color:var(--amber)}.am-bl.err{border-left-color:var(--red)}
-.a-sum{background:var(--cell);border:1px solid var(--g2);padding:12px;margin-top:12px;font-size:9.5px;line-height:1.9;font-family:var(--mono);white-space:pre-wrap;color:var(--text)}
-/* ANALYTICS */
-.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}
-.an-cell{background:var(--cell);border:1px solid var(--g);padding:8px 10px}
-.an-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:var(--display)}
-.an-val{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:3px}
-.an-dsc{font-size:8px;color:var(--dim);margin-top:2px;line-height:1.3}
-/* CABINET */
-#page-cab{flex:1;overflow-y:auto;padding:14px}
-.cab-grid{display:grid;grid-template-columns:200px 1fr;gap:12px}
-.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px}
+.ag-run-area{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 12px;border-left:1px solid var(--border);flex-shrink:0}
+.run-btn{padding:5px 12px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+.run-btn:hover{background:rgba(52,211,153,.18)}
+.run-btn.off{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.25);color:var(--red)}
+.ag-status-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim)}
+/* ── SIGNALS PAGE ──────────────────────── */
+#page-sig .sig-layout{display:grid;grid-template-columns:1fr 1fr 280px;flex:1;overflow:hidden;min-height:0;height:100%}
+#page-sig .sig-col{overflow-y:auto;padding:14px;border-right:1px solid var(--border)}
+#page-sig .sig-col:last-child{border:none}
+.page-section-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+/* ── CABINET PAGE ──────────────────────── */
+#page-cab .cab-layout{display:grid;grid-template-columns:220px 1fr;gap:12px;padding:16px;overflow-y:auto;flex:1}
+.cab-sidebar-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:10px}
+.cab-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+.cab-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.cab-email{font-size:11px;color:var(--dim)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
 .stat-row:last-child{border:none}
-.sl{color:var(--dim);font-family:var(--display);font-size:9px;letter-spacing:.08em}
+.sl{color:var(--dim)}
 .sv{font-family:var(--mono);font-weight:600}
-/* BUTTONS */
-.btn{background:transparent;border:1px solid var(--g);color:var(--text);padding:5px 11px;font-family:var(--display);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
-.btn:hover{border-color:var(--green);color:var(--green)}
-.btn.p{background:var(--green);border-color:var(--green);color:#000;font-weight:800}
-.btn.p:hover{opacity:.85}
-.btn.d{border-color:rgba(255,45,85,.3);color:var(--red)}
-.inp{background:var(--cell);border:1px solid var(--g);color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:10.5px;outline:none}
-.inp:focus{border-color:var(--g3)}
+.cab-nav{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.cab-nav-btn{display:flex;align-items:center;gap:8px;padding:8px 11px;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;width:100%;text-align:left;font-family:var(--sans);transition:all .15s}
+.cab-nav-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.cab-nav-btn.primary{background:#6366f1;border-color:#6366f1;color:#fff}
+.cab-nav-btn.primary:hover{opacity:.85}
+.cab-nav-btn.danger{border-color:rgba(248,113,113,.25);color:var(--red)}
+.cab-nav-btn.purple{border-color:rgba(167,139,250,.25);color:var(--purple)}
+/* ── TRADE FORM ────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.fl{font-size:10px;font-weight:500;color:var(--dim);display:block;margin-bottom:4px;letter-spacing:.05em}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 9px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
+.inp:focus{border-color:rgba(99,102,241,.4)}
 .inp::placeholder{color:var(--dim)}
-.sel{background:var(--cell);border:1px solid var(--g);color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:10px;outline:none}
-.sel:focus{border-color:var(--g3)}
-@media(max-width:1000px){.term-grid{grid-template-columns:1fr}.left-col,.right-col{display:none}}
+.sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 9px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
+.sel:focus{border-color:rgba(99,102,241,.4)}
+/* ── TRADES LIST ───────────────────────── */
+.tr{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
+.tr-sym{font-weight:600;color:var(--text);width:42px;font-family:var(--mono)}
+.tr-dir{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px}
+.tr-long{background:rgba(52,211,153,.12);color:var(--green)}
+.tr-short{background:rgba(248,113,113,.12);color:var(--red)}
+.tr-info{flex:1;font-size:10px;color:var(--dim)}
+.tr-pnl{font-family:var(--mono);font-weight:600}
+/* ── GENERIC ───────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 11px;font-family:var(--sans);font-size:11px;font-weight:500;cursor:pointer;border-radius:var(--r);transition:all .15s}
+.btn:hover{border-color:var(--border2);color:var(--text);background:rgba(255,255,255,.04)}
+.btn.p{background:#6366f1;border-color:#6366f1;color:#fff}
+.btn.p:hover{opacity:.85}
+.btn.d{border-color:rgba(248,113,113,.25);color:var(--red)}
+.up{color:var(--green)}.dn{color:var(--red)}.am{color:var(--amber)}.bl{color:var(--blue)}.pu{color:var(--purple)}
+/* ── MODALS ────────────────────────────── */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.mbox{background:var(--bg2);border:1px solid var(--border2);width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;border-radius:10px;animation:fadeIn .2s ease;overflow:hidden}
+.mhdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mt{font-size:13px;font-weight:600;color:var(--indigo);letter-spacing:.08em}
+.mc{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.mc:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.mbody{overflow-y:auto;padding:16px;flex:1}
+/* ── AUDIT ─────────────────────────────── */
+.am{display:flex;gap:10px;margin-bottom:10px;opacity:0;transition:opacity .4s;align-items:flex-start}
+.am.show{opacity:1}
+.am-av{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border-radius:7px}
+.am-nm{font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:500}
+.am-bl{background:var(--bg3);border-left:2px solid var(--dim);padding:7px 10px;font-size:11px;line-height:1.6;border-radius:0 5px 5px 0}
+.am-bl.ok{border-left-color:var(--green)}
+.am-bl.warn{border-left-color:var(--amber)}
+.am-bl.err{border-left-color:var(--red)}
+.a-sum{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-top:12px;font-size:10px;line-height:1.9;font-family:var(--mono);white-space:pre-wrap;color:var(--text)}
+/* ── ANALYTICS MODAL ───────────────────── */
+.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.an-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
+.an-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.an-val{font-family:var(--mono);font-size:16px;font-weight:700}
+.an-dsc{font-size:9px;color:var(--dim);margin-top:2px;line-height:1.4}
+/* ── ALERT MODAL ───────────────────────── */
+.al-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.al-card{border:1px solid var(--border);border-radius:var(--r2);padding:11px}
+/* ── JOURNAL MODAL ─────────────────────── */
+.jm-recap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:10px;font-size:10px}
+/* ── CONTEXT MENU ──────────────────────── */
+#chart-ctx-menu{position:fixed;z-index:9000;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);min-width:220px;overflow:hidden;display:none;transition:opacity .12s,transform .12s;transform-origin:top left;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.ctx-hdr{padding:9px 12px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.ctx-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s;font-size:11px}
+.ctx-item:hover{background:rgba(255,255,255,.04)}
+.ctx-item:last-child{border:none}
+.ctx-sec{padding:4px 12px;background:var(--bg3);font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+/* ── HOTKEY ────────────────────────────── */
+#hotkey-flash{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) scale(1.2);background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.5);color:#818cf8;font-family:var(--mono);font-size:20px;font-weight:700;padding:8px 18px;border-radius:8px;z-index:9998;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
+#hotkey-help{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(3px)}
+.hk-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;min-width:420px;max-width:580px}
+.hk-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.hk-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+kbd{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:2px 9px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500}
+.hk-sec{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;grid-column:1/3}
+/* ── TOAST ─────────────────────────────── */
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+#toast-wrap > div{pointer-events:all;animation:fadeIn .25s ease}
+/* ── MULTI CHART ───────────────────────── */
+#multichart-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border);min-height:0}
+.mc-panel{display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.mc-panel-hdr{height:30px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:6px;flex-shrink:0}
+.mc-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;outline:none;border-radius:4px;max-width:90px}
+.mc-tf-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;outline:none;border-radius:4px}
+.mc-focus-btn{padding:2px 7px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:var(--green);border-radius:4px;font-size:9px;cursor:pointer;font-family:var(--sans)}
+/* ── BACKTEST ──────────────────────────── */
+.bt-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end}
+.bt-results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.bt-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
+/* ── WL SEARCH ─────────────────────────── */
+.wl-search-wrap{padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.wl-search-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:var(--r);font-size:11px;outline:none}
+.wl-search-wrap input:focus{border-color:rgba(99,102,241,.4)}
 </style>
 </head>
 <body>
-<!-- APP -->
 <div id="app">
-  <!-- TICKER -->
-  <div class="tick-bar">
-    <div class="tick-logo">BCS</div>
-    <div class="tick-scroll"><div class="tick-inner" id="ticker">—</div></div>
-    <div class="tick-meta">
-      <div class="tick-badge"><div class="pulse" id="mkt-dot"></div><span id="mkt-st" style="color:var(--green)">—</span></div>
-      <div class="tick-badge" style="color:var(--dim)" id="clk">—</div>
+  <!-- ── TOP BAR ─────────────────────────── -->
+  <div class="topbar">
+    <div class="logo">BCS</div>
+    <div class="market-strip">
+      <div class="mpill"><div class="dot-live" id="mkt-dot"></div><span class="lbl">MOEX</span><span class="mkt-st" id="mkt-st" style="color:var(--green)">ОТКРЫТ</span></div>
+      <div class="mpill"><span class="lbl">IMOEX</span><span class="val" id="imoex-v">—</span></div>
+      <div class="mpill"><span class="lbl">USD/RUB</span><span class="val" id="usd-v">—</span></div>
+      <div class="mpill"><span class="lbl">BRENT</span><span class="val" id="brent-val">—</span><span class="chg" id="brent-chg" style="color:var(--muted)"></span></div>
+      <div class="mpill"><span class="lbl">ОФЗ</span><span id="ofz-nav" style="color:var(--amber)">—</span></div>
+      <div class="mpill" style="opacity:.7"><span class="lbl">Сигналов</span><span style="color:var(--amber)" id="sig-cnt">0</span></div>
+    </div>
+    <div class="topbar-r">
+      <div class="tb-clk" id="clk">—</div>
+      <button class="tb-kb" onclick="toggleHotkeyHelp()" title="Горячие клавиши">⌨</button>
+      <div class="tb-av" id="nav-av" onclick="showPage('cab')">А</div>
+      <div class="tb-nm" id="nav-nm" onclick="showPage('cab')">—</div>
     </div>
   </div>
-  <!-- NAV -->
-  <div class="nav-bar">
-    <button class="nb on" onclick="showPage('term')" id="nav-term">ТЕРМИНАЛ</button>
-    <button class="nb" onclick="showPage('sig')" id="nav-sig">СИГНАЛЫ</button>
-    <button class="nb" onclick="showPage('cab')" id="nav-cab">КАБИНЕТ</button>
-    <div class="nav-sep"></div>
-      <div id="hotkey-hint" style="font-family:var(--mono);font-size:13px;font-weight:700;
-        color:var(--green);opacity:0;transition:opacity .7s;padding:0 8px;
-        background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);
-        display:flex;align-items:center;height:20px;pointer-events:none"></div>
-    <div class="nav-stat"><span style="color:var(--dim)">IMOEX</span>&nbsp;<span id="imoex-v" style="color:var(--text)">—</span></div>
-    <div class="nav-stat"><span style="color:var(--dim)">USD</span>&nbsp;<span id="usd-v" style="color:var(--text)">—</span></div>
-    <div class="nav-stat"><span style="color:var(--dim)">Сигналов</span>&nbsp;<span id="sig-cnt" style="color:var(--amber)">0</span></div>
-    <button class="nb audit" onclick="runAudit()">⚡ АУДИТ</button>
-    <button onclick="toggleHotkeyHelp()"
-      style="height:30px;padding:0 12px;background:transparent;border:none;border-left:1px solid var(--g);
-      color:var(--dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:color .15s"
-      title="Горячие клавиши">⌨</button>
-    <button onclick="toggleHotkeysPanel()" title="Горячие клавиши (?)"
-      style="height:30px;padding:0 10px;font-family:var(--mono);font-size:11px;
-      background:transparent;border:none;color:var(--dim);border-left:1px solid var(--g);
-      cursor:pointer;transition:color .2s" onmouseover="this.style.color='var(--green)'"
-      onmouseout="this.style.color='var(--dim)'">⌨️</button>
-    <div class="nav-user" onclick="if(confirm('Выйти?'))doLogout()">
-      <div class="nav-av" id="nav-av">А</div>
-      <span id="nav-nm">—</span>
-    </div>
+  <!-- ticker hidden but functional (for rTick) -->
+  <div style="display:none"><div id="ticker"></div></div>
+
+  <!-- ── NAV TABS ───────────────────────── -->
+  <div class="navtabs">
+    <button class="ntab on" id="nav-term" onclick="showPage('term')"><span class="ico">📈</span>Терминал</button>
+    <button class="ntab" id="nav-sig"  onclick="showPage('sig')"><span class="ico">⚡</span>Сигналы</button>
+    <button class="ntab" id="nav-cab"  onclick="showPage('cab')"><span class="ico">💼</span>Кабинет</button>
+    <div class="nt-sep"></div>
+    <button class="nt-audit" onclick="runAudit()">⚡ Аудит агентов</button>
   </div>
 
-  <!-- TERMINAL PAGE -->
+  <!-- ══════════════════════════════════════
+       TERMINAL PAGE
+  ══════════════════════════════════════ -->
   <div class="page" id="page-term">
     <div class="term-grid">
-      <!-- LEFT -->
+
+      <!-- ── LEFT COL ── -->
       <div class="left-col">
-        <div class="ph"><span class="ph-t">Статистика</span><span class="ph-v" id="day-pnl">—</span></div>
-        <div class="sect">
-          <div class="mr"><span class="ml">ОТКРЫТЫХ</span><span class="mv" id="open-cnt">0</span></div>
-          <div class="mr"><span class="ml">СИГНАЛОВ</span><span class="mv am" id="sig-cnt2">0</span></div>
-          <div class="mr"><span class="ml">АВТО-СДЕЛОК</span><span class="mv bl" id="ag-cnt">0</span></div>
-          <div class="mr"><span class="ml">АГЕНТ IQ</span><span class="mv" id="ag-iq" style="color:var(--purple)">—</span></div>
-        </div>
-        <div style="padding:7px 10px 5px;border-bottom:1px solid var(--g);flex-shrink:0">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <div style="display:flex;align-items:center;gap:5px">
-            <span style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">ТОП СИГНАЛЫ</span>
-            <div id="scan-status" style="font-size:8px;color:var(--dim)">—</div>
+        <div class="sb-block">
+          <div class="sb-title">Статистика</div>
+          <div class="stat-grid">
+            <div class="sc"><div class="sc-lbl">Открытых</div><div class="sc-val" id="open-cnt">0</div></div>
+            <div class="sc"><div class="sc-lbl">Сигналов</div><div class="sc-val am" id="sig-cnt2">0</div></div>
+            <div class="sc"><div class="sc-lbl">Агент IQ</div><div class="sc-val pu" id="ag-iq">0%</div></div>
+            <div class="sc"><div class="sc-lbl">Авто-сделок</div><div class="sc-val bl" id="ag-cnt">0</div></div>
           </div>
-          <button id="scan-btn" onclick="runAutoScan()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:8px;font-weight:700;cursor:pointer;letter-spacing:.06em">🔍 СКАН</button>
         </div>
-        <div id="scan-results">
-          <div style="font-size:8.5px;color:var(--dim)">Нажмите скан...</div>
+
+        <div class="scan-block">
+          <div class="scan-hdr">
+            <div class="sb-title" style="margin:0">Топ сигналы</div>
+            <button class="scan-btn-sm" id="scan-btn" onclick="runAutoScan()">🔍 СКАН</button>
+          </div>
+          <div id="scan-status" style="font-size:9px;color:var(--dim);margin-bottom:5px">Нажмите скан...</div>
+          <div id="scan-results"><div style="font-size:10px;color:var(--dim)">Нажмите скан...</div></div>
+        </div>
+
+        <div class="sb-block">
+          <div class="sb-title">Секторы</div>
+          <div class="sector-wrap" id="sectors"></div>
+        </div>
+
+        <div class="pos-block">
+          <div style="padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+            <div class="sb-title" style="margin:0">Позиции</div>
+            <button class="btn" onclick="showPage('cab');showCab('open')" style="font-size:10px;padding:2px 8px">+ Новая</button>
+          </div>
+          <div id="pos-list"></div>
         </div>
       </div>
-      <div class="ph"><span class="ph-t">Секторы</span></div>
-        <div class="sp-grid" id="sectors"></div>
-        <div class="ph"><span class="ph-t">Позиции</span><button class="btn" onclick="showPage('cab');showCab('open')" style="font-size:7.5px;padding:1px 7px">+ НОВАЯ</button></div>
-        <div style="overflow-y:auto;flex:1" id="pos-list"></div>
-      </div>
-      <!-- CHART -->
+
+      <!-- ── CHART COL ── -->
       <div class="chart-col">
         <div class="chart-hdr">
           <span class="c-sym" id="ch-sym">SBER</span>
-          <span class="c-name" id="ch-name">Сбербанк</span><span style="font-size:8px;color:var(--dim);margin-left:4px">ПКМ = вход</span>
+          <span class="c-name" id="ch-name">Сбербанк</span>
+          <span style="font-size:8.5px;color:var(--dim)">ПКМ = вход</span>
           <span class="c-price up" id="ch-price">—</span>
-          <span class="c-chg" id="ch-chg">—</span>
+          <span class="c-chg up" id="ch-chg">—</span>
+          <span id="week52-header" class="c52-info"></span>
+          <div id="imoex-perf" style="display:flex;align-items:center;gap:4px"></div>
           <div class="tf-wrap">
             <button class="tf" onclick="setTF('1m')"  data-tf="1m">1М</button>
             <button class="tf" onclick="setTF('10m')" data-tf="10m">10М</button>
             <button class="tf" onclick="setTF('5D')"  data-tf="5D">5Д</button>
             <button class="tf" onclick="setTF('1Mo')" data-tf="1Mo">1МС</button>
             <button class="tf" onclick="setTF('3Mo')" data-tf="3Mo">3МС</button>
-            <button class="tf on" onclick="setTF('1Y')"  data-tf="1Y">1Г</button>
+            <button class="tf on" onclick="setTF('1Y')" data-tf="1Y">1Г</button>
             <button class="tf" onclick="setTF('3Y')"  data-tf="3Y">3Г</button>
             <button class="tf" onclick="setTF('5Y')"  data-tf="5Y">5Г</button>
             <button class="tf" onclick="setTF('MAX')" data-tf="MAX">МАКС</button>
           </div>
-          <select class="ch-sel" id="ch-sel" onchange="selSym(this.value)"></select>
-          <div id="week52-header" style="display:flex;align-items:center;gap:4px;margin-left:8px"></div>
-          <div id="imoex-perf" style="display:flex;align-items:center;gap:4px;margin-left:6px"></div>
-          <button id="multi-btn" onclick="toggleMultiChart()"
-            style="padding:2px 8px;font-family:var(--display);font-size:8.5px;font-weight:700;
-            letter-spacing:.06em;cursor:pointer;margin-left:4px;
-            background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-            color:var(--dim);transition:all .2s">⊞ 2×2</button>
-          <button id="imoex-toggle-btn" onclick="toggleImoex()"
-            style="padding:2px 8px;font-family:var(--display);font-size:8.5px;font-weight:700;
-            letter-spacing:.06em;cursor:pointer;margin-left:4px;
-            background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-            color:var(--dim);transition:all .2s">≡ IMOEX</button>
-          <button class="btn" onclick="showAn(curSym)" style="font-size:8px;padding:2px 8px;margin-left:4px">📊</button>
-          <button onclick="openAlertModal(curSym)" style="position:relative;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:var(--amber);padding:2px 10px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;cursor:pointer;margin-left:4px">
-            🔔
-            <span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--red);color:white;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
-          </button>
+          <div class="hdr-btns">
+            <select class="mc-sel" id="ch-sel" onchange="sSym(this.value)" style="max-width:120px;font-size:10px;padding:3px 6px"></select>
+            <button id="multi-btn" class="hbtn" onclick="toggleMultiChart()">⊞ 2×2</button>
+            <button id="imoex-toggle-btn" class="hbtn" onclick="toggleImoex()">≡ IMOEX</button>
+            <button class="hbtn" onclick="showAn(curSym)">📊</button>
+            <button class="hbtn amber" onclick="openAlertModal(curSym)" style="position:relative">
+              🔔<span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
+            </button>
+          </div>
         </div>
-        
-          <!-- MULTI-CHART GRID -->
-          <div id="multichart-grid" class="hidden" style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--g);min-height:0">
-            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
-              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
-                <div id="mc-hdr-0" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">SBER</div>
-                <select id="mc-sym-0" onchange="loadMultiChart(0,this.value,document.getElementById('mc-tf-0').value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
-                <select id="mc-tf-0" onchange="loadMultiChart(0,document.getElementById('mc-sym-0').value,this.value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
-                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
-                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
-                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
-                </select>
-                <button onclick="focusMultiChart(0)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
-              </div>
-              <div id="mc-0" style="flex:1;min-height:0"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
-              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
-                <div id="mc-hdr-1" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">LKOH</div>
-                <select id="mc-sym-1" onchange="loadMultiChart(1,this.value,document.getElementById('mc-tf-1').value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
-                <select id="mc-tf-1" onchange="loadMultiChart(1,document.getElementById('mc-sym-1').value,this.value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
-                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
-                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
-                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
-                </select>
-                <button onclick="focusMultiChart(1)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
-              </div>
-              <div id="mc-1" style="flex:1;min-height:0"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
-              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
-                <div id="mc-hdr-2" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">YNDX</div>
-                <select id="mc-sym-2" onchange="loadMultiChart(2,this.value,document.getElementById('mc-tf-2').value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
-                <select id="mc-tf-2" onchange="loadMultiChart(2,document.getElementById('mc-sym-2').value,this.value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
-                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
-                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
-                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
-                </select>
-                <button onclick="focusMultiChart(2)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
-              </div>
-              <div id="mc-2" style="flex:1;min-height:0"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;background:var(--ink);overflow:hidden">
-              <div style="height:28px;background:var(--panel);border-bottom:1px solid var(--g);display:flex;align-items:center;padding:0 6px;gap:5px;flex-shrink:0">
-                <div id="mc-hdr-3" style="flex:1;font-family:var(--display);font-size:10px;font-weight:700;color:var(--bright)">GMKN</div>
-                <select id="mc-sym-3" onchange="loadMultiChart(3,this.value,document.getElementById('mc-tf-3').value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none;max-width:80px"></select>
-                <select id="mc-tf-3" onchange="loadMultiChart(3,document.getElementById('mc-sym-3').value,this.value)"
-                  style="background:var(--cell);border:1px solid var(--g);color:var(--text);font-family:var(--mono);font-size:8px;padding:1px 3px;outline:none">
-                  <option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option>
-                  <option value="1Mo">1МС</option><option value="3Mo">3МС</option>
-                  <option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option>
-                </select>
-                <button onclick="focusMultiChart(3)" title="Открыть в главном" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:1px 5px;font-size:9px;cursor:pointer">⊙</button>
-              </div>
-              <div id="mc-3" style="flex:1;min-height:0"></div>
-            </div>
-          </div>
-          <!-- SINGLE CHART -->
-          <div id="single-chart-wrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
-<div id="chart-container" style="flex:1;min-height:0"></div>
-          <div style="height:50px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
-            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:var(--dim);z-index:2;font-family:var(--mono);pointer-events:none">VOL</span>
-            <div id="vol-container" style="height:100%;width:100%"></div>
-          </div>
-          <div style="height:72px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
-            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:rgba(167,139,250,.8);z-index:2;font-family:var(--mono);pointer-events:none">RSI(14)</span>
-            <div id="rsi-container" style="height:100%;width:100%"></div>
-          </div>
-          <div style="height:72px;border-top:1px solid var(--g);flex-shrink:0;position:relative;background:#030810">
-            <span style="position:absolute;top:3px;left:8px;font-size:8px;color:rgba(96,165,250,.8);z-index:2;font-family:var(--mono);pointer-events:none">MACD(12,26,9)</span>
-            <div id="macd-container" style="height:100%;width:100%"></div>
-          </div>
-          <div id="week52-bar" style="padding:5px 12px;border-top:1px solid var(--g);background:var(--panel);flex-shrink:0"></div>
-          <div class="chart-ind" id="ind-bar"><span style="font-size:9px;color:var(--dim)">Загрузка...</span></div>
-          </div><!-- /single-chart-wrap -->
-    </div><!-- /chart-col -->
 
-    <!-- RIGHT -->
+        <!-- MULTI-CHART GRID -->
+        <div id="multichart-grid" class="hidden">
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-0" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">SBER</div><select id="mc-sym-0" class="mc-sel" onchange="loadMultiChart(0,this.value,document.getElementById('mc-tf-0').value)"></select><select id="mc-tf-0" class="mc-tf-sel" onchange="loadMultiChart(0,document.getElementById('mc-sym-0').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(0)">⊙</button></div><div id="mc-0" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-1" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">LKOH</div><select id="mc-sym-1" class="mc-sel" onchange="loadMultiChart(1,this.value,document.getElementById('mc-tf-1').value)"></select><select id="mc-tf-1" class="mc-tf-sel" onchange="loadMultiChart(1,document.getElementById('mc-sym-1').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(1)">⊙</button></div><div id="mc-1" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-2" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">YNDX</div><select id="mc-sym-2" class="mc-sel" onchange="loadMultiChart(2,this.value,document.getElementById('mc-tf-2').value)"></select><select id="mc-tf-2" class="mc-tf-sel" onchange="loadMultiChart(2,document.getElementById('mc-sym-2').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(2)">⊙</button></div><div id="mc-2" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-3" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">GMKN</div><select id="mc-sym-3" class="mc-sel" onchange="loadMultiChart(3,this.value,document.getElementById('mc-tf-3').value)"></select><select id="mc-tf-3" class="mc-tf-sel" onchange="loadMultiChart(3,document.getElementById('mc-sym-3').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(3)">⊙</button></div><div id="mc-3" style="flex:1;min-height:0"></div></div>
+        </div>
+
+        <!-- SINGLE CHART -->
+        <div id="single-chart-wrap">
+          <div id="chart-container" style="flex:1;min-height:0"></div>
+          <div class="subchart-wrap" style="height:50px"><span class="subchart-label">VOL</span><div id="vol-container" style="height:100%;width:100%"></div></div>
+          <div class="subchart-wrap" style="height:72px"><span class="subchart-label">RSI(14)</span><div id="rsi-container" style="height:100%;width:100%"></div></div>
+          <div class="subchart-wrap" style="height:72px"><span class="subchart-label">MACD(12,26,9)</span><div id="macd-container" style="height:100%;width:100%"></div></div>
+          <div id="week52-bar"></div>
+          <div class="ind-bar" id="ind-bar"><span style="font-size:10px;color:var(--dim)">Загрузка...</span></div>
+        </div>
+      </div><!-- /chart-col -->
+
+      <!-- ── RIGHT COL ── -->
       <div class="right-col">
-        <div style="padding:8px 10px;border-bottom:1px solid var(--g);flex-shrink:0">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)">КОНСЕНСУС АГЕНТОВ</span>
-          <span id="consensus-sym" style="font-size:9px;color:var(--green);font-family:var(--mono)">SBER</span>
+        <!-- Consensus -->
+        <div style="border-bottom:1px solid var(--border);flex-shrink:0">
+          <div class="rp-head"><span class="rp-title">Консенсус агентов</span><span class="rp-sub" id="consensus-sym">SBER</span></div>
+          <div class="consensus-panel" id="consensus-panel" style="padding:6px 12px 10px"><div style="font-size:10px;color:var(--dim)">Загрузка...</div></div>
         </div>
-        <div id="consensus-panel">
-          <div style="font-size:8.5px;color:var(--dim)">Загрузка...</div>
+
+        <!-- Watchlist -->
+        <div class="rp-head" style="flex-shrink:0"><span class="rp-title">Watchlist</span></div>
+        <div class="wl-search-wrap"><input id="wl-search" placeholder="Поиск тикера..." oninput="filterWL(this.value)"/></div>
+        <div class="wl-block" id="wl-list"></div>
+
+        <!-- Signals mini -->
+        <div style="border-top:1px solid var(--border);flex-shrink:0">
+          <div class="rp-head"><span class="rp-title">Сигналы AI</span><span style="font-size:11px;color:var(--amber)" id="sig-cnt3">0</span></div>
+          <div id="sig-list"></div>
         </div>
-      </div>
-      <div class="ph"><span class="ph-t">Watchlist</span><input id="wl-search" class="inp" placeholder="Поиск..." style="width:80px;font-size:9px;padding:2px 6px" oninput="filterWL(this.value)"/></div>
-        <div style="overflow-y:auto;flex:1" id="wl-list"></div>
-        <div class="ph"><span class="ph-t">Сигналы AI</span><span class="ph-v" id="sig-cnt3">0</span></div>
-        <div style="max-height:110px;overflow-y:auto" id="sig-list"></div>
-        <div class="cio-wrap">
-          <div class="cio-lbl"><div class="cio-dot"></div>CIO ДИРЕКТОР <span id="cio-st" style="color:var(--amber);font-size:8px">Готов</span></div>
-          <select class="cio-sel" id="cio-sym"></select>
-          <button class="cio-btn" onclick="runCIO()" id="cio-btn">⚡ АНАЛИЗ С TA</button>
-          <input type="password" class="cio-key" id="groq-key" placeholder="gsk_..." oninput="saveGK(this.value)"/>
+
+        <!-- OFZ -->
+        <div style="border-top:1px solid var(--border);flex-shrink:0">
+          <div class="rp-head"><span class="rp-title">ОФЗ доходности</span></div>
+          <div id="ofz-list" style="padding:4px 12px"><div style="font-size:10px;color:var(--dim)">Загрузка...</div></div>
+        </div>
+
+        <!-- CIO -->
+        <div class="cio-section" style="border-top:1px solid var(--border)">
+          <div class="cio-hdr"><div class="cio-dot"></div><span class="cio-title-txt">CIO ДИРЕКТОР</span><span id="cio-st" style="color:var(--amber);font-size:10px">Готов</span></div>
+          <div class="cio-sym-row">
+            <select class="cio-sel" id="cio-sym" style="flex:1"></select>
+          </div>
+          <button class="cio-btn" id="cio-btn" onclick="runCIO()">⚡ Анализ с TA</button>
+          <input type="password" class="cio-key" id="groq-key" placeholder="gsk_... (Groq API)" oninput="sGK(this.value)"/>
           <div id="cio-result" class="cio-result hidden"></div>
         </div>
       </div>
-      <!-- BOTTOM AGENTS -->
+
+      <!-- ── AGENTS BAR ── -->
       <div class="bot-row">
-        <div class="ag-list">
-          <div class="ag-hdr">
-            <span class="ag-ht">АГЕНТЫ</span>
-            <span id="ag-iq-lbl" style="font-size:8px;color:var(--purple)">IQ —</span>
-            <div class="ag-sep"></div>
-            <div id="ag-status-dot" class="pulse" style="background:var(--dim)"></div>
-            <button class="run-btn" id="ag-run-btn" onclick="toggleAg()">СТАРТ</button>
+        <div class="ag-info">
+          <div class="ag-info-title">Агенты</div>
+          <div class="ag-iq-big" id="ag-iq-lbl">0.0%</div>
+          <div class="ag-info-sub">Глобальный IQ</div>
+          <div class="ag-status-row" style="margin-top:4px">
+            <div class="ag-dot" id="ag-status-dot"></div>
+            <span id="ag-run-status" style="font-size:9px">Остановлен</span>
           </div>
-          <div class="ag-scroll" id="ag-scroll"></div>
         </div>
-        <div class="evo-term">
-          <div class="evo-tabs">
-            <button class="etab on" onclick="swEvo('log')">СОБЫТИЯ</button>
-            <button class="etab" onclick="swEvo('sk')">НАВЫКИ</button>
-            <button class="etab" onclick="swEvo('tr')">СДЕЛКИ</button>
-            <button class="etab" onclick="swEvo('kn')">ЗНАНИЯ</button>
+        <div class="ag-scroll" id="ag-scroll"></div>
+        <div class="ag-evo">
+          <div class="ag-evo-tabs">
+            <button class="etab on" onclick="swEvo('log')">События</button>
+            <button class="etab" onclick="swEvo('sk')">Навыки</button>
+            <button class="etab" onclick="swEvo('tr')">Сделки</button>
+            <button class="etab" onclick="swEvo('kn')">Знания</button>
           </div>
           <div id="evo-log" class="evo-body"></div>
           <div id="evo-sk" class="evo-body hidden"><div class="sk-grid" id="sk-grid"></div></div>
           <div id="evo-tr" class="evo-body hidden"></div>
           <div id="evo-kn" class="evo-body hidden"></div>
         </div>
-      </div>
-    </div>
-
-
-  <!-- SIGNALS PAGE -->
-  <div class="page hidden" id="page-sig">
-    <div style="display:flex;border-bottom:1px solid var(--g);flex-shrink:0;background:var(--panel)">
-        <button class="etab on" id="sig-tab-signals" onclick="switchSigTab('signals')">СИГНАЛЫ</button>
-        <button class="etab" id="sig-tab-backtest" onclick="switchSigTab('backtest')">📊 БЭКТЕСТ</button>
-      </div>
-      <div id="sig-view-signals" style="display:grid;grid-template-columns:1fr 1fr 260px;flex:1;overflow:hidden;min-height:0">
-      <div style="border-right:1px solid var(--g);overflow-y:auto;padding:10px">
-        <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">ТОРГОВЫЕ СИГНАЛЫ</div>
-        <div style="margin-bottom:10px">
-          <div style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-            ТОП ПО СИЛЕ СИГНАЛА
-            <button onclick="runAutoScan()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:8px;cursor:pointer">🔍 ПЕРЕСКАНИРОВАТЬ</button>
-          </div>
-          <div id="scan-results-sig"></div>
+        <div class="ag-run-area">
+          <button class="run-btn" id="ag-run-btn" onclick="toggleAg()">▶ СТАРТ</button>
+          <button class="btn" onclick="swEvo('log')" style="font-size:10px;padding:4px 10px">События</button>
         </div>
-        <div style="font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">ДВИЖЕНИЕ ≥ 1.5%</div>
+      </div>
+
+    </div>
+  </div><!-- /page-term -->
+
+  <!-- ══════════════════════════════════════
+       SIGNALS PAGE
+  ══════════════════════════════════════ -->
+  <div class="page hidden" id="page-sig">
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+      <button class="ntab on" id="sig-tab-signals" onclick="switchSigTab('signals')" style="border-bottom-width:2px">Сигналы</button>
+      <button class="ntab" id="sig-tab-backtest" onclick="switchSigTab('backtest')" style="border-bottom-width:2px">📊 Бэктест</button>
+    </div>
+    <div id="sig-view-signals" style="display:grid;grid-template-columns:1fr 1fr 280px;flex:1;overflow:hidden;min-height:0">
+      <div style="border-right:1px solid var(--border);overflow-y:auto;padding:14px">
+        <div class="page-section-title">
+          Топ по силе сигнала
+          <button class="btn" onclick="runAutoScan()" style="font-size:10px;padding:2px 9px">🔍 Пересканировать</button>
+        </div>
+        <div id="scan-results-sig"></div>
+        <div class="page-section-title" style="margin-top:16px">Движение ≥ 1.5%</div>
         <div id="sig-full"></div>
       </div>
-      <div style="border-right:1px solid var(--g);overflow-y:auto;padding:10px">
-        <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">ПАТТЕРНЫ НА <span id="pat-sym" style="color:var(--green)">—</span></div>
+      <div style="border-right:1px solid var(--border);overflow-y:auto;padding:14px">
+        <div class="page-section-title">Паттерны на <span id="pat-sym" style="color:var(--green)">—</span></div>
         <div id="pat-list"></div>
-        <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px">БАЗА TA (32 ПАТТЕРНА)</div>
+        <div class="page-section-title" style="margin-top:16px">База TA</div>
         <div id="ta-kb"></div>
       </div>
-      <div style="border-left:1px solid var(--g);overflow-y:auto;padding:10px">
-        <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">CIO АНАЛИЗ</div>
-        <select class="cio-sel" id="cio-sym2" style="width:100%;margin-bottom:5px"></select>
-        <button class="cio-btn" onclick="runCIO2()" id="cio-btn2">⚡ АНАЛИЗ С TA</button>
-        <input type="password" class="cio-key" id="groq-key2" placeholder="gsk_..." style="margin-bottom:6px" oninput="saveGK(this.value)"/>
+      <div style="overflow-y:auto;padding:14px">
+        <div class="page-section-title">CIO Анализ</div>
+        <select class="cio-sel" id="cio-sym2" style="width:100%;margin-bottom:6px"></select>
+        <button class="cio-btn" id="cio-btn2" onclick="runCIO2()">⚡ Анализ с TA</button>
+        <input type="password" class="cio-key" id="groq-key2" placeholder="gsk_..." style="margin-bottom:8px" oninput="sGK(this.value)"/>
         <div id="cio-r2" class="cio-result hidden"></div>
-        <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin:10px 0 5px">НОВОСТИ РЫНКА</div>
+        <div class="page-section-title" style="margin-top:14px">Новости рынка</div>
         <div id="news-list"></div>
       </div>
     </div>
-  </div>
-
-      <!-- BACKTEST VIEW -->
-      <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:14px">
-        <!-- Controls -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div>
-            <label class="fl">Акция</label>
-            <select id="bt-sym" class="sel" style="width:100%"></select>
-          </div>
-          <div>
-            <label class="fl">Период</label>
-            <select id="bt-period" class="sel" style="width:100%">
-              <option value="6M">6 месяцев</option>
-              <option value="1Y" selected>1 год</option>
-              <option value="2Y">2 года</option>
-              <option value="3Y">3 года</option>
-              <option value="5Y">5 лет</option>
-            </select>
-          </div>
-          <div>
-            <label class="fl">Порог сигнала (%)</label>
-            <select id="bt-thresh" class="sel" style="width:100%">
-              <option value="55">55% (агрессивный)</option>
-              <option value="60" selected>60% (стандарт)</option>
-              <option value="65">65% (умеренный)</option>
-              <option value="70">70% (консервативный)</option>
-            </select>
-          </div>
-          <div>
-            <button id="bt-run-btn" onclick="runBacktest()"
-              style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);'+
-              'color:var(--green);padding:8px 16px;font-family:var(--display);font-size:9px;'+
-              'font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase;height:100%">
-              ▶ ЗАПУСТИТЬ
-            </button>
-          </div>
-        </div>
-        <div id="bt-status" style="font-size:9px;color:var(--dim);font-family:var(--mono);margin-bottom:10px">
-          Выберите параметры и запустите бэктест
-        </div>
-        <div id="bt-results">
-          <div style="text-align:center;padding:40px;color:var(--dim)">
-            <div style="font-size:32px;margin-bottom:8px">📊</div>
-            <div style="font-size:11px">Нажмите «Запустить» для тестирования стратегии на исторических данных</div>
-            <div style="font-size:9px;margin-top:6px;color:var(--dim)">
-              Алгоритм: RSI + MA + паттерны → сигнал → вход с ATR-стопом
-            </div>
-          </div>
-        </div>
+    <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:16px">
+      <div class="bt-controls">
+        <div><label class="fl">Акция</label><select id="bt-sym" class="sel" style="width:100%"></select></div>
+        <div><label class="fl">Период</label><select id="bt-period" class="sel" style="width:100%"><option value="6M">6 месяцев</option><option value="1Y" selected>1 год</option><option value="2Y">2 года</option><option value="3Y">3 года</option><option value="5Y">5 лет</option></select></div>
+        <div><label class="fl">Порог сигнала</label><select id="bt-thresh" class="sel" style="width:100%"><option value="55">55% (агрессивный)</option><option value="60" selected>60% (стандарт)</option><option value="65">65% (умеренный)</option><option value="70">70% (консерватив.)</option></select></div>
+        <div style="display:flex;align-items:flex-end"><button id="bt-run-btn" onclick="runBacktest()" class="cio-btn" style="margin:0;white-space:nowrap;padding:7px 16px;width:auto">▶ Запустить</button></div>
       </div>
+      <div id="bt-status" style="font-size:10px;color:var(--dim);margin-bottom:10px">Выберите параметры и запустите бэктест</div>
+      <div id="bt-results"><div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:32px;margin-bottom:8px">📊</div><div style="font-size:12px">Нажмите «Запустить» для тестирования стратегии на исторических данных</div></div></div>
     </div>
+  </div><!-- /page-sig -->
 
-  <!-- CABINET PAGE -->
+  <!-- ══════════════════════════════════════
+       CABINET PAGE
+  ══════════════════════════════════════ -->
   <div class="page hidden" id="page-cab">
-    <div id="page-cab-inner" style="padding:14px;overflow-y:auto;flex:1">
-      <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--g);padding-bottom:5px;margin-bottom:12px">ЛИЧНЫЙ КАБИНЕТ</div>
-      <div class="cab-grid">
-        <div>
-          <div style="background:var(--panel);border:1px solid var(--g);padding:12px;margin-bottom:8px">
-            <div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--green)" id="cab-init">А</div>
-            <div style="font-size:13px;font-weight:600;margin-top:3px" id="cab-nm">—</div>
-            <div style="font-size:9px;color:var(--dim)" id="cab-em">—</div>
-          </div>
-          <div style="background:var(--panel);border:1px solid var(--g);padding:9px;margin-bottom:8px">
-            <div class="stat-row"><span class="sl">СДЕЛОК</span><span class="sv" id="st-tr">0</span></div>
-            <div class="stat-row"><span class="sl">WIN RATE</span><span class="sv up" id="st-wr">—</span></div>
-            <div class="stat-row"><span class="sl">AVG P&L</span><span class="sv" id="st-pnl">—</span></div>
-            <div class="stat-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px"><span class="sl" style="color:var(--purple)">CIO СИГНАЛОВ</span><span class="sv" id="hist-sig-count">0</span></div>
-            <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO WIN RATE</span><span class="sv" id="hist-sig-wr">—</span></div>
-            <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO AVG P&L</span><span class="sv" id="hist-sig-pnl">—</span></div>
-            <div class="stat-row"><span class="sl">АВТО-СДЕЛОК</span><span class="sv" style="color:var(--amber)" id="st-ag">0</span></div>
-          </div>
-          <button class="btn" style="width:100%;margin-bottom:4px" onclick="showCab('open')">+ ОТКРЫТЬ СДЕЛКУ</button>
-          <button class="btn" style="width:100%;margin-bottom:4px;border-color:rgba(167,139,250,.3);color:var(--purple)" onclick="showCab('history');renderSignalHistory()">📊 СИГНАЛЫ CIO</button>
-          <button class="btn" style="width:100%;margin-bottom:4px" onclick="showCab('settings')">НАСТРОЙКИ</button>
-          <button class="btn d" style="width:100%" onclick="doLogout()">ВЫЙТИ</button>
+    <div class="cab-layout">
+      <!-- Sidebar -->
+      <div>
+        <div class="cab-sidebar-card">
+          <div class="cab-avatar" id="cab-init">А</div>
+          <div class="cab-name" id="cab-nm">—</div>
+          <div class="cab-email" id="cab-em">Локальный режим</div>
         </div>
-        <div>
-          <div id="cab-trades">
-            <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">ОТКРЫТЫЕ ПОЗИЦИИ</div>
-            <div id="open-list"></div>
-            <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px">ИСТОРИЯ</div>
-            <div id="hist-list"></div>
+        <div class="cab-sidebar-card">
+          <div class="stat-row"><span class="sl">Сделок</span><span class="sv" id="st-tr">0</span></div>
+          <div class="stat-row"><span class="sl">Win Rate</span><span class="sv up" id="st-wr">—</span></div>
+          <div class="stat-row"><span class="sl">Avg P&L</span><span class="sv" id="st-pnl">—</span></div>
+          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:8px"><span class="sl" style="color:var(--purple)">CIO Сигналов</span><span class="sv" id="hist-sig-count">0</span></div>
+          <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO Win Rate</span><span class="sv" id="hist-sig-wr">—</span></div>
+          <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO Avg P&L</span><span class="sv" id="hist-sig-pnl">—</span></div>
+          <div class="stat-row"><span class="sl">Авто-сделок</span><span class="sv am" id="st-ag">0</span></div>
+        </div>
+        <div class="cab-nav">
+          <button class="cab-nav-btn primary" onclick="showCab('open')">+ Открыть сделку</button>
+          <button class="cab-nav-btn purple" onclick="showCab('history');renderSignalHistory()">📊 Сигналы CIO</button>
+          <button class="cab-nav-btn" onclick="showCab('trades')">📋 Сделки</button>
+          <button class="cab-nav-btn" onclick="showCab('settings')">⚙️ Настройки</button>
+          <button class="cab-nav-btn danger" onclick="doLogout()">← Сменить имя</button>
+        </div>
+      </div>
+      <!-- Main area -->
+      <div style="min-width:0">
+        <!-- Trades -->
+        <div id="cab-trades">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Открытые позиции</div>
+          <div id="open-list"></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin:16px 0 8px">История сделок</div>
+          <div id="hist-list"></div>
+        </div>
+        <!-- CIO History -->
+        <div id="cab-history" class="hidden" style="max-height:calc(100vh-200px);overflow-y:auto">
+          <div style="font-size:10px;color:var(--dim);padding:8px">Загрузка...</div>
+        </div>
+        <!-- Open Trade Form -->
+        <div id="cab-open" class="hidden">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Новая сделка</div>
+          <div class="form-grid">
+            <div><label class="fl">Акция</label><select id="ot-sym" class="sel" style="width:100%"></select></div>
+            <div><label class="fl">Направление</label><select id="ot-dir" class="sel" style="width:100%"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
+            <div><label class="fl">Вход ₽</label><input type="number" id="ot-en" class="inp" placeholder="0.00"/></div>
+            <div><label class="fl">Стоп ₽</label><input type="number" id="ot-st" class="inp" placeholder="0.00"/></div>
+            <div><label class="fl">Цель 1 ₽</label><input type="number" id="ot-t1" class="inp" placeholder="0.00"/></div>
+            <div><label class="fl">Объём ₽</label><input type="number" id="ot-vl" class="inp" placeholder="10000"/></div>
           </div>
-          <div id="cab-history" class="hidden" style="max-height:calc(100vh-280px);overflow-y:auto">
-            <!-- rendered by renderSignalHistory() -->
-            <div style="font-size:9px;color:var(--dim);padding:8px">Загрузка истории...</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn p" onclick="openTrade()">Открыть сделку</button>
+            <button class="btn" onclick="fillCIO()">Из CIO</button>
+            <button class="btn" onclick="showCab('trades')">Назад</button>
           </div>
-
-          <div id="cab-open" class="hidden">
-            <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">НОВАЯ СДЕЛКА</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px">
-              <div><label class="fl">Акция</label><select id="ot-sym" class="sel" style="width:100%"></select></div>
-              <div><label class="fl">Направление</label><select id="ot-dir" class="sel" style="width:100%"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
-              <div><label class="fl">Вход ₽</label><input type="number" id="ot-en" class="inp" style="width:100%" placeholder="0.00"/></div>
-              <div><label class="fl">Стоп ₽</label><input type="number" id="ot-st" class="inp" style="width:100%" placeholder="0.00"/></div>
-              <div><label class="fl">Цель 1 ₽</label><input type="number" id="ot-t1" class="inp" style="width:100%" placeholder="0.00"/></div>
-              <div><label class="fl">Объём ₽</label><input type="number" id="ot-vl" class="inp" style="width:100%" placeholder="10000"/></div>
+        </div>
+        <!-- Settings -->
+        <div id="cab-settings" class="hidden">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Настройки</div>
+          <div style="display:grid;gap:12px;max-width:400px">
+            <div><label class="fl">Groq API Key</label><input type="password" id="s-gk" class="inp" placeholder="gsk_..." style="width:100%" onblur="sGK(this.value)"/></div>
+            <div style="display:flex;align-items:center;gap:10px"><label class="fl" style="margin:0">Автономные агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
+            <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
+            <button class="btn p" onclick="saveSettings()" style="width:fit-content">Сохранить</button>
+            <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+              <div style="font-size:11px;color:var(--red);margin-bottom:6px">Опасная зона</div>
+              <button class="btn d" onclick="clearTrades()">Удалить все сделки</button>
             </div>
-            <div style="display:flex;gap:6px">
-              <button class="btn p" onclick="openTrade()">ОТКРЫТЬ</button>
-              <button class="btn" onclick="fillCIO()">ИЗ CIO</button>
-              <button class="btn" onclick="showCab('trades')">НАЗАД</button>
-            </div>
-          </div>
-          <div id="cab-settings" class="hidden">
-            <div style="font-family:var(--display);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">НАСТРОЙКИ</div>
-            <div style="display:grid;gap:9px">
-              <div><label class="fl">Groq API Key</label><input type="password" id="s-gk" class="inp" style="width:300px" placeholder="gsk_..." onblur="saveGK(this.value)"/></div>
-              <div style="display:flex;align-items:center;gap:10px"><label class="fl" style="margin:0">Автономные агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
-              <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
-              <button class="btn p" onclick="saveSettings()">СОХРАНИТЬ</button>
-              <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g)">
-                <label class="fl" style="color:var(--red)">ОПАСНАЯ ЗОНА</label>
-                <button class="btn d" onclick="clearTrades()" style="margin-top:4px">УДАЛИТЬ ВСЕ СДЕЛКИ</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
+  </div><!-- /page-cab -->
 
-<!-- ANALYTICS MODAL -->
-<div class="mbg hidden" id="an-modal">
-  <div class="mbox">
-    <div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div>
-    <div class="mbody" id="an-body"></div>
-  </div>
-</div>
-
-
-<!-- HOTKEYS PANEL -->
-<div id="hotkeys-panel" class="hidden" style="position:fixed;top:68px;right:14px;z-index:700;
-  background:var(--panel);border:1px solid var(--g2);width:290px;max-height:80vh;
-  overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6)">
-  <div style="padding:10px 14px;border-bottom:1px solid var(--g);display:flex;align-items:center;justify-content:space-between">
-    <span style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--green)">⌨️ ГОРЯЧИЕ КЛАВИШИ</span>
-    <button onclick="toggleHotkeysPanel()" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:14px">✕</button>
-  </div>
-  <div id="hotkeys-list" style="padding:12px 14px"></div>
-  <div style="padding:8px 14px;border-top:1px solid var(--g);font-size:8.5px;color:var(--dim)">
-    Не работают пока открыты поля ввода
-  </div>
-</div>
-
-<!-- TOAST NOTIFICATIONS -->
-<div id="toast-wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none">
-  <!-- toasts injected here -->
-</div>
-<style>
-  #toast-wrap > div { pointer-events:all; }
-</style>
-
-
-<!-- JOURNAL EXECUTION MODAL -->
-<div class="mbg hidden" id="journal-modal">
-  <div class="mbox" style="max-width:500px">
-    <div class="mhdr">
-      <span class="mt">▶ ИСПОЛНИТЬ СИГНАЛ —
-        <span id="jm-dir" style="font-size:11px">LONG</span>
-        <span id="jm-sym" style="color:var(--bright)">—</span>
-      </span>
-      <button class="mc" onclick="closeJournalModal()">✕</button>
+  <!-- ══════════════════════════════════════
+       MODALS
+  ══════════════════════════════════════ -->
+  <!-- Analytics -->
+  <div class="mbg hidden" id="an-modal">
+    <div class="mbox" style="max-width:680px">
+      <div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div>
+      <div class="mbody" id="an-body"></div>
     </div>
-    <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
-      <!-- AI signal recap -->
-      <div style="background:var(--cell);border:1px solid var(--g);padding:10px;font-size:9px">
-        <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);margin-bottom:6px">СИГНАЛ AI</div>
-        <div style="display:flex;gap:16px;font-family:var(--mono)">
-          <span>Вход: <b id="jm-ai-entry" style="color:var(--text)">—</b></span>
-          <span>Стоп: <b id="jm-ai-stop" style="color:var(--red)">—</b></span>
-          <span>Цель: <b id="jm-ai-tg1" style="color:var(--green)">—</b></span>
-          <span>AI: <b id="jm-ai-conf" style="color:var(--purple)">—</b></span>
-        </div>
-      </div>
-      <!-- Execution details -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div>
-          <label class="fl">Фактическая цена входа ₽</label>
-          <input type="number" id="jm-exec-price" class="inp" style="width:100%" step="0.01"/>
-        </div>
-        <div>
-          <label class="fl">Объём сделки ₽</label>
-          <input type="number" id="jm-volume" class="inp" style="width:100%" placeholder="10000"/>
-        </div>
-      </div>
-      <div>
-        <label class="fl">Как выполнили сигнал?</label>
-        <select id="jm-tag" class="sel" style="width:100%">
-          <option value="exact">✅ Точно по рекомендации AI</option>
-          <option value="modified">⚠️ Изменил цену входа</option>
-          <option value="partial">½ Зашёл частичным объёмом</option>
-        </select>
-      </div>
-      <div>
-        <label class="fl">Заметка (необязательно)</label>
-        <input type="text" id="jm-note" class="inp" style="width:100%" placeholder="Почему именно сейчас..."/>
-      </div>
-      <input type="hidden" id="jm-signal-id"/>
-      <div style="display:flex;gap:6px">
-        <button class="btn p" onclick="submitExecution()" style="flex:1">▶ ЗАПИСАТЬ ИСПОЛНЕНИЕ</button>
-        <button class="btn" onclick="closeJournalModal()">ОТМЕНА</button>
+  </div>
+
+  <!-- Audit -->
+  <div class="mbg hidden" id="audit-modal">
+    <div class="mbox">
+      <div class="mhdr"><span class="mt">⚡ Совещание агентов — Аудит</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div>
+      <div class="mbody">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:10px" id="audit-sub">Агенты подключаются...</div>
+        <div id="audit-feed"></div>
+        <div id="audit-sum" class="a-sum hidden"></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- JOURNAL CLOSE MODAL -->
-<div class="mbg hidden" id="journal-close-modal">
-  <div class="mbox" style="max-width:500px">
-    <div class="mhdr">
-      <span class="mt">■ ЗАКРЫТЬ СДЕЛКУ —
-        <span id="jcm-dir" style="font-size:11px">LONG</span>
-        <span id="jcm-sym" style="color:var(--bright)">—</span>
-      </span>
-      <button class="mc" onclick="closeJournalCloseModal()">✕</button>
-    </div>
-    <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
-      <div style="background:var(--cell);border:1px solid var(--g);padding:10px;font-size:9px;font-family:var(--mono)">
-        <div style="display:flex;gap:16px">
-          <span>Вход: <b id="jcm-entry" style="color:var(--text)">—</b></span>
-          <span id="jcm-cur" style="color:var(--green)"></span>
+  <!-- Alert Modal -->
+  <div class="mbg hidden" id="alert-modal">
+    <div class="mbox" style="max-width:480px">
+      <div class="mhdr"><span class="mt">🔔 Алерты — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--green);font-size:11px"></span></span><button class="mc" onclick="closeAlertModal()">✕</button></div>
+      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
+        <div class="al-type-grid">
+          <div class="al-card" style="border-color:rgba(52,211,153,.2)"><div style="font-size:10px;font-weight:600;color:var(--green);margin-bottom:6px">ВЫШЕ ЦЕНЫ ▲</div><input type="number" id="al-price-above" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)" style="width:100%;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);padding:7px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт выше</button></div>
+          <div class="al-card" style="border-color:rgba(248,113,113,.2)"><div style="font-size:10px;font-weight:600;color:var(--red);margin-bottom:6px">НИЖЕ ЦЕНЫ ▼</div><input type="number" id="al-price-below" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)" style="width:100%;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red);padding:7px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт ниже</button></div>
         </div>
-      </div>
-      <div>
-        <label class="fl">Цена закрытия ₽</label>
-        <input type="number" id="jcm-close-price" class="inp" style="width:100%" step="0.01"/>
-      </div>
-      <div>
-        <label class="fl">Причина закрытия / итоговая заметка</label>
-        <textarea id="jcm-result-note" class="inp" style="width:100%;height:70px;resize:none"
-          placeholder="Почему закрыли здесь? Что сработало / не сработало?"></textarea>
-      </div>
-      <input type="hidden" id="jcm-signal-id2"/>
-      <div style="display:flex;gap:6px">
-        <button class="btn p" onclick="submitClose()" style="flex:1">■ ЗАКРЫТЬ И ЗАПИСАТЬ</button>
-        <button class="btn" onclick="closeJournalCloseModal()">ОТМЕНА</button>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px"><div style="font-size:10px;font-weight:600;color:var(--amber);margin-bottom:6px">ДВИЖЕНИЕ НА %</div><div style="display:flex;gap:6px"><input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/><span style="font-size:11px;color:var(--muted);padding:5px">%</span><button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)" style="flex:1;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);color:var(--amber);padding:6px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт на движение</button></div></div>
+        <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:600;color:var(--dim)">АКТИВНЫЕ АЛЕРТЫ</span><button onclick="clearTriggered()" style="background:transparent;border:1px solid var(--border);color:var(--dim);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer">Очистить</button></div><div id="alerts-list-modal"></div></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ALERT MODAL -->
-<div class="mbg hidden" id="alert-modal">
-  <div class="mbox" style="max-width:480px">
-    <div class="mhdr">
-      <span class="mt">🔔 АЛЕРТЫ — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--green);font-size:11px"></span></span>
-      <button class="mc" onclick="closeAlertModal()">✕</button>
-    </div>
-    <div class="mbody" style="display:flex;flex-direction:column;gap:12px">
-      <!-- Create alert -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);padding:10px">
-          <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--green);margin-bottom:6px">ВЫШЕ ЦЕНЫ ▲</div>
-          <input type="number" id="al-price-above" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/>
-          <button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)"
-            style="width:100%;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--green);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
-            + АЛЕРТ ВЫШЕ
-          </button>
-        </div>
-        <div style="background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.2);padding:10px">
-          <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--red);margin-bottom:6px">НИЖЕ ЦЕНЫ ▼</div>
-          <input type="number" id="al-price-below" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/>
-          <button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)"
-            style="width:100%;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--red);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
-            + АЛЕРТ НИЖЕ
-          </button>
-        </div>
-      </div>
-      <div style="background:var(--cell,#0a1628);border:1px solid var(--g);padding:10px">
-        <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--amber);margin-bottom:6px">ИЗМЕНЕНИЕ НА % ~</div>
-        <div style="display:flex;gap:6px">
-          <input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/>
-          <span style="font-size:10px;color:var(--dim);padding:5px">%</span>
-          <button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)"
-            style="flex:1;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber);padding:6px;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.1em;cursor:pointer;text-transform:uppercase">
-            + АЛЕРТ НА ДВИЖЕНИЕ
-          </button>
-        </div>
-      </div>
-      <!-- Active alerts list -->
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-family:var(--display);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)">АКТИВНЫЕ АЛЕРТЫ</span>
-          <button onclick="clearTriggered()" style="background:transparent;border:1px solid rgba(255,255,255,.08);color:var(--dim);padding:2px 8px;font-family:var(--mono);font-size:8px;cursor:pointer">ОЧИСТИТЬ СРАБОТАВШИЕ</button>
-        </div>
-        <div id="alerts-list-modal"></div>
+  <!-- Journal Execution Modal -->
+  <div class="mbg hidden" id="journal-modal">
+    <div class="mbox" style="max-width:500px">
+      <div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div>
+      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
+        <div class="jm-recap"><div style="font-size:10px;font-weight:600;color:var(--dim);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:16px;font-family:var(--mono);font-size:11px"><span>Вход: <b id="jm-ai-entry" style="color:var(--text)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--purple)">—</b></span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Фактическая цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" style="width:100%" step="0.01"/></div><div><label class="fl">Объём сделки ₽</label><input type="number" id="jm-volume" class="inp" style="width:100%" placeholder="10000"/></div></div>
+        <div><label class="fl">Как выполнили сигнал?</label><select id="jm-tag" class="sel" style="width:100%"><option value="exact">✅ Точно по рекомендации AI</option><option value="modified">⚠️ Изменил цену входа</option><option value="partial">½ Зашёл частичным объёмом</option></select></div>
+        <div><label class="fl">Заметка (необязательно)</label><input type="text" id="jm-note" class="inp" style="width:100%" placeholder="Почему именно сейчас..."/></div>
+        <input type="hidden" id="jm-signal-id"/>
+        <div style="display:flex;gap:6px"><button class="btn p" onclick="submitExecution()" style="flex:1">▶ Записать исполнение</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- AUDIT MODAL -->
-<div class="mbg hidden" id="audit-modal">
-  <div class="mbox">
-    <div class="mhdr"><span class="mt">⚡ СОВЕЩАНИЕ АГЕНТОВ — АУДИТ</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div>
-    <div class="mbody">
-      <div style="font-size:8.5px;color:var(--dim);font-family:var(--display);margin-bottom:10px;letter-spacing:.06em" id="audit-sub">Агенты подключаются к совещанию...</div>
-      <div id="audit-feed"></div>
-      <div id="audit-sum" class="a-sum hidden"></div>
+  <!-- Journal Close Modal -->
+  <div class="mbg hidden" id="journal-close-modal">
+    <div class="mbox" style="max-width:500px">
+      <div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div>
+      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
+        <div class="jm-recap"><div style="display:flex;gap:16px;font-family:var(--mono);font-size:11px"><span>Вход: <b id="jcm-entry" style="color:var(--text)">—</b></span><span id="jcm-cur" style="color:var(--green)"></span></div></div>
+        <div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" style="width:100%" step="0.01"/></div>
+        <div><label class="fl">Причина закрытия / итоговая заметка</label><textarea id="jcm-result-note" class="inp" style="width:100%;height:70px;resize:none" placeholder="Что сработало / не сработало?"></textarea></div>
+        <input type="hidden" id="jcm-signal-id2"/>
+        <div style="display:flex;gap:6px"><button class="btn p" onclick="submitClose()" style="flex:1">■ Закрыть и записать</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div>
+      </div>
     </div>
   </div>
+
+  <!-- Chart Context Menu -->
+  <div id="chart-ctx-menu">
+    <div class="ctx-hdr"><div style="display:flex;align-items:center;justify-content:space-between"><div><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)" id="ctxm-price">—</span> <span style="font-size:10px;font-weight:600;color:var(--muted)" id="ctxm-sym">—</span></div><div style="text-align:right"><div style="font-size:10px;color:var(--dim)" id="ctxm-diff">—</div><div style="font-size:10px;color:var(--dim)">R:R <span id="ctxm-rr" style="color:var(--text);font-family:var(--mono)">—</span></div></div></div></div>
+    <div class="ctx-item" onclick="ctxOpenTrade('LONG')"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px">🟢</span><div><div style="font-weight:600;color:var(--green);font-size:11px">Открыть LONG</div><div style="font-size:9px;color:var(--dim)">Стоп: <span id="ctxm-long-stop">—</span> → <span id="ctxm-long-tg">—</span></div></div></div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;color:var(--muted)">B</kbd></div>
+    <div class="ctx-item" onclick="ctxOpenTrade('SHORT')"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px">🔴</span><div><div style="font-weight:600;color:var(--red);font-size:11px">Открыть SHORT</div><div style="font-size:9px;color:var(--dim)">Стоп: <span id="ctxm-short-stop">—</span> → <span id="ctxm-short-tg">—</span></div></div></div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;color:var(--muted)">S</kbd></div>
+    <div class="ctx-sec">Быстрые действия</div>
+    <div class="ctx-item" onclick="ctxSetAlert('above')"><span style="font-size:11px">🔔</span> <span style="font-size:11px;color:var(--amber)">Алерт выше этой цены</span></div>
+    <div class="ctx-item" onclick="ctxSetAlert('below')"><span style="font-size:11px">🔔</span> <span style="font-size:11px;color:var(--amber)">Алерт ниже этой цены</span></div>
+    <div class="ctx-item" onclick="ctxCIOAtPrice()"><span style="font-size:11px">⚡</span> <span style="font-size:11px;color:var(--purple)">CIO анализ для этой цены</span></div>
+  </div>
+
+  <!-- Hotkey Flash -->
+  <div id="hotkey-flash"></div>
+
+  <!-- Hotkey Help -->
+  <div id="hotkey-help" class="hidden" onclick="this.classList.add('hidden')">
+    <div class="hk-modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span style="font-size:14px;font-weight:600;color:var(--indigo)">⌨ Горячие клавиши</span>
+        <button onclick="document.getElementById('hotkey-help').classList.add('hidden')" class="mc">✕</button>
+      </div>
+      <div class="hk-grid">
+        <div class="hk-sec">Торговля</div>
+        <div class="hk-row"><kbd>B</kbd><span style="font-size:11px;color:var(--text)">Открыть LONG</span></div>
+        <div class="hk-row"><kbd>S</kbd><span style="font-size:11px;color:var(--text)">Открыть SHORT</span></div>
+        <div class="hk-row"><kbd>C</kbd><span style="font-size:11px;color:var(--text)">CIO анализ</span></div>
+        <div class="hk-row"><kbd>A</kbd><span style="font-size:11px;color:var(--text)">Алерты</span></div>
+        <div class="hk-sec">Таймфреймы</div>
+        <div class="hk-row"><kbd>1</kbd><span style="font-size:11px;color:var(--muted)">1 мин</span> <kbd>2</kbd><span style="font-size:11px;color:var(--muted)">10 мин</span></div>
+        <div class="hk-row"><kbd>3</kbd><span style="font-size:11px;color:var(--muted)">5 дней</span> <kbd>4</kbd><span style="font-size:11px;color:var(--muted)">1 мес</span></div>
+        <div class="hk-row"><kbd>5</kbd><span style="font-size:11px;color:var(--muted)">3 мес</span> <kbd>6</kbd><span style="font-size:11px;color:var(--text);font-weight:500">1 год</span></div>
+        <div class="hk-row"><kbd>7</kbd><span style="font-size:11px;color:var(--muted)">3 года</span> <kbd>8</kbd><span style="font-size:11px;color:var(--muted)">5 лет</span> <kbd>9</kbd><span style="font-size:11px;color:var(--muted)">МАКС</span></div>
+        <div class="hk-sec">Навигация</div>
+        <div class="hk-row"><kbd>↑↓</kbd><span style="font-size:11px;color:var(--text)">Следующая/предыдущая акция</span></div>
+        <div class="hk-row"><kbd>M</kbd><span style="font-size:11px;color:var(--text)">Мультиграфик 2×2</span></div>
+        <div class="hk-row"><kbd>I</kbd><span style="font-size:11px;color:var(--text)">IMOEX overlay</span></div>
+        <div class="hk-row"><kbd>SPACE</kbd><span style="font-size:11px;color:var(--text)">Обновить данные</span></div>
+        <div class="hk-row"><kbd>ESC</kbd><span style="font-size:11px;color:var(--text)">Закрыть окно</span></div>
+        <div class="hk-row"><kbd>?</kbd><span style="font-size:11px;color:var(--text)">Эта справка</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-wrap"></div>
+
 </div>
-<script>function loadData(){return ld();}
+<script>
+function loadData(){return ld();}
 function saveData(d){return sd(d);}
 
 'use strict';
@@ -1096,9 +1041,9 @@ function rSigs(){
   var mini=sigs.slice(0,5).map(function(x){
     var dir=x.c>0?'LONG':'SHORT';
     var col=x.c>0?'var(--green)':'var(--red)';
-    return '<div class="sr" onclick="sSym(\''+x.s+'\')">'+
+    return '<div class="sig-item" onclick="sSym(\''+x.s+'\')">'+
       '<span class="sr-sym">'+x.s+'</span>'+
-      '<span class="sr-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
+      '<span class="si-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
       '<div style="flex:1;font-size:8px;color:var(--dim)">'+(ST[x.s]&&ST[x.s].n||'')+'</div>'+
       '<span style="font-family:var(--mono);font-size:9.5px;color:'+col+'">'+(x.c>=0?'+':'')+x.c.toFixed(2)+'%</span>'+
     '</div>';
@@ -1109,9 +1054,9 @@ function rSigs(){
   var full=sigs.map(function(x){
     var dir=x.c>0?'LONG':'SHORT';
     var col=x.c>0?'var(--green)':'var(--red)';
-    return '<div class="sr" onclick="sSym(\''+x.s+'\');showPage(\'term\')">'+
+    return '<div class="sig-item" onclick="sSym(\''+x.s+'\');showPage(\'term\')">'+
       '<span class="sr-sym">'+x.s+'</span>'+
-      '<span class="sr-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
+      '<span class="si-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
       '<div style="flex:1;font-size:8.5px;color:var(--dim)">'+(ST[x.s]&&ST[x.s].n||'')+'</div>'+
       '<span style="font-size:10px;color:'+col+';font-weight:600">'+(x.c>=0?'+':'')+x.c.toFixed(2)+'%</span>'+
     '</div>';
@@ -1220,12 +1165,12 @@ function rInd(data){
   var pats=dPats(data.slice(-20));
   var rc=rsi>70?'bear':rsi<30?'bull':'neut';
   var rl=rsi>70?'ПЕРЕКУПЛ':rsi<30?'ПЕРЕПРОДАН':'НОРМА';
-  var html='<span class="ind '+rc+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
+  var html='<span class="ind-tag '+(rc==="bull"?"it-bull":rc==="bear"?"it-bear":"it-neut")+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
     '<span class="ind '+(ma20>ma50?'bull':'bear')+'">MA20 '+(ma20>ma50?'>':'<')+' MA50</span>'+
     '<span class="ind sig">СВЕЧА: '+(dc>=0?'+':'')+dc+'%</span>'+
-    '<span class="ind '+(last.close>ma20?'bull':'bear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
-    pats.slice(0,2).map(function(p){return '<span class="ind '+p.t+'">'+p.n+'</span>';}).join('')+
-    '<span class="ind neut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
+    '<span class="ind-tag '+(last.close>ma20?'it-bull':'it-bear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
+    pats.slice(0,2).map(function(p){return '<span class="ind-tag '+(p.t==="bull"?"it-bull":p.t==="bear"?"it-bear":"it-sig")+'">'+p.n+'</span>';}).join('')+
+    '<span class="ind-tag it-neut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
   el.innerHTML=html;
   // Re-render IMOEX overlay if active
   if(typeof imoexEnabled!=='undefined'&&imoexEnabled) renderImoexOverlay();
@@ -5350,130 +5295,7 @@ function showApp(){
 }
 
 showApp();
+
 </script>
-
-<!-- HOTKEY FLASH INDICATOR -->
-<div id="hotkey-flash" style="
-  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) scale(1.3);
-  background:rgba(0,255,136,.15);border:1px solid rgba(0,255,136,.4);
-  color:var(--green);font-family:var(--mono);font-size:18px;font-weight:700;
-  padding:8px 16px;z-index:9998;opacity:0;
-  transition:opacity .3s,transform .3s;pointer-events:none">
-</div>
-
-<!-- HOTKEY HELP MODAL -->
-<div id="hotkey-help" class="hidden" style="
-  position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.8)" onclick="this.classList.add('hidden')">
-  <div style="background:var(--panel);border:1px solid var(--g2);padding:24px;min-width:400px;max-width:560px" onclick="event.stopPropagation()">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <span style="font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--green)">⌨ ГОРЯЧИЕ КЛАВИШИ</span>
-      <button onclick="document.getElementById('hotkey-help').classList.add('hidden')"
-        style="background:transparent;border:1px solid var(--g);color:var(--dim);width:24px;height:24px;cursor:pointer">✕</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);margin-bottom:2px">ТОРГОВЛЯ</div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--green);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">B</kbd><span style="font-size:9px;color:var(--text)">Открыть LONG</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.3);color:var(--red);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">S</kbd><span style="font-size:9px;color:var(--text)">Открыть SHORT</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:var(--purple);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">C</kbd><span style="font-size:9px;color:var(--text)">CIO анализ</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber);padding:2px 8px;font-family:var(--mono);font-size:11px;font-weight:700">A</kbd><span style="font-size:9px;color:var(--text)">Алерты</span></div>
-      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);border-top:1px solid var(--g);margin:4px 0 2px">ТАЙМФРЕЙМЫ</div>
-      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">1</kbd><span style="font-size:9px;color:var(--dim)">1 минута</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">2</kbd><span style="font-size:9px;color:var(--dim)">10 мин</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">3</kbd><span style="font-size:9px;color:var(--dim)">5 дней</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">4</kbd><span style="font-size:9px;color:var(--dim)">1 мес</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">5</kbd><span style="font-size:9px;color:var(--dim)">3 мес</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">6</kbd><span style="font-size:9px;color:var(--text);font-weight:600">1 год</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:2px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">7</kbd><span style="font-size:9px;color:var(--dim)">3 года</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">8</kbd><span style="font-size:9px;color:var(--dim)">5 лет</span>&nbsp;&nbsp;<kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 7px;font-family:var(--mono);font-size:11px">9</kbd><span style="font-size:9px;color:var(--dim)">МАКС</span></div>
-      <div style="font-family:var(--display);font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:4px 0;grid-column:1/3;border-bottom:1px solid var(--g);border-top:1px solid var(--g);margin:4px 0 2px">НАВИГАЦИЯ</div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">↑↓</kbd><span style="font-size:9px;color:var(--text)">Следующая / предыдущая акция</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">M</kbd><span style="font-size:9px;color:var(--text)">Мультиграфик 2×2</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">I</kbd><span style="font-size:9px;color:var(--text)">IMOEX overlay</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">SPACE</kbd><span style="font-size:9px;color:var(--text)">Обновить данные</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">ESC</kbd><span style="font-size:9px;color:var(--text)">Закрыть окно</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">?</kbd><span style="font-size:9px;color:var(--text)">Эта справка</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- CHART CONTEXT MENU -->
-<div id="chart-ctx-menu" style="
-  display:none;position:fixed;z-index:9000;
-  background:var(--panel);border:1px solid var(--g2);
-  min-width:220px;overflow:hidden;
-  transition:opacity .15s,transform .15s;transform-origin:top left;
-  box-shadow:0 8px 32px rgba(0,0,0,.6)">
-
-  <!-- Header: price info -->
-  <div style="padding:8px 12px;border-bottom:1px solid var(--g);background:var(--cell)">
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--bright)" id="ctxm-price">—</span>
-      <span style="font-size:9px;font-weight:700;color:var(--text)" id="ctxm-sym">—</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:3px;font-size:8.5px">
-      <span id="ctxm-diff" style="font-family:var(--mono)">—</span>
-      <span style="color:var(--dim)">R:R <span id="ctxm-rr" style="color:var(--text);font-family:var(--mono)">—</span></span>
-    </div>
-  </div>
-
-  <!-- LONG button -->
-  <div onclick="ctxOpenTrade('LONG')" style="
-    display:flex;align-items:center;justify-content:space-between;
-    padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--g);
-    transition:background .1s" onmouseover="this.style.background='rgba(0,255,136,.08)'" onmouseout="this.style.background=''">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px">🟢</span>
-      <div>
-        <div style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--green)">ОТКРЫТЬ LONG</div>
-        <div style="font-size:8px;color:var(--dim)">Стоп: <span id="ctxm-long-stop" style="color:var(--red)">—</span> → <span id="ctxm-long-tg" style="color:var(--green)">—</span></div>
-      </div>
-    </div>
-    <span style="font-size:9px;color:var(--dim)">B</span>
-  </div>
-
-  <!-- SHORT button -->
-  <div onclick="ctxOpenTrade('SHORT')" style="
-    display:flex;align-items:center;justify-content:space-between;
-    padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--g);
-    transition:background .1s" onmouseover="this.style.background='rgba(255,45,85,.08)'" onmouseout="this.style.background=''">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px">🔴</span>
-      <div>
-        <div style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--red)">ОТКРЫТЬ SHORT</div>
-        <div style="font-size:8px;color:var(--dim)">Стоп: <span id="ctxm-short-stop" style="color:var(--red)">—</span> → <span id="ctxm-short-tg" style="color:var(--green)">—</span></div>
-      </div>
-    </div>
-    <span style="font-size:9px;color:var(--dim)">S</span>
-  </div>
-
-  <!-- Divider -->
-  <div style="padding:3px 12px;background:var(--cell)">
-    <span style="font-size:7.5px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;font-family:var(--display)">Быстрые действия</span>
-  </div>
-
-  <!-- Alert above -->
-  <div onclick="ctxSetAlert('above')" style="
-    display:flex;align-items:center;gap:8px;
-    padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--g);
-    transition:background .1s" onmouseover="this.style.background='rgba(251,191,36,.06)'" onmouseout="this.style.background=''">
-    <span style="font-size:10px">🔔</span>
-    <span style="font-family:var(--display);font-size:9px;color:var(--amber)">Алерт ВЫШЕ этой цены</span>
-  </div>
-
-  <!-- Alert below -->
-  <div onclick="ctxSetAlert('below')" style="
-    display:flex;align-items:center;gap:8px;
-    padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--g);
-    transition:background .1s" onmouseover="this.style.background='rgba(251,191,36,.06)'" onmouseout="this.style.background=''">
-    <span style="font-size:10px">🔔</span>
-    <span style="font-family:var(--display);font-size:9px;color:var(--amber)">Алерт НИЖЕ этой цены</span>
-  </div>
-
-  <!-- CIO at price -->
-  <div onclick="ctxCIOAtPrice()" style="
-    display:flex;align-items:center;gap:8px;
-    padding:7px 12px;cursor:pointer;
-    transition:background .1s" onmouseover="this.style.background='rgba(167,139,250,.06)'" onmouseout="this.style.background=''">
-    <span style="font-size:10px">⚡</span>
-    <span style="font-family:var(--display);font-size:9px;color:var(--purple)">CIO анализ для этой цены</span>
-  </div>
-</div>
 </body>
 </html>
