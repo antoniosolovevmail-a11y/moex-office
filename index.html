@@ -243,6 +243,10 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
     <button class="nb" onclick="showPage('sig')" id="nav-sig">СИГНАЛЫ</button>
     <button class="nb" onclick="showPage('cab')" id="nav-cab">КАБИНЕТ</button>
     <div class="nav-sep"></div>
+      <div id="hotkey-hint" style="font-family:var(--mono);font-size:13px;font-weight:700;
+        color:var(--green);opacity:0;transition:opacity .7s;padding:0 8px;
+        background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);
+        display:flex;align-items:center;height:20px;pointer-events:none"></div>
     <div class="nav-stat"><span style="color:var(--dim)">IMOEX</span>&nbsp;<span id="imoex-v" style="color:var(--text)">—</span></div>
     <div class="nav-stat"><span style="color:var(--dim)">USD</span>&nbsp;<span id="usd-v" style="color:var(--text)">—</span></div>
     <div class="nav-stat"><span style="color:var(--dim)">Сигналов</span>&nbsp;<span id="sig-cnt" style="color:var(--amber)">0</span></div>
@@ -251,6 +255,11 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
       style="height:30px;padding:0 12px;background:transparent;border:none;border-left:1px solid var(--g);
       color:var(--dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:color .15s"
       title="Горячие клавиши">⌨</button>
+    <button onclick="toggleHotkeysPanel()" title="Горячие клавиши (?)"
+      style="height:30px;padding:0 10px;font-family:var(--mono);font-size:11px;
+      background:transparent;border:none;color:var(--dim);border-left:1px solid var(--g);
+      cursor:pointer;transition:color .2s" onmouseover="this.style.color='var(--green)'"
+      onmouseout="this.style.color='var(--dim)'">⌨️</button>
     <div class="nav-user" onclick="if(confirm('Выйти?'))doLogout()">
       <div class="nav-av" id="nav-av">А</div>
       <span id="nav-nm">—</span>
@@ -290,7 +299,7 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
       <div class="chart-col">
         <div class="chart-hdr">
           <span class="c-sym" id="ch-sym">SBER</span>
-          <span class="c-name" id="ch-name">Сбербанк</span>
+          <span class="c-name" id="ch-name">Сбербанк</span><span style="font-size:8px;color:var(--dim);margin-left:4px">ПКМ = вход</span>
           <span class="c-price up" id="ch-price">—</span>
           <span class="c-chg" id="ch-chg">—</span>
           <div class="tf-wrap">
@@ -405,7 +414,6 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
           <div id="week52-bar" style="padding:5px 12px;border-top:1px solid var(--g);background:var(--panel);flex-shrink:0"></div>
           <div class="chart-ind" id="ind-bar"><span style="font-size:9px;color:var(--dim)">Загрузка...</span></div>
           </div><!-- /single-chart-wrap -->
-      </div>
       <!-- RIGHT -->
       <div class="right-col">
         <div style="padding:8px 10px;border-bottom:1px solid var(--g);flex-shrink:0">
@@ -625,6 +633,21 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
   </div>
 </div>
 
+
+<!-- HOTKEYS PANEL -->
+<div id="hotkeys-panel" class="hidden" style="position:fixed;top:68px;right:14px;z-index:700;
+  background:var(--panel);border:1px solid var(--g2);width:290px;max-height:80vh;
+  overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+  <div style="padding:10px 14px;border-bottom:1px solid var(--g);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--green)">⌨️ ГОРЯЧИЕ КЛАВИШИ</span>
+    <button onclick="toggleHotkeysPanel()" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:14px">✕</button>
+  </div>
+  <div id="hotkeys-list" style="padding:12px 14px"></div>
+  <div style="padding:8px 14px;border-top:1px solid var(--g);font-size:8.5px;color:var(--dim)">
+    Не работают пока открыты поля ввода
+  </div>
+</div>
+
 <!-- TOAST NOTIFICATIONS -->
 <div id="toast-wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none">
   <!-- toasts injected here -->
@@ -783,7 +806,9 @@ body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradie
     </div>
   </div>
 </div>
-<script>
+<script>function loadData(){return ld();}
+function saveData(d){return sd(d);}
+
 'use strict';
 // ═══════════════════════════════════════════════
 // BCS TERMINAL v3 — NO AUTH, localStorage only
@@ -1200,6 +1225,8 @@ function rInd(data){
     pats.slice(0,2).map(function(p){return '<span class="ind '+p.t+'">'+p.n+'</span>';}).join('')+
     '<span class="ind neut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
   el.innerHTML=html;
+  // Re-render IMOEX overlay if active
+  if(typeof imoexEnabled!=='undefined'&&imoexEnabled) renderImoexOverlay();
 }
 
 function rPats(){
@@ -1641,7 +1668,7 @@ async function runAudit(){
         escHtml(txt)+
       '</div>'+
       '<div style="margin-top:10px;display:flex;gap:6px">'+
-        '<button class="btn p" onclick="copyPrompt(this)" style="font-size:8px">📋 СКОПИРОВАТЬ ПРОМТ</button>'+
+        '<button class="btn p" onclick="copyAuditPrompt(this)" style="font-size:8px">📋 СКОПИРОВАТЬ ПРОМТ</button>'+
         '<button class="btn" onclick="this.closest(\'#audit-prompt-wrap\').style.display=\'none\'" style="font-size:8px">✕ ЗАКРЫТЬ</button>'+
       '</div>';
     window._lastAuditPrompt=txt;
@@ -1654,7 +1681,7 @@ async function runAudit(){
 function escHtml(t){
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-function copyPrompt(btn){
+function copyAuditPrompt(btn){
   if(!window._lastAuditPrompt)return;
   navigator.clipboard.writeText(window._lastAuditPrompt).then(function(){
     btn.textContent='✅ СКОПИРОВАНО';
@@ -2060,6 +2087,30 @@ function showAn(sym){
       '<button class="btn" onclick="closeMod(\'an-modal\');sSym(\''+sym+'\')">ОТКРЫТЬ ГРАФИК</button>'+
     '</div>';
   document.getElementById('an-modal').classList.remove('hidden');
+
+  // ── 52-week range inline ─────────────────────
+  var w52x = calc52Week(sym===curSym ? chartData : []);
+  if(w52x && p){
+    var pct52 = Math.max(0,Math.min(100,Math.round((p.p-w52x.low)/(w52x.high-w52x.low)*100)));
+    var col52 = pct52>75?'var(--red)':pct52<25?'var(--green)':'var(--amber)';
+    var w52html = '<div style="margin-bottom:10px">'+
+      '<div style="font-family:var(--display);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">52-НЕДЕЛЬНЫЙ ДИАПАЗОН</div>'+
+      '<div style="position:relative;height:8px;background:rgba(255,255,255,.06)">'+
+        '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,255,136,.3),rgba(251,191,36,.3),rgba(255,45,85,.3))"></div>'+
+        '<div style="position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--bright);left:calc('+pct52+'% - 1.5px)"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-top:2px">'+
+        '<span>'+w52x.low.toFixed(2)+'</span>'+
+        '<span style="color:'+col52+';font-weight:700">'+pct52+'% от диапазона</span>'+
+        '<span>'+w52x.high.toFixed(2)+'</span>'+
+      '</div></div>';
+    // Insert before the buttons
+    var bdy = document.getElementById('an-body');
+    if(bdy){
+      var btnIdx = bdy.innerHTML.indexOf('<div style="display:flex;gap:6px">');
+      if(btnIdx>=0) bdy.innerHTML = bdy.innerHTML.slice(0,btnIdx)+w52html+bdy.innerHTML.slice(btnIdx);
+    }
+  }
 }
 function closeMod(id){document.getElementById(id).classList.add('hidden');}
 
@@ -3396,103 +3447,6 @@ function updateHistoryStats(){
   }
 }
 
-function renderSignalHistory(){
-  var container = document.getElementById('cab-history');
-  if(!container) return;
-  var h = getSignalHistory();
-  var s = calcHistoryStats();
-
-  // Stats bar
-  var statsHtml =
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">'+
-      _statBox('ВСЕГО',s.total,'var(--text)')+
-      _statBox('ЗАКРЫТО',s.closed,'var(--text)')+
-      _statBox('WIN RATE',s.wr!==null?s.wr+'%':'—',s.wr>=60?'var(--green)':s.wr!==null?'var(--red)':'var(--dim)')+
-      _statBox('AVG P&L',s.avgPnl!==null?(s.avgPnl>=0?'+':'')+s.avgPnl+'%':'—',
-               s.avgPnl>=0?'var(--green)':'var(--red)')+
-    '</div>'+
-    (s.closed>0?
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'+
-        _statBox('ЛУЧШИЙ','+'+s.best+'%','var(--green)')+
-        _statBox('ХУДШИЙ',s.worst+'%','var(--red)')+
-      '</div>':'')+
-    // Accuracy chart (bar per 10 signals)
-    (s.closed>=3?renderAccuracyBar(getSignalHistory()):'');
-
-  if(!h.length){
-    container.innerHTML=statsHtml+
-      '<div style="font-size:9px;color:var(--dim);padding:12px 0">'+
-        'Нажмите «В ЖУРНАЛ» в карточке CIO-сигнала, чтобы добавить сигналы.'+
-      '</div>';
-    return;
-  }
-
-  var rows = h.map(function(sig){
-    var isLong = sig.dir==='LONG';
-    var dc = isLong?'var(--green)':'var(--red)';
-    var statusBadge = sig.status==='closed'
-      ? (sig.pnl>=0
-          ?'<span style="background:rgba(0,255,136,.12);color:var(--green);padding:1px 6px;font-size:8px">✓ +'+sig.pnl+'%</span>'
-          :'<span style="background:rgba(255,45,85,.12);color:var(--red);padding:1px 6px;font-size:8px">✗ '+sig.pnl+'%</span>')
-      : sig.status==='executed'
-          ?'<span style="background:rgba(251,191,36,.1);color:var(--amber);padding:1px 6px;font-size:8px">▶ ИСПОЛ.</span>'
-          :'<span style="background:rgba(255,255,255,.06);color:var(--dim);padding:1px 6px;font-size:8px">NEW</span>';
-
-    var curP = prices[sig.sym]&&prices[sig.sym].p;
-    var unrealized = (curP&&sig.status==='executed')
-      ? (sig.dir==='LONG'?(curP-sig.execPrice)/sig.execPrice*100:(sig.execPrice-curP)/sig.execPrice*100)
-      : null;
-
-    var actions = '';
-    if(sig.status==='new'){
-      actions=
-        '<button onclick="execSignalPrompt(\''+sig.id+'\','+sig.entry+')" '+
-          'style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);'+
-          'color:var(--green);padding:2px 7px;font-family:var(--mono);font-size:8px;cursor:pointer">'+
-          '▶ ИСПОЛНЕН</button>';
-    } else if(sig.status==='executed'){
-      actions=
-        '<button onclick="closeSignalPrompt(\''+sig.id+'\','+sig.execPrice+')" '+
-          'style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);'+
-          'color:var(--amber);padding:2px 7px;font-family:var(--mono);font-size:8px;cursor:pointer">'+
-          '■ ЗАКРЫТЬ</button>';
-    }
-
-    return '<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,.04);'+
-      (sig.status==='new'?'opacity:.8':'')+'">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-        '<span style="font-size:9px;color:var(--dim);font-family:var(--mono);width:36px">'+sig.date+'</span>'+
-        '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--bright)">'+sig.sym+'</span>'+
-        '<span style="font-size:9px;font-weight:700;padding:1px 6px;background:'+(isLong?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)')+';color:'+dc+'">'+sig.dir+'</span>'+
-        statusBadge+
-        '<div style="flex:1"></div>'+
-        (sig.conf?'<span style="font-size:8px;color:var(--dim)">AI: '+sig.conf+'%</span>':'')+
-        '<button onclick="deleteSignal(\''+sig.id+'\')" '+
-          'style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:0 2px">✕</button>'+
-      '</div>'+
-      '<div style="display:flex;gap:12px;align-items:center">'+
-        '<span style="font-size:9px;color:var(--dim)">'+
-          'Вход: <b style="color:var(--bright);font-family:var(--mono)">'+(sig.execPrice||sig.entry)+'₽</b>'+
-        '</span>'+
-        '<span style="font-size:9px;color:var(--dim)">'+
-          'Стоп: <b style="color:var(--red);font-family:var(--mono)">'+sig.stop+'₽</b>'+
-        '</span>'+
-        '<span style="font-size:9px;color:var(--dim)">'+
-          'Цель: <b style="color:var(--green);font-family:var(--mono)">'+sig.tg1+'₽</b>'+
-        '</span>'+
-        (unrealized!==null?
-          '<span style="font-family:var(--mono);font-size:9px;font-weight:700;color:'+(unrealized>=0?'var(--green)':'var(--red)')+'">'+
-            'Сейчас: '+(unrealized>=0?'+':'')+unrealized.toFixed(2)+'%</span>':'')+
-        '<div style="flex:1"></div>'+
-        actions+
-      '</div>'+
-      (sig.reasoning?'<div style="font-size:8px;color:var(--dim);margin-top:3px">'+sig.reasoning.slice(0,80)+'</div>':'')+
-    '</div>';
-  }).join('');
-
-  container.innerHTML = statsHtml + rows;
-}
-
 function _statBox(label, val, col){
   return '<div style="background:var(--cell,#0a1628);border:1px solid rgba(255,255,255,.06);padding:8px 10px">'+
     '<div style="font-size:8px;color:var(--dim);font-family:var(--display,sans-serif);text-transform:uppercase;letter-spacing:.08em">'+label+'</div>'+
@@ -4579,36 +4533,6 @@ function update52Header(w52, p){
 }
 
 // Extend showAn to include 52W data
-var _origShowAn = showAn;
-function showAn(sym){
-  _origShowAn(sym);
-  // Add 52W section to modal after render
-  setTimeout(function(){
-    var body = document.getElementById('an-body');
-    if(!body) return;
-    var w52 = calc52Week(sym===curSym ? chartData : []);
-    var p = prices[sym];
-    if(!w52||!p) return;
-
-    var pct = Math.round((p.p-w52.low)/(w52.high-w52.low)*100);
-    var week52Html =
-      '<div style="margin-bottom:10px">'+
-        '<div style="font-family:var(--display);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">52-НЕДЕЛЬНЫЙ ДИАПАЗОН</div>'+
-        '<div id="week52-bar-modal"></div>'+
-      '</div>';
-
-    // Insert before the description text
-    var descIdx = body.innerHTML.indexOf('P/E&lt;10x');
-    if(descIdx>0){
-      body.innerHTML = body.innerHTML.slice(0,descIdx) + week52Html + body.innerHTML.slice(descIdx);
-    } else {
-      body.innerHTML += week52Html;
-    }
-    render52WeekBar(p.p, w52.low, w52.high, 'week52-bar-modal');
-  }, 50);
-}
-
-
 // ═══════════════════════════════════════════════════
 // TASK 10: COMPARE WITH IMOEX — OVERLAY LINE
 // ═══════════════════════════════════════════════════
@@ -4742,16 +4666,7 @@ function removeImoexOverlay(){
   }
   // Hide left scale
   if(chart){
-    try{chart.priceScale('imoex').applyOptions({visible:false});}catch(e){}
-  }
-}
 
-// Re-render overlay when chart data changes
-var _origRenderInd = rInd;
-function rInd(data){
-  _origRenderInd(data);
-  if(imoexEnabled) renderImoexOverlay();
-}
 
 
 // ═══════════════════════════════════════════════════
@@ -4954,20 +4869,6 @@ function isTypingContext(){
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
-function initHotkeys(){
-  document.addEventListener('keydown', function(e){
-    if(isTypingContext()) return;
-    var key = e.key.toLowerCase();
-    // Prevent space scrolling page
-    if(key === ' ') e.preventDefault();
-    var hk = HOTKEYS[key];
-    if(hk){
-      hk.fn();
-      showHotkeyFlash(hk.label);
-    }
-  });
-}
-
 function showHotkeyFlash(key){
   var el = document.getElementById('hotkey-flash');
   if(!el) return;
@@ -5049,6 +4950,345 @@ function toggleHotkeyHelp(){
   el.classList.toggle('hidden');
 }
 
+
+// ═══════════════════════════════════════════════════
+// TASK 12: KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════
+
+var hotkeysVisible = false;
+
+var HOTKEYS = [
+  // TF switching
+  {key:'1', desc:'Таймфрейм 1 мин',      fn:function(){setTF('1m');}},
+  {key:'2', desc:'Таймфрейм 10 мин',     fn:function(){setTF('10m');}},
+  {key:'3', desc:'Таймфрейм 5 дней',     fn:function(){setTF('5D');}},
+  {key:'4', desc:'Таймфрейм 1 месяц',    fn:function(){setTF('1Mo');}},
+  {key:'5', desc:'Таймфрейм 3 месяца',   fn:function(){setTF('3Mo');}},
+  {key:'6', desc:'Таймфрейм 1 год',      fn:function(){setTF('1Y');}},
+  {key:'7', desc:'Таймфрейм 3 года',     fn:function(){setTF('3Y');}},
+  {key:'8', desc:'Таймфрейм 5 лет',      fn:function(){setTF('5Y');}},
+  {key:'0', desc:'Максимальная история',  fn:function(){setTF('MAX');}},
+  // Actions
+  {key:'B', desc:'Buy — открыть LONG',
+    fn:function(){
+      var p=prices[curSym];
+      showPage('cab');showCab('open');
+      document.getElementById('ot-sym').value=curSym;
+      document.getElementById('ot-dir').value='LONG';
+      if(p)document.getElementById('ot-en').value=p.p;
+      var atr=p?Math.max((p.h-p.l)/4,p.p*0.005):0;
+      if(p&&atr)document.getElementById('ot-st').value=(p.p-atr*1.5).toFixed(2);
+      if(p&&atr)document.getElementById('ot-t1').value=(p.p+atr*2).toFixed(2);
+      showToast('⌨️ B — BUY','LONG '+curSym+' @ '+(p?p.p+'₽':'?'),null);
+    }
+  },
+  {key:'S', desc:'Sell — открыть SHORT',
+    fn:function(){
+      var p=prices[curSym];
+      showPage('cab');showCab('open');
+      document.getElementById('ot-sym').value=curSym;
+      document.getElementById('ot-dir').value='SHORT';
+      if(p)document.getElementById('ot-en').value=p.p;
+      var atr=p?Math.max((p.h-p.l)/4,p.p*0.005):0;
+      if(p&&atr)document.getElementById('ot-st').value=(p.p+atr*1.5).toFixed(2);
+      if(p&&atr)document.getElementById('ot-t1').value=(p.p-atr*2).toFixed(2);
+      showToast('⌨️ S — SELL','SHORT '+curSym+' @ '+(p?p.p+'₽':'?'),null);
+    }
+  },
+  {key:'A', desc:'Анализ CIO для текущей акции',
+    fn:function(){
+      showPage('term');
+      document.getElementById('cio-sym').value=curSym;
+      runCIO();
+      showToast('⌨️ A — CIO','Анализ '+curSym+'...',null);
+    }
+  },
+  {key:' ', desc:'Обновить цены',
+    fn:function(){
+      fetchP().then(function(){
+        updateChartLivePrice();rSigs();
+        renderConsensusPanel(curSym);checkAlerts();
+        refreshMultiChartHeaders();
+      });
+      showToast('⌨️ SPACE','Цены обновлены',null);
+    }
+  },
+  {key:'M', desc:'Toggle — сравнение с IMOEX',
+    fn:function(){toggleImoex();}
+  },
+  {key:'Z', desc:'Toggle — мультиграфик 2×2',
+    fn:function(){toggleMultiChart();}
+  },
+  {key:'R', desc:'Запустить авто-скан сигналов',
+    fn:function(){
+      runAutoScan();
+      showToast('⌨️ R — СКАН','Сканирование 50 акций...',null);
+    }
+  },
+  // Navigation
+  {key:'T', desc:'Страница Терминал',
+    fn:function(){showPage('term');}
+  },
+  {key:'G', desc:'Страница Сигналы',
+    fn:function(){showPage('sig');}
+  },
+  {key:'K', desc:'Страница Кабинет',
+    fn:function(){showPage('cab');}
+  },
+  {key:'/', desc:'Поиск по вотчлисту',
+    fn:function(){
+      showPage('term');
+      var el=document.getElementById('wl-search');
+      if(el){el.focus();el.select();}
+    }
+  },
+  {key:'L', desc:'Алерт для текущей акции',
+    fn:function(){openAlertModal(curSym);}
+  },
+  {key:'Escape', desc:'Закрыть модалы',
+    fn:function(){
+      ['an-modal','audit-modal','alert-modal','journal-modal','journal-close-modal']
+        .forEach(function(id){
+          var el=document.getElementById(id);
+          if(el&&!el.classList.contains('hidden'))el.classList.add('hidden');
+        });
+      if(hotkeysVisible)toggleHotkeysPanel();
+    }
+  },
+  {key:'?', desc:'Показать / скрыть горячие клавиши',
+    fn:function(){toggleHotkeysPanel();}
+  }
+];
+
+function handleHotkey(e){
+  // Ignore when typing in inputs, textareas, selects
+  var tag = e.target.tagName.toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+
+  var key = e.key==='&nbsp;'?' ':e.key;
+  var hk  = HOTKEYS.filter(function(h){return h.key===key||h.key===key.toUpperCase();});
+  if(!hk.length) return;
+
+  e.preventDefault();
+  hk[0].fn();
+
+  // Flash key hint in nav
+  showKeyHint(key==='&nbsp;'?'SPC':key.toUpperCase());
+}
+
+function showKeyHint(key){
+  var el = document.getElementById('hotkey-hint');
+  if(!el) return;
+  el.textContent = key;
+  el.style.opacity = '1';
+  setTimeout(function(){el.style.opacity='0';}, 700);
+}
+
+function toggleHotkeysPanel(){
+  hotkeysVisible = !hotkeysVisible;
+  var panel = document.getElementById('hotkeys-panel');
+  if(!panel) return;
+  if(hotkeysVisible){
+    panel.classList.remove('hidden');
+    renderHotkeysPanel();
+  } else {
+    panel.classList.add('hidden');
+  }
+}
+
+function renderHotkeysPanel(){
+  var el = document.getElementById('hotkeys-list');
+  if(!el) return;
+
+  var groups = [
+    {title:'ТАЙМФРЕЙМЫ',  keys:['1','2','3','4','5','6','7','8','0']},
+    {title:'ТОРГОВЛЯ',    keys:['B','S','A','L']},
+    {title:'НАВИГАЦИЯ',   keys:['T','G','K','/']},
+    {title:'ИНСТРУМЕНТЫ', keys:[' ','M','Z','R','Escape','?']},
+  ];
+
+  el.innerHTML = groups.map(function(g){
+    var items = HOTKEYS.filter(function(h){
+      return g.keys.indexOf(h.key)>=0||g.keys.indexOf(h.key.toUpperCase())>=0;
+    });
+    return '<div style="margin-bottom:12px">'+
+      '<div style="font-family:var(--display);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">'+g.title+'</div>'+
+      items.map(function(h){
+        var keyLabel = h.key===' '?'SPACE':h.key==='Escape'?'ESC':h.key==='/'?'/':h.key;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)">'+
+          '<kbd style="background:var(--cell);border:1px solid rgba(255,255,255,.15);'+
+            'padding:2px 7px;font-family:var(--mono);font-size:10px;font-weight:700;'+
+            'color:var(--bright);min-width:28px;text-align:center;display:inline-block">'+keyLabel+'</kbd>'+
+          '<span style="font-size:9.5px;color:var(--text)">'+h.desc+'</span>'+
+        '</div>';
+      }).join('')+
+    '</div>';
+  }).join('');
+}
+
+function initHotkeys(){
+  document.addEventListener('keydown', handleHotkey);
+}
+
+
+// ═══════════════════════════════════════════════════
+// TASK 13: QUICK ENTRY FROM CHART (RIGHT CLICK)
+// ═══════════════════════════════════════════════════
+
+var ctxMenuPrice  = null; // price at right-click position
+var ctxMenuTime   = null; // time at right-click position
+
+function initChartContextMenu(){
+  var container = document.getElementById('chart-container');
+  if(!container) return;
+
+  container.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    if(!cs || !chartData.length) return;
+
+    // Get price at cursor Y position
+    var rect = container.getBoundingClientRect();
+    var y    = e.clientY - rect.top;
+    var price = null;
+    try{ price = cs.coordinateToPrice(y); }catch(ex){}
+    if(!price || price <= 0) return;
+
+    ctxMenuPrice = parseFloat(price.toFixed(2));
+
+    // Find nearest candle for time reference
+    var x = e.clientX - rect.left;
+    try{
+      var logical = chart.timeScale().coordinateToLogical(x);
+      if(logical !== null && chartData[logical]){
+        ctxMenuTime = chartData[logical].time;
+      }
+    }catch(ex){}
+
+    showChartContextMenu(e.clientX, e.clientY, ctxMenuPrice);
+  });
+
+  // Hide context menu on click/scroll elsewhere
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#chart-ctx-menu')){
+      hideChartContextMenu();
+    }
+  });
+  document.addEventListener('scroll', hideChartContextMenu);
+}
+
+function showChartContextMenu(x, y, price){
+  var menu = document.getElementById('chart-ctx-menu');
+  if(!menu) return;
+
+  var p    = prices[curSym];
+  var curP = p ? p.p : price;
+  var atr  = p && p.h && p.l ? (p.h - p.l) * 0.5 : price * 0.01;
+  var stopL = parseFloat((price - atr * 1.5).toFixed(2));
+  var stopS = parseFloat((price + atr * 1.5).toFixed(2));
+  var tg1L  = parseFloat((price + atr * 2.0).toFixed(2));
+  var tg1S  = parseFloat((price - atr * 2.0).toFixed(2));
+  var rr    = (atr*2.0 / (atr*1.5)).toFixed(1);
+
+  var diffPct = curP>0 ? ((price-curP)/curP*100).toFixed(2) : '0';
+  var diffCol = diffPct>=0 ? 'var(--green)':'var(--red)';
+  var diffStr = (diffPct>=0?'+':'')+diffPct+'%';
+
+  document.getElementById('ctxm-price').textContent  = price.toFixed(2)+' ₽';
+  document.getElementById('ctxm-sym').textContent    = curSym;
+  document.getElementById('ctxm-diff').textContent   = diffStr+' от текущей';
+  document.getElementById('ctxm-diff').style.color   = diffCol;
+  document.getElementById('ctxm-rr').textContent     = '1:'+rr;
+
+  document.getElementById('ctxm-long-stop').textContent = stopL+'₽';
+  document.getElementById('ctxm-long-tg').textContent   = tg1L+'₽';
+  document.getElementById('ctxm-short-stop').textContent= stopS+'₽';
+  document.getElementById('ctxm-short-tg').textContent  = tg1S+'₽';
+
+  // Store calculated levels for use in buttons
+  menu._stopL = stopL; menu._tg1L = tg1L;
+  menu._stopS = stopS; menu._tg1S = tg1S;
+
+  // Position menu (avoid going off screen)
+  var menuW = 220, menuH = 220;
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var left = Math.min(x+4, vw - menuW - 8);
+  var top  = Math.min(y+4, vh - menuH - 8);
+
+  menu.style.left    = left + 'px';
+  menu.style.top     = top  + 'px';
+  menu.style.display = 'block';
+  menu.style.opacity = '0';
+  menu.style.transform = 'scale(.95)';
+  setTimeout(function(){
+    menu.style.opacity   = '1';
+    menu.style.transform = 'scale(1)';
+  }, 10);
+}
+
+function hideChartContextMenu(){
+  var menu = document.getElementById('chart-ctx-menu');
+  if(menu) menu.style.display = 'none';
+}
+
+function ctxOpenTrade(dir){
+  var menu   = document.getElementById('chart-ctx-menu');
+  var price  = ctxMenuPrice;
+  var stopP  = dir==='LONG' ? menu._stopL : menu._stopS;
+  var tg1P   = dir==='LONG' ? menu._tg1L  : menu._tg1S;
+  hideChartContextMenu();
+
+  // Navigate to open trade form and pre-fill
+  showPage('cab');
+  showCab('open');
+
+  setTimeout(function(){
+    var symEl  = document.getElementById('ot-sym');
+    var dirEl  = document.getElementById('ot-dir');
+    var enEl   = document.getElementById('ot-en');
+    var stEl   = document.getElementById('ot-st');
+    var tgEl   = document.getElementById('ot-t1');
+    if(symEl)  symEl.value = curSym;
+    if(dirEl)  dirEl.value = dir;
+    if(enEl)   enEl.value  = price;
+    if(stEl)   stEl.value  = stopP;
+    if(tgEl)   tgEl.value  = tg1P;
+
+    // Flash the form
+    var form = document.getElementById('cab-open');
+    if(form){
+      form.style.transition = 'background .3s';
+      form.style.background = dir==='LONG'?'rgba(0,255,136,.06)':'rgba(255,45,85,.06)';
+      setTimeout(function(){form.style.background='';},800);
+    }
+  }, 150);
+
+  showToast(
+    (dir==='LONG'?'🟢':'🔴')+' '+dir+' '+curSym,
+    'Вход: '+price+'₽  Стоп: '+stopP+'₽  Цель: '+tg1P+'₽',
+    curSym
+  );
+  addEv('trade', null, 'Быстрый вход: '+dir+' '+curSym+' @ '+price+'₽ с графика');
+}
+
+function ctxSetAlert(dir){
+  hideChartContextMenu();
+  requestNotifPermission(function(){});
+  var price = ctxMenuPrice;
+  addAlert(curSym, dir==='above'?'above':'below', price, 0);
+}
+
+function ctxCIOAtPrice(){
+  hideChartContextMenu();
+  // Set CIO symbol and run
+  var selEl = document.getElementById('cio-sym');
+  if(selEl) selEl.value = curSym;
+  // Store price context for CIO
+  window._ctxCIOPrice = ctxMenuPrice;
+  runCIO();
+  showToast('CIO анализ', 'Анализирую '+curSym+' @ '+ctxMenuPrice+'₽', curSym);
+}
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -5061,6 +5301,7 @@ function showApp(){
   rAgCards();
   renderConsensusPanel(curSym);
   initCh();
+  setTimeout(initChartContextMenu, 500);
   rTaKb();
   updCabUI();
   lCabTr();
@@ -5095,6 +5336,7 @@ function showApp(){
   setInterval(fetchMa,60000);
   // fetchNews replaced by fetchNewsMulti above
   requestNotifPermission(function(){});
+  initHotkeys();
   updateAlertBadge();
   updateHistoryStats();
   initHotkeys();
@@ -5145,6 +5387,89 @@ showApp();
       <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">ESC</kbd><span style="font-size:9px;color:var(--text)">Закрыть окно</span></div>
       <div style="display:flex;align-items:center;gap:8px;padding:3px 0"><kbd style="background:var(--cell);border:1px solid var(--g);color:var(--text);padding:2px 8px;font-family:var(--mono);font-size:11px">?</kbd><span style="font-size:9px;color:var(--text)">Эта справка</span></div>
     </div>
+  </div>
+</div>
+
+<!-- CHART CONTEXT MENU -->
+<div id="chart-ctx-menu" style="
+  display:none;position:fixed;z-index:9000;
+  background:var(--panel);border:1px solid var(--g2);
+  min-width:220px;overflow:hidden;
+  transition:opacity .15s,transform .15s;transform-origin:top left;
+  box-shadow:0 8px 32px rgba(0,0,0,.6)">
+
+  <!-- Header: price info -->
+  <div style="padding:8px 12px;border-bottom:1px solid var(--g);background:var(--cell)">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--bright)" id="ctxm-price">—</span>
+      <span style="font-size:9px;font-weight:700;color:var(--text)" id="ctxm-sym">—</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:3px;font-size:8.5px">
+      <span id="ctxm-diff" style="font-family:var(--mono)">—</span>
+      <span style="color:var(--dim)">R:R <span id="ctxm-rr" style="color:var(--text);font-family:var(--mono)">—</span></span>
+    </div>
+  </div>
+
+  <!-- LONG button -->
+  <div onclick="ctxOpenTrade('LONG')" style="
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--g);
+    transition:background .1s" onmouseover="this.style.background='rgba(0,255,136,.08)'" onmouseout="this.style.background=''">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px">🟢</span>
+      <div>
+        <div style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--green)">ОТКРЫТЬ LONG</div>
+        <div style="font-size:8px;color:var(--dim)">Стоп: <span id="ctxm-long-stop" style="color:var(--red)">—</span> → <span id="ctxm-long-tg" style="color:var(--green)">—</span></div>
+      </div>
+    </div>
+    <span style="font-size:9px;color:var(--dim)">B</span>
+  </div>
+
+  <!-- SHORT button -->
+  <div onclick="ctxOpenTrade('SHORT')" style="
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--g);
+    transition:background .1s" onmouseover="this.style.background='rgba(255,45,85,.08)'" onmouseout="this.style.background=''">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px">🔴</span>
+      <div>
+        <div style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--red)">ОТКРЫТЬ SHORT</div>
+        <div style="font-size:8px;color:var(--dim)">Стоп: <span id="ctxm-short-stop" style="color:var(--red)">—</span> → <span id="ctxm-short-tg" style="color:var(--green)">—</span></div>
+      </div>
+    </div>
+    <span style="font-size:9px;color:var(--dim)">S</span>
+  </div>
+
+  <!-- Divider -->
+  <div style="padding:3px 12px;background:var(--cell)">
+    <span style="font-size:7.5px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;font-family:var(--display)">Быстрые действия</span>
+  </div>
+
+  <!-- Alert above -->
+  <div onclick="ctxSetAlert('above')" style="
+    display:flex;align-items:center;gap:8px;
+    padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--g);
+    transition:background .1s" onmouseover="this.style.background='rgba(251,191,36,.06)'" onmouseout="this.style.background=''">
+    <span style="font-size:10px">🔔</span>
+    <span style="font-family:var(--display);font-size:9px;color:var(--amber)">Алерт ВЫШЕ этой цены</span>
+  </div>
+
+  <!-- Alert below -->
+  <div onclick="ctxSetAlert('below')" style="
+    display:flex;align-items:center;gap:8px;
+    padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--g);
+    transition:background .1s" onmouseover="this.style.background='rgba(251,191,36,.06)'" onmouseout="this.style.background=''">
+    <span style="font-size:10px">🔔</span>
+    <span style="font-family:var(--display);font-size:9px;color:var(--amber)">Алерт НИЖЕ этой цены</span>
+  </div>
+
+  <!-- CIO at price -->
+  <div onclick="ctxCIOAtPrice()" style="
+    display:flex;align-items:center;gap:8px;
+    padding:7px 12px;cursor:pointer;
+    transition:background .1s" onmouseover="this.style.background='rgba(167,139,250,.06)'" onmouseout="this.style.background=''">
+    <span style="font-size:10px">⚡</span>
+    <span style="font-family:var(--display);font-size:9px;color:var(--purple)">CIO анализ для этой цены</span>
   </div>
 </div>
 </body>
