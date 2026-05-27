@@ -754,7 +754,7 @@ const ST={
   MVID:{n:'М.Видео',s:'Ритейл',pe:null,pb:0.6,roe:-12,div:0},
   SPBE:{n:'СПБ Биржа',s:'Финансы',pe:null,pb:0.8,roe:-5,div:0},
   VKCO:{n:'VK',s:'Технологии',pe:null,pb:1.2,roe:-8,div:0},
-  RENI:{n:'Ренессанс',s:'Финансы',pe:5.2,pb:1.1,roe:24,div:7.8}
+  RENI:{n:'Ренессанс',s:'Финансы',pe:5.2,pb:1.1,roe:24,div:7.8,eps:12.2}
 };
 const SYMS=Object.keys(ST);
 
@@ -1073,9 +1073,9 @@ function calcMrk(data){
     var bd=Math.abs(c.close-c.open);
     var rn=c.high-c.low;
     if(c.close>c.open&&bd>rn*0.6&&c.close>av*1.008)
-      m.push({time:c.time,position:'belowBar',color:'#00ff88',shape:'arrowUp',text:''});
+      m.push({time:c.time,position:'belowBar',color:'var(--ios-green)',shape:'arrowUp',text:''});
     else if(c.close<c.open&&bd>rn*0.6&&c.close<av*0.992)
-      m.push({time:c.time,position:'aboveBar',color:'#ff2d55',shape:'arrowDown',text:''});
+      m.push({time:c.time,position:'aboveBar',color:'var(--ios-red)',shape:'arrowDown',text:''});
   }
   return m.slice(-15);
 }
@@ -1185,7 +1185,7 @@ function rSectors(){
   var el=document.getElementById('sectors');
   if(!el)return;
   el.innerHTML=cats.map(function(c){
-    return '<div class="sp" onclick="this.classList.toggle(\'on\')">'+c+'</div>';
+    return '<div class="sec-chip" onclick="this.classList.toggle(\'on\')">'+c+'</div>';
   }).join('');
 }
 
@@ -1198,7 +1198,7 @@ function rAgCards(){
     var wr=a.tr>0?Math.round(a.wi/a.tr*100):0;
     var dc=agOn?a.c:'#374151';
     var sel=selAg===a.id?' sel':'';
-    return '<div class="ag-card'+sel+'" onclick="selA(\''+a.id+'\')">'+
+    return '<div class="agc'+sel+'" onclick="selA(\''+a.id+'\')">'+
       '<div class="ag-dot'+(agOn?' on':'')+'"></div>'+
       '<span class="ag-e">'+a.e+'</span>'+
       '<div class="ag-n">'+a.n+'</div>'+
@@ -1656,12 +1656,12 @@ function renderSignalCard(sym, data, containerEl){
   var consensusPct = Math.round(agreeCount/votes.length*100);
 
   // Confidence bar color
-  var confCol = conf>=75?'#00ff88':conf>=55?'#fbbf24':'#ff2d55';
-  var dirCol  = isLong?'#00ff88':'#ff2d55';
-  var dirBg   = isLong?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)';
+  var confCol = conf>=75?'var(--ios-green)':conf>=55?'var(--ios-orange)':'var(--ios-red)';
+  var dirCol  = isLong?'var(--ios-green)':'var(--ios-red)';
+  var dirBg   = isLong?'rgba(48,209,88,.1)':'rgba(255,69,58,.1)';
 
   var card = '<div style="'+
-    'background:#04080f;border:1px solid '+(isLong?'rgba(0,255,136,.25)':'rgba(255,45,85,.25)')+';'+
+    'background:var(--bg1);border:0.5px solid '+(isLong?'rgba(0,255,136,.25)':'rgba(255,45,85,.25)')+';'+
     'font-family:\'JetBrains Mono\',monospace;overflow:hidden;margin-top:8px">'+
 
     // ── Header ──
@@ -1681,17 +1681,17 @@ function renderSignalCard(sym, data, containerEl){
 
     // ── Price levels ──
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">'+
-      _priceCell('ВХОД','#94b3cc',entry.toFixed(2),'₽','',false)+
-      _priceCell('СТОП','#ff2d55',stop.toFixed(2),'₽','-'+stopPct+'%',false)+
-      _priceCell('ЦЕЛЬ 1','#00ff88',tg1.toFixed(2),'₽','+'+tg1Pct+'%',false)+
-      _priceCell('ЦЕЛЬ 2','#fbbf24',tg2.toFixed(2),'₽','+'+tg2Pct+'%',true)+
+      _priceCell('ВХОД','var(--label2)',entry.toFixed(2),'₽','',false)+
+      _priceCell('СТОП','var(--ios-red)',stop.toFixed(2),'₽','-'+stopPct+'%',false)+
+      _priceCell('ЦЕЛЬ 1','var(--ios-green)',tg1.toFixed(2),'₽','+'+tg1Pct+'%',false)+
+      _priceCell('ЦЕЛЬ 2','var(--ios-orange)',tg2.toFixed(2),'₽','+'+tg2Pct+'%',true)+
     '</div>'+
 
     // ── R:R + Horizon ──
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">'+
-      _metaCell('R:R RATIO','1 : '+rr.toFixed(1),rr>=2?'#00ff88':rr>=1.5?'#fbbf24':'#ff2d55')+
-      _metaCell('ГОРИЗОНТ',data.horizon||'4-8 часов','#94b3cc')+
-      _metaCell('РИСК',data.risk||'2% депозита','#94b3cc')+
+      _metaCell('R:R RATIO','1 : '+rr.toFixed(1),rr>=2?'var(--ios-green)':rr>=1.5?'var(--ios-orange)':'var(--ios-red)')+
+      _metaCell('ГОРИЗОНТ',data.horizon||'4-8 часов','var(--label2)')+
+      _metaCell('РИСК',data.risk||'2% депозита','var(--label2)')+
     '</div>'+
 
     // ── Confidence bar ──
@@ -1708,12 +1708,12 @@ function renderSignalCard(sym, data, containerEl){
     '<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06)">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
         '<span style="font-size:9px;color:#3d5a7a;letter-spacing:.1em">КОНСЕНСУС АГЕНТОВ</span>'+
-        '<span style="font-size:11px;font-weight:700;color:'+(consensusPct>=70?'#00ff88':consensusPct>=50?'#fbbf24':'#ff2d55')+'">'+
+        '<span style="font-size:11px;font-weight:700;color:'+(consensusPct>=70?'var(--ios-green)':consensusPct>=50?'var(--ios-orange)':'var(--ios-red)')+'">'+
           agreeCount+'/'+votes.length+' — '+consensusPct+'%</span>'+
       '</div>'+
       '<div style="display:flex;gap:4px;flex-wrap:wrap">'+
         votes.map(function(v){
-          var vc = v.agrees ? '#00ff88' : '#ff2d55';
+          var vc = v.agrees ? 'var(--ios-green)' : 'var(--ios-red)';
           var vbg = v.agrees ? 'rgba(0,255,136,.08)' : 'rgba(255,45,85,.06)';
           return '<div title="'+v.name+': '+v.reason+'" style="'+
             'background:'+vbg+';border:1px solid '+(v.agrees?'rgba(0,255,136,.2)':'rgba(255,45,85,.15)')+';'+
@@ -2024,10 +2024,6 @@ function showCab(t){
     var el=document.getElementById('cab-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
   });
-  document.querySelectorAll('.tab-btn').forEach(function(b,i){
-    b.classList.toggle('active',
-      ['trades','history','open','settings'][i]===t);
-  });
 }
 
 // ── Trades (localStorage) ─────────────────────
@@ -2222,7 +2218,7 @@ function renderPrompts(){
       prompt:'В index.html добавь функцию async function fetchSentiment(). '
         +'Она берёт последние 6 заголовков из news-list, отправляет их в Groq API '
         +'(модель llama-3.3-70b-versatile) с промтом: "Rate overall market sentiment from -1 (very bearish) '
-        +'to +1 (very bullish) based on these Russian financial news headlines. Respond with JSON: {score: X.X, label: \'FEAR/GREED/NEUTRAL\'}". '
+        +'to +1 (very bullish) based on these Russian financial news headlines. Respond with JSON: {}". '
         +'Показывай результат в nav-bar рядом с IMOEX как индикатор СТРАХ/НЕЙТР/ЖАДНОСТЬ.'
     },
     {
@@ -2503,9 +2499,11 @@ var RSS_SOURCES=[
 var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 
 async function fetchNewsMulti(filterTicker){
+  try{
   var promises=RSS_SOURCES.map(function(src){
     return fetch(RSS2JSON+encodeURIComponent(src.url)+'&count=10')
       .then(function(r){return r.json();})
+      .catch(function(){return {items:[]};})
       .then(function(d){
         return (d.items||[]).map(function(i){
           return {title:i.title||'',link:i.link||'#',source:src.name,
@@ -2538,6 +2536,7 @@ async function fetchNewsMulti(filterTicker){
   items.sort(function(a,b){return (b.score-a.score)||0;});
   allNews=items.slice(0,30);
   renderNews();
+  }catch(ex){console.warn('fetchNewsMulti',ex);}
 }
 
 function renderNews(){
@@ -2767,7 +2766,7 @@ function renderConsensusPanel(sym){
   var res = calcFullConsensus(sym);
   var isLong  = res.dir==='LONG';
   var isShort = res.dir==='SHORT';
-  var dirCol  = isLong?'var(--green)':isShort?'var(--red)':'var(--amber)';
+  var dirCol  = isLong?'var(--ios-green)':isShort?'var(--ios-red)':'var(--ios-orange)';
 
   var html =
     // ── Header row ──
@@ -2786,7 +2785,7 @@ function renderConsensusPanel(sym){
 
     // ── Agent rows ──
     res.agents.map(function(a){
-      var ac  = a.dir==='LONG'?'var(--green)':a.dir==='SHORT'?'var(--red)':'var(--amber)';
+      var ac  = a.dir==='LONG'?'var(--ios-green)':a.dir==='SHORT'?'var(--ios-red)':'var(--ios-orange)';
       var ico = a.dir==='LONG'?'▲':a.dir==='SHORT'?'▼':'—';
       return '<div style="margin-bottom:5px" title="'+a.reason+'">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'+
@@ -2993,14 +2992,14 @@ function renderScanResults(){
   var el2 = document.getElementById('scan-results-sig2') || document.getElementById('scan-results-sig');
   if(el2) el2.innerHTML = el ? el.innerHTML : '';
   if(!scanResults.length){
-    el.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px 0">Нет сильных сигналов</div>';
+    el.innerHTML='<div style="font-size:11px;color:var(--label3);padding:8px 0">Нет сильных сигналов — нажмите «Скан»</div>';
     return;
   }
   var top = scanResults.slice(0,5);
   el.innerHTML = top.map(function(r,idx){
     var isLong = r.dir==='LONG';
-    var dc = isLong?'var(--green)':'var(--red)';
-    var db = isLong?'rgba(0,255,136,.08)':'rgba(255,45,85,.08)';
+    var dc = isLong?'var(--ios-green)':'var(--ios-red)';
+    var db = isLong?'rgba(48,209,88,.08)':'rgba(255,69,58,.08)';
     var chgStr = (r.chg>=0?'+':'')+r.chg.toFixed(2)+'%';
     return '<div onclick="sSym(\''+r.sym+'\')" style="'+
       'cursor:pointer;padding:6px 8px;margin-bottom:4px;'+
@@ -3079,7 +3078,7 @@ function showToast(title, body, sym){
   if(!wrap) return;
   var t = document.createElement('div');
   t.style.cssText =
-    'background:var(--bg4,#0d1828);border:1px solid rgba(0,255,136,.4);'+
+    'background:rgba(44,44,46,.92);backdrop-filter:blur(20px);border:0.5px solid rgba(84,84,88,.5);border-radius:var(--r2);'+
     'padding:10px 14px;margin-bottom:6px;cursor:pointer;'+
     'animation:fadeIn .3s ease;max-width:300px;'+
     'box-shadow:0 4px 20px rgba(0,0,0,.5)';
@@ -3361,7 +3360,7 @@ function updateHistoryStats(){
 }
 
 function _statBox(label, val, col){
-  return '<div style="background:var(--cell,#0a1628);border:1px solid rgba(255,255,255,.06);padding:8px 10px">'+
+  return '<div style="background:var(--bg2);border:0.5px solid var(--sep);padding:8px 10px">'+
     '<div style="font-size:8px;color:var(--dim);font-family:var(--display,sans-serif);text-transform:uppercase;letter-spacing:.08em">'+label+'</div>'+
     '<div style="font-family:var(--mono,monospace);font-size:16px;font-weight:700;color:'+col+';margin-top:2px">'+val+'</div>'+
   '</div>';
@@ -3567,11 +3566,11 @@ function renderSignalHistory(){
   // Stats
   var statsHtml =
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">'+
-      _statBox('СИГНАЛОВ', s.total, 'var(--text)')+
-      _statBox('ЗАКРЫТО',  s.closed, 'var(--text)')+
-      _statBox('WIN RATE', s.wr!==null?s.wr+'%':'—', s.wr>=60?'var(--green)':s.wr!==null?'var(--red)':'var(--dim)')+
+      _statBox('СИГНАЛОВ', s.total, 'var(--label2)')+
+      _statBox('ЗАКРЫТО',  s.closed, 'var(--label2)')+
+      _statBox('WIN RATE', s.wr!==null?s.wr+'%':'—', s.wr>=60?'var(--ios-green)':s.wr!==null?'var(--ios-red)':'var(--label3)')+
       _statBox('AVG P&L',  s.avgPnl!==null?(s.avgPnl>=0?'+':'')+s.avgPnl+'%':'—',
-               s.avgPnl>=0?'var(--green)':'var(--red)')+
+               s.avgPnl>=0?'var(--ios-green)':'var(--ios-red)')+
     '</div>';
 
   // Analytics: followed vs modified
@@ -3583,9 +3582,9 @@ function renderSignalHistory(){
           '🤖 ЦЕННОСТЬ СЛЕДОВАНИЯ AI</div>'+
         '<div style="display:flex;flex-direction:column;gap:5px">'+
         [
-          {tag:'exact',    label:'✅ Следовал точно', col:'var(--green)'},
-          {tag:'modified', label:'⚠️ Изменил вход',   col:'var(--amber)'},
-          {tag:'partial',  label:'½ Частично',         col:'var(--blue)'}
+          {tag:'exact',    label:'✅ Следовал точно', col:'var(--ios-green)'},
+          {tag:'modified', label:'⚠️ Изменил вход',   col:'var(--ios-orange)'},
+          {tag:'partial',  label:'½ Частично',         col:'var(--ios-blue)'}
         ].filter(function(r){return an[r.tag];}).map(function(r){
           var g = an[r.tag];
           return '<div style="display:flex;align-items:center;gap:8px;font-size:9px">'+
@@ -3594,7 +3593,7 @@ function renderSignalHistory(){
             '<div style="flex:1;height:3px;background:rgba(255,255,255,.06)">'+
               '<div style="height:3px;background:'+r.col+';width:'+g.wr+'%"></div></div>'+
             '<span style="font-family:var(--mono);font-weight:700;color:'+r.col+';width:36px">'+g.wr+'%</span>'+
-            '<span style="font-family:var(--mono);font-size:8px;color:'+(g.avg>=0?'var(--green)':'var(--red)')+';width:48px">'+
+            '<span style="font-family:var(--mono);font-size:8px;color:'+(g.avg>=0?'var(--ios-green)':'var(--ios-red)')+';width:48px">'+
               (g.avg>=0?'+':'')+g.avg+'%</span>'+
           '</div>';
         }).join('')+
@@ -3617,7 +3616,7 @@ function renderSignalHistory(){
 
   var rows = h.map(function(sig){
     var isLong = sig.dir==='LONG';
-    var dc     = isLong?'var(--green)':'var(--red)';
+    var dc     = isLong?'var(--ios-green)':'var(--ios-red)';
     var db     = isLong?'rgba(0,255,136,.06)':'rgba(255,45,85,.06)';
     var ep     = sig.execPrice||sig.entry;
 
@@ -3625,7 +3624,7 @@ function renderSignalHistory(){
     var statusPill =
       sig.status==='closed'
         ? '<span style="background:'+(sig.pnl>=0?'rgba(0,255,136,.12)':'rgba(255,45,85,.12)')+
-            ';color:'+(sig.pnl>=0?'var(--green)':'var(--red)')+';padding:2px 7px;font-size:8px;font-weight:700">'+
+            ';color:'+(sig.pnl>=0?'var(--ios-green)':'var(--ios-red)')+';padding:2px 7px;font-size:8px;font-weight:700">'+
             (sig.pnl>=0?'✓ +':' ✗ ')+sig.pnl+'%</span>'
         : sig.status==='executed'
           ? '<span style="background:rgba(251,191,36,.1);color:var(--amber);padding:2px 7px;font-size:8px">▶ ОТКРЫТА</span>'
@@ -3650,7 +3649,7 @@ function renderSignalHistory(){
 
     // vsTarget display
     var vsHtml = (sig.status==='closed'&&sig.vsTarget!==null)
-      ? '<span style="font-size:8px;color:'+(sig.vsTarget>=0?'var(--green)':'var(--red)')+'">'+
+      ? '<span style="font-size:8px;color:'+(sig.vsTarget>=0?'var(--ios-green)':'var(--ios-red)')+'">'+
           'vs цель: '+(sig.vsTarget>=0?'+':'')+sig.vsTarget+'%</span>'
       : '';
 
@@ -3668,9 +3667,9 @@ function renderSignalHistory(){
         '■ ЗАКРЫТЬ</button>';
     }
 
-    return '<div style="border-left:2px solid '+(sig.status==='closed'?(sig.pnl>=0?'var(--green)':'var(--red)'):'var(--dim)')+
+    return '<div style="border-left:2px solid '+(sig.status==='closed'?(sig.pnl>=0?'var(--ios-green)':'var(--ios-red)'):'var(--label3)')+
       ';padding:8px 10px;margin-bottom:5px;background:'+
-      (sig.status==='closed'?'var(--cell,#0a1628)':db)+';opacity:'+(sig.status==='new'?.75:1)+'">'+
+      (sig.status==='closed'?'var(--bg2)':db)+';opacity:'+(sig.status==='new'?.75:1)+'">'+
 
       // Row 1: header
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'+
@@ -3717,7 +3716,7 @@ function renderSignalHistory(){
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
         (unrealPnl!==null?
           '<span style="font-family:var(--mono);font-size:10px;font-weight:700;'+
-            'color:'+(unrealPnl>=0?'var(--green)':'var(--red)')+'">'+
+            'color:'+(unrealPnl>=0?'var(--ios-green)':'var(--ios-red)')+'">'+
             'Сейчас: '+(unrealPnl>=0?'+':'')+unrealPnl.toFixed(2)+'%</span>':'')+
         devHtml+vsHtml+
         (sig.execNote?'<span style="font-size:8px;color:var(--dim);font-style:italic">«'+sig.execNote.slice(0,40)+'»</span>':'')+
@@ -4000,7 +3999,7 @@ function renderBacktestResults(r){
           var dt  = new Date(t.entryTime).toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'2-digit'});
           return '<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.03);font-size:9px">'+
             '<span style="color:var(--dim);font-family:var(--mono);width:42px">'+dt+'</span>'+
-            '<span style="font-family:var(--mono);font-weight:700;padding:1px 5px;background:'+(t.dir==='LONG'?'rgba(0,255,136,.1)':'rgba(255,45,85,.1)')+';color:'+dc+'">'+t.dir+'</span>'+
+            '<span style="font-family:var(--mono);font-weight:700;padding:1px 5px;background:'+(t.dir==='LONG'?'rgba(48,209,88,.1)':'rgba(255,69,58,.1)')+';color:'+dc+'">'+t.dir+'</span>'+
             '<span style="font-family:var(--mono);color:var(--dim)">@'+t.entry.toFixed(2)+'₽</span>'+
             '<span style="font-family:var(--mono);font-size:8px;color:var(--dim)">'+t.daysHeld+' дн.</span>'+
             '<span style="font-size:8px;color:var(--dim)">'+t.reason+'</span>'+
@@ -4023,7 +4022,7 @@ function renderEquityCurve(equity, dates, w, h){
     var y = h - ((v-mn)/rng)*(h-10) - 2;
     return x.toFixed(1)+','+y.toFixed(1);
   }).join(' ');
-  var col = equity[equity.length-1] >= equity[0] ? '#00ff88' : '#ff2d55';
+  var col = equity[equity.length-1] >= equity[0] ? 'var(--ios-green)' : 'var(--ios-red)';
   var zero = h - ((100-mn)/rng)*(h-10) - 2;
   return '<svg width="'+w+'" height="'+(h+20)+'" style="width:100%;display:block">'+
     '<defs><linearGradient id="eqGrad" x1="0" x2="0" y1="0" y2="1">'+
@@ -4139,13 +4138,13 @@ function initCh(){
   // ── Main chart ──
   var mainOpts = commonChartOpts(mainEl);
   mainOpts.height = mainEl.offsetHeight||280;
-  mainOpts.layout.textColor = '#3d5a7a';
+  mainOpts.layout.textColor = 'var(--label3)';
   mainOpts.timeScale.visible = false; // hide time on main, show on bottom
   chart = LightweightCharts.createChart(mainEl, mainOpts);
   cs = chart.addCandlestickSeries({
-    upColor:'#00ff88', downColor:'#ff2d55',
-    borderUpColor:'#00ff88', borderDownColor:'#ff2d55',
-    wickUpColor:'#00ff88', wickDownColor:'#ff2d55'
+    upColor:'var(--ios-green)', downColor:'var(--ios-red)',
+    borderUpColor:'var(--ios-green)', borderDownColor:'var(--ios-red)',
+    wickUpColor:'var(--ios-green)', wickDownColor:'var(--ios-red)'
   });
 
   // ── Volume chart ──
@@ -4167,7 +4166,7 @@ function initCh(){
     rsiChart = LightweightCharts.createChart(rsiEl, rsiOpts);
     // RSI line
     rsiLine = rsiChart.addLineSeries({
-      color:'#a78bfa', lineWidth:1.5,
+      color:'var(--ios-purple)', lineWidth:1.5,
       priceScaleId:'rsi',
       scaleMargins:{top:.1,bottom:.1}
     });
@@ -4194,7 +4193,7 @@ function initCh(){
   // ── MACD chart ──
   if(macdEl){
     var macdOpts = commonChartOpts(macdEl, macdEl.offsetHeight||72);
-    macdOpts.layout.textColor = '#3d5a7a';
+    macdOpts.layout.textColor = 'var(--label3)';
     macdChart = LightweightCharts.createChart(macdEl, macdOpts);
     // Histogram
     macdHist = macdChart.addHistogramSeries({
@@ -4422,7 +4421,7 @@ function update52WeekChart(){
     title:'52Н MIN'
   });
 
-  var firstTime = chartData[0].time;
+  var firstTime = chartData.length>0?chartData[0].time:0;
   var lastTime  = chartData[chartData.length-1].time;
   hiLine.setData([{time:firstTime,value:w52.high},{time:lastTime,value:w52.high}]);
   loLine.setData([{time:firstTime,value:w52.low}, {time:lastTime,value:w52.low}]);
@@ -4511,7 +4510,7 @@ async function renderImoexOverlay(){
 
   // Build time-aligned normalized % series
   // Both normalized to 0% at the first common candle
-  var stockStart=chartData[0].close;
+  var stockStart=chartData.length>0?chartData[0].close:1;
   var imoexMap={};
   imoexData.forEach(function(d){imoexMap[d.time]=d.close;});
   var imoexStart=null;
@@ -4643,7 +4642,7 @@ function initMultiCharts(){
     var c = LightweightCharts.createChart(container,{
       width:  container.offsetWidth,
       height: container.offsetHeight||200,
-      layout:{ background:{type:'solid',color:'#030810'}, textColor:'#3d5a7a'},
+      layout:{ background:{type:'solid',color:'#030810'}, textColor:'var(--label3)'},
       grid:{   vertLines:{color:'rgba(0,255,136,.03)'}, horzLines:{color:'rgba(0,255,136,.03)'}},
       crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
       rightPriceScale:{borderColor:'rgba(0,255,136,.06)',scaleMargins:{top:.05,bottom:.05}},
@@ -4651,9 +4650,9 @@ function initMultiCharts(){
       handleScroll:true, handleScale:true
     });
     var candleSer = c.addCandlestickSeries({
-      upColor:'#00ff88', downColor:'#ff2d55',
-      borderUpColor:'#00ff88', borderDownColor:'#ff2d55',
-      wickUpColor:'#00ff88', wickDownColor:'#ff2d55'
+      upColor:'var(--ios-green)', downColor:'var(--ios-red)',
+      borderUpColor:'var(--ios-green)', borderDownColor:'var(--ios-red)',
+      wickUpColor:'var(--ios-green)', wickDownColor:'var(--ios-red)'
     });
 
     multiCharts.push({chart:c, cs:candleSer, sym:cfg.sym, tf:cfg.tf, idx:i});
@@ -5235,8 +5234,11 @@ function showApp(){
       checkAlerts();
     });
   },5000);
-  setInterval(fetchBrent,30000);
-  scheduleAutoScan();
+  if(!window._intervalsSet){
+    window._intervalsSet=true;
+    setInterval(fetchBrent,30000);
+    scheduleAutoScan();
+  }
   setInterval(fetchOFZ,60000);
   setInterval(fetchFundamentals,300000); // every 5 min
   setInterval(function(){fetchNewsMulti(curSym);},180000); // every 3 min
@@ -5263,5 +5265,15 @@ function showApp(){
 showApp();
 
 </script>
+
+  <!-- JS-referenced hidden elements -->
+  <div style="display:none">
+    <div id="brent-v"></div>
+    <div id="hotkey-hint"></div>
+    <div id="hotkeys-list"></div>
+    <div id="hotkeys-panel"></div>
+    <div id="evo-prompts"></div>
+    <textarea id="audit-prompt-text"></textarea>
+  </div>
 </body>
 </html>
