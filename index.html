@@ -4,405 +4,463 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>BCS Terminal</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root{
-  --bg:      #0d0f14;
-  --bg2:     #111318;
-  --bg3:     #171b23;
-  --bg4:     #1e2330;
-  --border:  rgba(255,255,255,.07);
-  --border2: rgba(255,255,255,.12);
-  --green:   #34d399;
-  --red:     #f87171;
-  --amber:   #fbbf24;
-  --blue:    #60a5fa;
-  --purple:  #a78bfa;
-  --indigo:  #818cf8;
-  --text:    #e2e8f0;
-  --muted:   #94a3b8;
-  --dim:     #4a5568;
-  --mono:    'JetBrains Mono',monospace;
-  --sans:    'Inter',sans-serif;
-  --r:       6px;
-  --r2:      8px;
+  --bg0:      #000000;
+  --bg1:      #1c1c1e;
+  --bg2:      #2c2c2e;
+  --bg3:      #3a3a3c;
+  --bg4:      #48484a;
+  --sep:      rgba(84,84,88,.65);
+  --sep2:     rgba(84,84,88,.36);
+  --label:    #ffffff;
+  --label2:   rgba(235,235,245,.6);
+  --label3:   rgba(235,235,245,.3);
+  --label4:   rgba(235,235,245,.18);
+  --fill:     rgba(120,120,128,.2);
+  --fill2:    rgba(120,120,128,.12);
+  --ios-green:  #30d158;
+  --ios-red:    #ff453a;
+  --ios-blue:   #0a84ff;
+  --ios-orange: #ff9f0a;
+  --ios-purple: #bf5af2;
+  --ios-teal:   #5ac8f5;
+  --ios-indigo: #5e5ce6;
+  --ios-yellow: #ffd60a;
+  --mono: -apple-system-ui-monospaced, 'SF Mono', 'Menlo', monospace;
+  --sans: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --disp: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --r1: 10px;
+  --r2: 13px;
+  --r3: 18px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
 html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:12px}
-body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9999}
-::-webkit-scrollbar{width:3px;height:3px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+body{background:var(--bg0);color:var(--label);font-family:var(--sans);font-size:13px}
+::-webkit-scrollbar{width:2px;height:2px}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
 .hidden{display:none!important}
-@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes rtl{to{transform:translateX(-50%)}}
-/* ── SHELL ─────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── APP SHELL ── */
 #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-/* ── TOP BAR ───────────────────────────── */
-.topbar{height:44px;min-height:44px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0}
-.logo{font-size:14px;font-weight:700;letter-spacing:.14em;color:#fff;padding-right:16px;border-right:1px solid var(--border)}
-.market-strip{display:flex;gap:5px;padding:0 14px;flex:1;overflow:hidden}
-.mpill{display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(255,255,255,.05);border-radius:var(--r);font-size:11px;white-space:nowrap;flex-shrink:0}
-.mpill .lbl{color:var(--dim)}
-.mpill .val{font-weight:500;font-family:var(--mono);color:var(--text)}
-.mpill .chg{font-size:10px}
-.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
-.topbar-r{display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--border)}
-.tb-clk{font-size:11px;color:var(--dim);font-family:var(--mono)}
-.tb-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer}
-.tb-nm{font-size:12px;color:var(--muted);cursor:pointer}
-.tb-kb{height:44px;padding:0 12px;background:transparent;border:none;color:var(--dim);font-size:14px;cursor:pointer;border-left:1px solid var(--border)}
-.tb-kb:hover{color:var(--text)}
-/* ── NAV TABS ──────────────────────────── */
-.navtabs{height:40px;min-height:40px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:stretch;padding:0 14px;gap:1px;flex-shrink:0}
-.ntab{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;font-weight:500;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;background:transparent;border-top:none;border-left:none;border-right:none}
-.ntab:hover{color:var(--muted)}
-.ntab.on{color:var(--text);border-bottom-color:#6366f1}
-.ntab .ico{font-size:14px}
-.nt-sep{flex:1}
-.nt-audit{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;font-weight:600;color:var(--amber);cursor:pointer;border:none;background:transparent}
-.nt-audit:hover{color:#fde68a}
-/* ── PAGES ─────────────────────────────── */
-.page{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-/* ── TERMINAL GRID ─────────────────────── */
-.term-grid{flex:1;display:grid;grid-template-columns:200px 1fr 248px;grid-template-rows:1fr 90px;overflow:hidden;min-height:0}
-/* ── LEFT SIDEBAR ──────────────────────── */
-.left-col{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.sb-block{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sb-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.sc{background:var(--bg3);border-radius:var(--r);padding:7px 9px;border:1px solid var(--border)}
-.sc-lbl{font-size:10px;color:var(--dim);margin-bottom:2px}
-.sc-val{font-size:15px;font-weight:600;font-family:var(--mono);color:var(--text)}
-.sb-block .sb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.sector-wrap{display:flex;flex-wrap:wrap;gap:4px}
-.sec-chip{font-size:10px;padding:2px 8px;background:rgba(255,255,255,.05);border-radius:4px;cursor:pointer;color:var(--muted);transition:all .15s;border:1px solid transparent}
-.sec-chip:hover,.sec-chip.on{background:rgba(99,102,241,.15);color:#818cf8;border-color:rgba(99,102,241,.25)}
-.scan-block{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.scan-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.scan-btn-sm{padding:2px 9px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:var(--sans)}
-.scan-btn-sm:hover{background:rgba(52,211,153,.18)}
-#scan-status{font-size:9px;color:var(--dim)}
-.sig-item{display:flex;align-items:center;gap:6px;padding:5px 14px;cursor:pointer;transition:background .1s}
-.sig-item:hover{background:rgba(255,255,255,.03)}
-.si-sym{font-size:11px;font-weight:600;color:var(--text);width:42px;font-family:var(--mono)}
-.si-dir{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px}
-.si-long{background:rgba(52,211,153,.12);color:var(--green)}
-.si-short{background:rgba(248,113,113,.12);color:var(--red)}
-.si-name{flex:1;font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.si-pct{font-size:11px;font-family:var(--mono);font-weight:500}
-.pos-block{flex:1;overflow-y:auto;min-height:0}
-/* ── CHART COLUMN ──────────────────────── */
-.chart-col{display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.chart-hdr{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
-.c-sym{font-size:15px;font-weight:700;color:#fff}
-.c-name{font-size:11px;color:var(--dim)}
-.c-price{font-size:20px;font-weight:700;font-family:var(--mono)}
-.c-chg{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
-.c-chg.up{background:rgba(52,211,153,.12);color:var(--green)}
-.c-chg.dn{background:rgba(248,113,113,.12);color:var(--red)}
-.c52-info{font-size:10px;color:var(--dim)}
-.tf-wrap{display:flex;gap:2px;margin-left:auto}
-.tf{padding:3px 8px;font-size:10px;font-weight:600;border-radius:4px;cursor:pointer;color:var(--dim);background:transparent;border:1px solid transparent;transition:all .15s;font-family:var(--sans)}
-.tf:hover{color:var(--muted)}
-.tf.on{background:rgba(99,102,241,.15);color:#818cf8;border-color:rgba(99,102,241,.2)}
-.hdr-btns{display:flex;gap:4px;padding-left:8px;border-left:1px solid var(--border)}
-.hbtn{padding:4px 9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);border-radius:5px;font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
-.hbtn:hover{background:rgba(255,255,255,.1);color:var(--text)}
-.hbtn.on{background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:#818cf8}
-.hbtn.amber{color:var(--amber);border-color:rgba(251,191,36,.2)}
-.hbtn.amber:hover{background:rgba(251,191,36,.08)}
-.chart-hdr .week52-inline{display:flex;align-items:center;gap:4px}
+
+/* ── STATUS BAR (market data) ── */
+.statusbar{height:38px;min-height:38px;background:rgba(28,28,30,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:0.5px solid var(--sep);display:flex;align-items:center;padding:0 18px;gap:0;flex-shrink:0}
+.sb-logo{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--label);letter-spacing:-.02em;padding-right:18px;border-right:0.5px solid var(--sep);flex-shrink:0}
+.sb-markets{display:flex;gap:18px;padding:0 18px;flex:1;overflow:hidden}
+.sbm{display:flex;align-items:baseline;gap:5px}
+.sbm-l{font-size:11px;color:var(--label3);font-weight:500}
+.sbm-v{font-size:13px;font-weight:600;font-family:var(--mono)}
+.sbm-c{font-size:11px;font-weight:500}
+.g{color:var(--ios-green)}.r{color:var(--ios-red)}.a{color:var(--ios-orange)}.t{color:var(--ios-teal)}.pu{color:var(--ios-purple)}.b{color:var(--ios-blue)}
+.statusbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.live-pill{display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(48,209,88,.12);border-radius:20px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--ios-green);animation:pulse 2s infinite}
+.live-txt{font-size:11px;color:var(--ios-green);font-weight:600}
+.sb-clk{font-size:12px;color:var(--label3);font-family:var(--mono)}
+.sb-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--ios-indigo),var(--ios-purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
+.sb-nm{font-size:12px;color:var(--label2);cursor:pointer}
+
+/* ── NAV TABS (iOS segmented / pill style) ── */
+.navrow{height:44px;min-height:44px;background:rgba(28,28,30,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid var(--sep);display:flex;align-items:center;padding:0 16px;gap:4px;flex-shrink:0}
+.ntab{height:30px;padding:0 16px;border-radius:20px;font-size:13px;font-weight:500;color:var(--label2);background:transparent;border:none;cursor:pointer;transition:all .2s;font-family:var(--sans);letter-spacing:-.01em;white-space:nowrap}
+.ntab:hover{color:var(--label);background:var(--fill)}
+.ntab.on{background:var(--fill2);color:var(--label);border:0.5px solid var(--sep2)}
+.ntab .ico{margin-right:5px}
+.nav-sep{flex:1}
+.audit-pill{display:flex;align-items:center;gap:5px;padding:6px 14px;background:rgba(255,159,10,.1);border:0.5px solid rgba(255,159,10,.25);border-radius:20px;font-size:12px;font-weight:600;color:var(--ios-orange);cursor:pointer}
+.kb-btn{width:34px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--fill2);border-radius:8px;font-size:14px;cursor:pointer;border:0.5px solid var(--sep);color:var(--label3)}
+.kb-btn:hover{color:var(--label)}
+
+/* ── MAIN LAYOUT ── */
+.page{flex:1;overflow:hidden;display:flex;min-height:0}
+
+/* ── LEFT PANEL ── */
+.left-panel{width:320px;min-width:320px;display:flex;flex-direction:column;overflow:hidden;border-right:0.5px solid var(--sep)}
+
+/* Signal Hero Card */
+.signal-hero{padding:14px 16px;border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.card-label{font-size:11px;font-weight:600;color:var(--label3);letter-spacing:.03em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cio-pulse{width:6px;height:6px;border-radius:50%;background:var(--ios-purple);animation:pulse 2.5s infinite}
+.signal-main{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.dir-pill{padding:7px 14px;border-radius:20px;font-size:15px;font-weight:700;letter-spacing:.02em}
+.dp-long{background:rgba(48,209,88,.15);color:var(--ios-green);border:0.5px solid rgba(48,209,88,.3)}
+.dp-short{background:rgba(255,69,58,.15);color:var(--ios-red);border:0.5px solid rgba(255,69,58,.3)}
+.signal-id{flex:1}
+.sig-sym{font-family:var(--disp);font-size:22px;font-weight:700;color:var(--label);letter-spacing:-.02em;line-height:1}
+.sig-name{font-size:12px;color:var(--label3);margin-top:2px}
+.sig-conf-block{text-align:right}
+.sig-conf-num{font-family:var(--disp);font-size:26px;font-weight:700;line-height:1}
+.sig-conf-lbl{font-size:10px;color:var(--label3);margin-top:1px;font-weight:500}
+.levels-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.lc{background:var(--bg1);border-radius:var(--r2);padding:8px 9px;border:0.5px solid var(--sep2)}
+.lc-l{font-size:10px;color:var(--label3);font-weight:500;margin-bottom:3px}
+.lc-v{font-size:13px;font-weight:600;font-family:var(--mono)}
+.rr-card{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:rgba(94,92,230,.1);border-radius:var(--r2);border:0.5px solid rgba(94,92,230,.25);margin-bottom:10px}
+.rr-left .rr-t{font-size:12px;font-weight:600;color:var(--ios-indigo)}
+.rr-left .rr-s{font-size:10px;color:var(--label3);margin-top:1px}
+.rr-val{font-family:var(--disp);font-size:20px;font-weight:700;color:var(--ios-indigo)}
+.conf-bar-wrap{margin-bottom:12px}
+.cb-header{display:flex;justify-content:space-between;font-size:11px;color:var(--label3);margin-bottom:6px;font-weight:500}
+.cb-track{height:5px;background:var(--fill);border-radius:3px;overflow:hidden}
+.cb-fill{height:5px;border-radius:3px;background:var(--ios-green)}
+.sig-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sb-primary{padding:11px;background:var(--ios-indigo);border:none;color:#fff;border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.sb-primary:active{opacity:.75}
+.sb-sec{padding:11px;background:var(--fill2);border:0.5px solid var(--sep);color:var(--label2);border-radius:var(--r2);font-size:13px;cursor:pointer;font-family:var(--sans)}
+.sb-sec:active{opacity:.75}
+
+/* CIO Input area */
+.cio-area{padding:12px 16px;border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.cio-row{display:flex;gap:8px;margin-bottom:8px}
+.cio-sel{flex:1;background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);padding:8px 10px;font-family:var(--mono);font-size:12px;outline:none;border-radius:var(--r2)}
+.cio-sel:focus{border-color:var(--ios-indigo)}
+.cio-run-btn{padding:8px 16px;background:var(--ios-indigo);border:none;color:#fff;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+.cio-run-btn:disabled{opacity:.4;cursor:default}
+.cio-key{width:100%;background:var(--bg2);border:0.5px solid var(--sep);color:var(--label2);padding:8px 10px;font-family:var(--mono);font-size:12px;outline:none;border-radius:var(--r2)}
+.cio-key::placeholder{color:var(--label4)}
+.cio-key:focus{border-color:var(--ios-indigo)}
+.cio-result{background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:10px;font-size:11px;line-height:1.75;color:var(--label2);max-height:150px;overflow-y:auto;margin-top:8px;font-family:var(--mono)}
+
+/* Consensus section */
+.section-block{padding:12px 16px;border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.section-hdr{font-size:11px;font-weight:600;color:var(--label3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+.cbar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}
+.cbar-name{width:55px;color:var(--label2);font-weight:500;flex-shrink:0}
+.cbar-track{flex:1;height:4px;background:var(--fill);border-radius:2px;overflow:hidden}
+.cbar-fill{height:4px;border-radius:2px;transition:width 1s}
+.cbar-pct{width:28px;text-align:right;font-family:var(--mono);font-size:11px}
+
+/* Watchlist */
+.wl-area{flex:1;overflow-y:auto;min-height:0}
+.wl-search{padding:8px 16px;border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.wl-search input{width:100%;background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);padding:8px 12px;border-radius:var(--r2);font-family:var(--sans);font-size:13px;outline:none}
+.wl-search input:focus{border-color:var(--ios-indigo)}
+.wl-search input::placeholder{color:var(--label3)}
+.wl-row{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;transition:background .15s}
+.wl-row:hover{background:var(--fill)}
+.wl-row.on{background:rgba(94,92,230,.08)}
+.wl-sym{font-size:13px;font-weight:600;color:var(--label);width:44px;font-family:var(--mono);letter-spacing:-.01em}
+.wl-name-col{flex:1}
+.wl-name{font-size:12px;color:var(--label2);line-height:1}
+.wl-sector{font-size:10px;color:var(--label3);margin-top:1px}
+.wl-vals{text-align:right}
+.wl-price{font-size:13px;font-weight:600;font-family:var(--mono)}
+.wl-chg{font-size:11px;font-weight:500}
+.wl-an{padding:3px 8px;background:rgba(94,92,230,.12);border:0.5px solid rgba(94,92,230,.25);color:var(--ios-indigo);border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0}
+.wl-sep{height:0.5px;background:var(--sep);margin:0 16px}
+
+/* Signals mini */
+.sig-mini{border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.sig-mini-hdr{padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between}
+.si-row{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer}
+.si-row:hover{background:var(--fill)}
+.si-sym{font-size:12px;font-weight:600;color:var(--label);width:42px;font-family:var(--mono)}
+.si-dir{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+.si-long{background:rgba(48,209,88,.12);color:var(--ios-green)}
+.si-short{background:rgba(255,69,58,.12);color:var(--ios-red)}
+.si-name{flex:1;font-size:11px;color:var(--label3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-pct{font-size:12px;font-family:var(--mono);font-weight:600}
+
+/* ── CHART SIDE ── */
+.chart-side{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.chart-header{height:54px;min-height:54px;background:rgba(28,28,30,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid var(--sep);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
+.ch-sym{font-family:var(--disp);font-size:17px;font-weight:700;color:var(--label);letter-spacing:-.02em}
+.ch-name{font-size:12px;color:var(--label3);letter-spacing:-.01em}
+.ch-price{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.03em}
+.ch-chg{font-size:12px;font-weight:600;padding:3px 9px;border-radius:8px}
+.chup{background:rgba(48,209,88,.12);color:var(--ios-green)}
+.chdn{background:rgba(255,69,58,.12);color:var(--ios-red)}
+.ch52{font-size:11px;color:var(--label3);padding:4px 10px;background:var(--fill2);border-radius:8px;white-space:nowrap}
+.tf-wrap{display:flex;gap:2px;margin-left:auto;background:var(--bg2);border-radius:9px;padding:2px}
+.tf{padding:4px 9px;font-size:11px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--label3);background:transparent;border:none;transition:all .2s;font-family:var(--sans)}
+.tf.on{background:var(--bg3);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.ch-tools{display:flex;gap:6px;padding-left:10px;border-left:0.5px solid var(--sep)}
+.cht{height:30px;padding:0 11px;background:var(--bg2);border:0.5px solid var(--sep);color:var(--label3);border-radius:8px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;display:flex;align-items:center;gap:4px}
+.cht:hover{color:var(--label);background:var(--bg3)}
+.cht.on{background:rgba(94,92,230,.15);border-color:rgba(94,92,230,.3);color:var(--ios-indigo)}
+.cht.amber{color:var(--ios-orange)}
+
+/* Chart containers */
 #single-chart-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
-#chart-container{flex:1;min-height:0;background:var(--bg)}
-.subchart-wrap{flex-shrink:0;position:relative;background:var(--bg);border-top:1px solid var(--border)}
-.subchart-label{position:absolute;top:4px;left:10px;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);z-index:2;pointer-events:none}
-.subchart-val{position:absolute;top:4px;right:10px;font-size:10px;font-family:var(--mono);z-index:2;pointer-events:none}
-.ind-bar{height:30px;min-height:30px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;padding:0 12px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
-.ind-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
-.it-bull{background:rgba(52,211,153,.1);color:var(--green)}
-.it-bear{background:rgba(248,113,113,.1);color:var(--red)}
-.it-neut{background:rgba(255,255,255,.06);color:var(--muted)}
-.it-sig{background:rgba(251,191,36,.1);color:var(--amber)}
-#week52-bar{padding:4px 12px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
-/* ── RIGHT PANEL ───────────────────────── */
-.right-col{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.rp-head{padding:8px 12px 5px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.rp-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.rp-sub{font-size:11px;font-weight:600;color:var(--indigo)}
-.consensus-panel{padding:6px 12px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
-#consensus-panel .cons-summary{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.cons-dir-big{font-size:15px;font-weight:700}
-.cons-votes{font-size:10px;color:var(--muted)}
-.cons-pct{margin-left:auto;font-size:13px;font-weight:600;font-family:var(--mono)}
-.cbar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px}
-.cbar-lbl{color:var(--muted);width:50px;flex-shrink:0}
-.cbar-track{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
-.cbar-fill{height:4px;border-radius:2px;transition:width .8s}
-.cbar-num{width:24px;text-align:right;font-family:var(--mono);font-size:10px}
-.wl-block{flex:1;overflow-y:auto;min-height:0}
-.wl-row{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(255,255,255,.03)}
-.wl-row:hover{background:rgba(255,255,255,.03)}
-.wl-row.on{background:rgba(99,102,241,.07)}
-.wl-sym{font-size:11px;font-weight:600;width:38px;color:var(--text);font-family:var(--mono)}
-.wl-name{flex:1;font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wl-p{font-size:11px;font-weight:500;font-family:var(--mono)}
-.wl-c{font-size:10px}
-.wl-an{padding:1px 6px;font-size:9px;font-weight:600;background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
-.wl-an:hover{background:rgba(99,102,241,.2)}
-.signals-mini{max-height:100px;overflow-y:auto;border-bottom:1px solid var(--border);flex-shrink:0}
-/* ── CIO ───────────────────────────────── */
-.cio-section{padding:10px 12px;flex-shrink:0}
-.cio-hdr{display:flex;align-items:center;gap:5px;margin-bottom:8px}
-.cio-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite}
-.cio-title-txt{font-size:11px;font-weight:600;color:var(--purple);letter-spacing:.06em}
-#cio-st{font-size:10px;margin-left:auto}
-.cio-sym-row{display:flex;gap:5px;margin-bottom:6px}
-.cio-sel{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
-.cio-sel:focus{border-color:rgba(99,102,241,.4)}
-.cio-btn{width:100%;background:#6366f1;border:none;color:#fff;padding:7px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;border-radius:var(--r);transition:opacity .15s;margin-bottom:5px}
-.cio-btn:hover{opacity:.85}
-.cio-btn:disabled{opacity:.4;cursor:default}
-.cio-key{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
-.cio-key:focus{border-color:rgba(99,102,241,.4)}
-.cio-result{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:10px;line-height:1.7;color:var(--text);max-height:160px;overflow-y:auto;margin-top:6px;font-family:var(--mono)}
-/* ── AGENTS BAR ────────────────────────── */
-.bot-row{grid-column:1/4;border-top:1px solid var(--border);display:flex;overflow:hidden;background:var(--bg2);height:90px;min-height:90px;flex-shrink:0}
-.ag-info{width:140px;padding:12px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:3px;flex-shrink:0}
-.ag-info-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.ag-iq-big{font-size:20px;font-weight:700;color:var(--indigo);font-family:var(--mono)}
-.ag-info-sub{font-size:10px;color:var(--dim)}
-.ag-scroll{display:flex;gap:5px;align-items:center;padding:10px 10px;overflow-x:auto;flex:1;scrollbar-width:thin}
-.ag-card{width:72px;background:var(--bg3);border-radius:var(--r2);padding:6px 8px;flex-shrink:0;cursor:pointer;border:1px solid transparent;transition:all .15s}
-.ag-card:hover{border-color:rgba(99,102,241,.3);background:rgba(99,102,241,.06)}
-.ag-card.sel{border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.1)}
-.ag-e{font-size:16px;display:block;margin-bottom:2px}
-.ag-n{font-size:9px;color:var(--muted);display:block;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ag-iq-txt{font-size:9px;color:var(--dim);font-family:var(--mono)}
-.ag-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:3px}
-.ag-fill{height:3px;border-radius:2px;transition:width 1.5s}
-.ag-dot{width:5px;height:5px;border-radius:50%;background:var(--dim);display:inline-block;margin-right:3px}
-.ag-dot.on{background:var(--green);animation:pulse 2s infinite}
-.ag-evo{width:220px;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-.ag-evo-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.etab{flex:1;padding:5px 0;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border:none;background:transparent;cursor:pointer;transition:color .15s;border-bottom:2px solid transparent}
-.etab.on{color:var(--indigo);border-bottom-color:var(--indigo)}
-.evo-body{flex:1;overflow-y:auto;padding:4px 8px}
-.ev-item{display:flex;align-items:flex-start;gap:5px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);animation:fadeIn .3s}
-.ev-t{font-size:9px;color:var(--dim);flex-shrink:0;width:36px}
-.ev-badge{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;flex-shrink:0}
-.ev-trade{background:rgba(52,211,153,.1);color:var(--green)}
-.ev-learn{background:rgba(96,165,250,.1);color:var(--blue)}
-.ev-loss{background:rgba(248,113,113,.1);color:var(--red)}
-.ev-skill{background:rgba(167,139,250,.1);color:var(--purple)}
-.ev-audit{background:rgba(251,191,36,.1);color:var(--amber)}
-.ev-txt{font-size:9px;color:var(--muted);line-height:1.4}
-.ev-ag{color:var(--text);font-weight:500}
+#chart-container{flex:1;min-height:0;background:var(--bg0)}
+.sub-wrap{flex-shrink:0;position:relative;background:var(--bg0);border-top:0.5px solid var(--sep)}
+.sub-lbl{position:absolute;top:5px;left:12px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label4);z-index:2;pointer-events:none;font-family:var(--sans)}
+.ind-bar{height:32px;min-height:32px;background:rgba(28,28,30,.85);backdrop-filter:blur(20px);border-top:0.5px solid var(--sep);display:flex;align-items:center;gap:5px;padding:0 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.itag{font-size:11px;font-weight:500;padding:3px 9px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+.ibull{background:rgba(48,209,88,.12);color:var(--ios-green)}
+.ibear{background:rgba(255,69,58,.12);color:var(--ios-red)}
+.ineut{background:var(--fill2);color:var(--label3)}
+.isig{background:rgba(255,159,10,.12);color:var(--ios-orange)}
+#week52-bar{padding:5px 14px;border-top:0.5px solid var(--sep);background:rgba(28,28,30,.85);backdrop-filter:blur(12px);flex-shrink:0}
+
+/* ── AGENTS BAR ── */
+.agents-bar{height:64px;min-height:64px;border-top:0.5px solid var(--sep);background:rgba(28,28,30,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;padding:0;overflow:hidden;flex-shrink:0;grid-column:1/3}
+.ag-summary{padding:0 18px;border-right:0.5px solid var(--sep);display:flex;flex-direction:column;justify-content:center;gap:2px;flex-shrink:0;min-width:110px}
+.ag-iq-big{font-family:var(--disp);font-size:20px;font-weight:700;color:var(--ios-indigo);letter-spacing:-.03em}
+.ag-iq-lbl{font-size:10px;color:var(--label3);font-weight:500}
+.ag-scroll{display:flex;gap:6px;align-items:center;padding:0 12px;overflow-x:auto;flex:1;scrollbar-width:none}
+.agc{display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--bg2);border-radius:12px;flex-shrink:0;cursor:pointer;border:0.5px solid var(--sep);transition:all .2s}
+.agc:hover{background:var(--bg3)}
+.agc.sel{border-color:rgba(94,92,230,.5);background:rgba(94,92,230,.1)}
+.agc-icon{font-size:16px;flex-shrink:0}
+.agc-body{display:flex;flex-direction:column;gap:2px}
+.agc-name{font-size:11px;color:var(--label2);font-weight:500;white-space:nowrap}
+.agc-iq{font-size:10px;color:var(--label3);font-family:var(--mono)}
+.agc-bar{height:2px;background:var(--fill);border-radius:1px;width:48px;margin-top:2px;overflow:hidden}
+.agc-bar-fill{height:2px;border-radius:1px;transition:width 1.5s}
+.ag-dot{width:5px;height:5px;border-radius:50%;background:var(--bg4);display:inline-block}
+.ag-dot.on{background:var(--ios-green);animation:pulse 2s infinite}
+.ag-run-area{display:flex;flex-direction:column;gap:6px;padding:0 16px;border-left:0.5px solid var(--sep);flex-shrink:0}
+.ag-run-btn{padding:7px 14px;background:rgba(48,209,88,.12);border:0.5px solid rgba(48,209,88,.25);color:var(--ios-green);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+.ag-run-btn.off{background:rgba(255,69,58,.1);border-color:rgba(255,69,58,.25);color:var(--ios-red)}
+.ag-events-btn{padding:6px 12px;background:var(--fill2);border:0.5px solid var(--sep);color:var(--label3);border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--sans)}
+
+/* ── EVO tabs ── */
+.evo-term{width:220px;border-left:0.5px solid var(--sep);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.evo-tabs{display:flex;border-bottom:0.5px solid var(--sep);background:var(--bg1);flex-shrink:0}
+.etab{flex:1;padding:5px 0;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--label3);border:none;background:transparent;cursor:pointer;font-family:var(--sans);border-bottom:1.5px solid transparent;transition:all .15s}
+.etab.on{color:var(--ios-indigo);border-bottom-color:var(--ios-indigo)}
+.evo-body{flex:1;overflow-y:auto;padding:6px 8px}
+.ev-item{display:flex;align-items:flex-start;gap:5px;padding:4px 0;border-bottom:0.5px solid var(--sep2);animation:fadeUp .3s}
+.ev-t{font-size:9px;color:var(--label4);flex-shrink:0;width:36px;font-family:var(--mono)}
+.ev-badge{font-size:8px;font-weight:600;padding:1px 5px;border-radius:5px;flex-shrink:0}
+.ev-trade{background:rgba(48,209,88,.12);color:var(--ios-green)}
+.ev-learn{background:rgba(10,132,255,.1);color:var(--ios-blue)}
+.ev-loss{background:rgba(255,69,58,.1);color:var(--ios-red)}
+.ev-skill{background:rgba(191,90,242,.1);color:var(--ios-purple)}
+.ev-audit{background:rgba(255,159,10,.1);color:var(--ios-orange)}
+.ev-txt{font-size:9px;color:var(--label3);line-height:1.4;flex:1}
+.ev-ag{color:var(--label2);font-weight:500}
 .sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px}
-.sk-card{background:var(--bg3);border-radius:var(--r);padding:7px 9px}
-.sk-n{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:3px}
-.sk-v{font-size:15px;font-weight:700;color:var(--green);font-family:var(--mono)}
-.sk-bar{height:2px;background:var(--bg4);margin-top:4px;border-radius:1px;overflow:hidden}
-.sk-fill{height:2px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1.5s}
-.ag-run-area{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 12px;border-left:1px solid var(--border);flex-shrink:0}
-.run-btn{padding:5px 12px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
-.run-btn:hover{background:rgba(52,211,153,.18)}
-.run-btn.off{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.25);color:var(--red)}
-.ag-status-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim)}
-/* ── SIGNALS PAGE ──────────────────────── */
-#page-sig .sig-layout{display:grid;grid-template-columns:1fr 1fr 280px;flex:1;overflow:hidden;min-height:0;height:100%}
-#page-sig .sig-col{overflow-y:auto;padding:14px;border-right:1px solid var(--border)}
-#page-sig .sig-col:last-child{border:none}
-.page-section-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-/* ── CABINET PAGE ──────────────────────── */
-#page-cab .cab-layout{display:grid;grid-template-columns:220px 1fr;gap:12px;padding:16px;overflow-y:auto;flex:1}
-.cab-sidebar-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:10px}
-.cab-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
-.cab-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
-.cab-email{font-size:11px;color:var(--dim)}
-.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
+.sk-card{background:var(--bg2);border-radius:var(--r1);padding:7px 9px;border:0.5px solid var(--sep)}
+.sk-n{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--label3);margin-bottom:3px;font-weight:500}
+.sk-v{font-size:15px;font-weight:700;color:var(--ios-green);font-family:var(--mono)}
+.sk-bar{height:2px;background:var(--fill);margin-top:4px;border-radius:1px;overflow:hidden}
+.sk-fill{height:2px;border-radius:1px;background:var(--ios-green);transition:width 1.5s}
+
+/* ── SIGNALS PAGE ── */
+#page-sig{display:grid;grid-template-columns:1fr 1fr 280px;overflow:hidden}
+.sig-col{overflow-y:auto;padding:16px;border-right:0.5px solid var(--sep)}
+.sig-col:last-child{border:none}
+.page-sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--label3);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.sig-tab-bar{display:flex;gap:1px;background:var(--bg1);border-bottom:0.5px solid var(--sep);flex-shrink:0}
+.sig-ntab{flex:0;padding:10px 18px;font-size:13px;font-weight:500;color:var(--label3);background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--sans);white-space:nowrap}
+.sig-ntab.on{color:var(--label);border-bottom-color:var(--ios-indigo)}
+
+/* ── CABINET PAGE ── */
+#page-cab{overflow-y:auto}
+.cab-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;padding:20px;max-width:900px}
+.ios-card{background:var(--bg1);border-radius:var(--r3);padding:16px;margin-bottom:12px;border:0.5px solid var(--sep)}
+.cab-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--ios-indigo),var(--ios-purple));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:10px}
+.cab-name{font-size:15px;font-weight:600;color:var(--label);letter-spacing:-.01em;margin-bottom:2px}
+.cab-email{font-size:12px;color:var(--label3)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--sep2);font-size:13px}
 .stat-row:last-child{border:none}
-.sl{color:var(--dim)}
+.sl{color:var(--label3)}
 .sv{font-family:var(--mono);font-weight:600}
-.cab-nav{display:flex;flex-direction:column;gap:4px;margin-top:10px}
-.cab-nav-btn{display:flex;align-items:center;gap:8px;padding:8px 11px;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;width:100%;text-align:left;font-family:var(--sans);transition:all .15s}
-.cab-nav-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
-.cab-nav-btn.primary{background:#6366f1;border-color:#6366f1;color:#fff}
-.cab-nav-btn.primary:hover{opacity:.85}
-.cab-nav-btn.danger{border-color:rgba(248,113,113,.25);color:var(--red)}
-.cab-nav-btn.purple{border-color:rgba(167,139,250,.25);color:var(--purple)}
-/* ── TRADE FORM ────────────────────────── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
-.fl{font-size:10px;font-weight:500;color:var(--dim);display:block;margin-bottom:4px;letter-spacing:.05em}
-.inp{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 9px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
-.inp:focus{border-color:rgba(99,102,241,.4)}
-.inp::placeholder{color:var(--dim)}
-.sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 9px;font-family:var(--mono);font-size:11px;outline:none;border-radius:var(--r)}
-.sel:focus{border-color:rgba(99,102,241,.4)}
-/* ── TRADES LIST ───────────────────────── */
-.tr{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
-.tr-sym{font-weight:600;color:var(--text);width:42px;font-family:var(--mono)}
-.tr-dir{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px}
-.tr-long{background:rgba(52,211,153,.12);color:var(--green)}
-.tr-short{background:rgba(248,113,113,.12);color:var(--red)}
-.tr-info{flex:1;font-size:10px;color:var(--dim)}
+.ios-btn-list{display:flex;flex-direction:column;gap:6px}
+.ios-btn{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg1);border:0.5px solid var(--sep);border-radius:var(--r2);cursor:pointer;font-size:13px;font-weight:500;color:var(--label2);font-family:var(--sans);transition:background .15s}
+.ios-btn:hover{background:var(--bg2)}
+.ios-btn.primary{background:var(--ios-indigo);border-color:var(--ios-indigo);color:#fff}
+.ios-btn.purple{border-color:rgba(191,90,242,.3);color:var(--ios-purple)}
+.ios-btn.danger{border-color:rgba(255,69,58,.25);color:var(--ios-red)}
+.ios-btn-arr{color:var(--label4);font-size:14px}
+
+/* ── TRADE ROWS ── */
+.tr{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--sep2);font-size:13px}
+.tr-sym{font-weight:600;color:var(--label);width:44px;font-family:var(--mono)}
+.tr-dir{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+.tr-long{background:rgba(48,209,88,.12);color:var(--ios-green)}
+.tr-short{background:rgba(255,69,58,.12);color:var(--ios-red)}
+.tr-info{flex:1;font-size:11px;color:var(--label3)}
 .tr-pnl{font-family:var(--mono);font-weight:600}
-/* ── GENERIC ───────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 11px;font-family:var(--sans);font-size:11px;font-weight:500;cursor:pointer;border-radius:var(--r);transition:all .15s}
-.btn:hover{border-color:var(--border2);color:var(--text);background:rgba(255,255,255,.04)}
-.btn.p{background:#6366f1;border-color:#6366f1;color:#fff}
-.btn.p:hover{opacity:.85}
-.btn.d{border-color:rgba(248,113,113,.25);color:var(--red)}
-.up{color:var(--green)}.dn{color:var(--red)}.am{color:var(--amber)}.bl{color:var(--blue)}.pu{color:var(--purple)}
-/* ── MODALS ────────────────────────────── */
-.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
-.mbox{background:var(--bg2);border:1px solid var(--border2);width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;border-radius:10px;animation:fadeIn .2s ease;overflow:hidden}
-.mhdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.mt{font-size:13px;font-weight:600;color:var(--indigo);letter-spacing:.08em}
-.mc{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
-.mc:hover{background:rgba(255,255,255,.1);color:var(--text)}
-.mbody{overflow-y:auto;padding:16px;flex:1}
-/* ── AUDIT ─────────────────────────────── */
-.am{display:flex;gap:10px;margin-bottom:10px;opacity:0;transition:opacity .4s;align-items:flex-start}
+
+/* ── FORMS ── */
+.fl{font-size:11px;font-weight:500;color:var(--label3);display:block;margin-bottom:4px;letter-spacing:.01em}
+.inp{width:100%;background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);padding:9px 11px;font-family:var(--mono);font-size:13px;outline:none;border-radius:var(--r2)}
+.inp:focus{border-color:var(--ios-indigo)}
+.inp::placeholder{color:var(--label4)}
+.sel{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);padding:9px 11px;font-family:var(--sans);font-size:13px;outline:none;border-radius:var(--r2);width:100%}
+.sel:focus{border-color:var(--ios-indigo)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+
+/* ── MODALS ── */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mbox{background:var(--bg1);border:0.5px solid var(--sep);width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;border-radius:var(--r3);animation:fadeUp .2s ease;overflow:hidden}
+.mhdr{padding:14px 18px;border-bottom:0.5px solid var(--sep);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:rgba(28,28,30,.9);backdrop-filter:blur(20px)}
+.mt{font-size:14px;font-weight:600;color:var(--ios-indigo);letter-spacing:-.01em}
+.mc{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label3);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.mc:hover{background:var(--bg3)}
+.mbody{overflow-y:auto;padding:18px;flex:1;background:var(--bg0)}
+.am{display:flex;gap:10px;margin-bottom:12px;opacity:0;transition:opacity .4s;align-items:flex-start}
 .am.show{opacity:1}
-.am-av{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border-radius:7px}
-.am-nm{font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:500}
-.am-bl{background:var(--bg3);border-left:2px solid var(--dim);padding:7px 10px;font-size:11px;line-height:1.6;border-radius:0 5px 5px 0}
-.am-bl.ok{border-left-color:var(--green)}
-.am-bl.warn{border-left-color:var(--amber)}
-.am-bl.err{border-left-color:var(--red)}
-.a-sum{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-top:12px;font-size:10px;line-height:1.9;font-family:var(--mono);white-space:pre-wrap;color:var(--text)}
-/* ── ANALYTICS MODAL ───────────────────── */
-.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
-.an-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
-.an-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
-.an-val{font-family:var(--mono);font-size:16px;font-weight:700}
-.an-dsc{font-size:9px;color:var(--dim);margin-top:2px;line-height:1.4}
-/* ── ALERT MODAL ───────────────────────── */
-.al-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.al-card{border:1px solid var(--border);border-radius:var(--r2);padding:11px}
-/* ── JOURNAL MODAL ─────────────────────── */
-.jm-recap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:10px;font-size:10px}
-/* ── CONTEXT MENU ──────────────────────── */
-#chart-ctx-menu{position:fixed;z-index:9000;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);min-width:220px;overflow:hidden;display:none;transition:opacity .12s,transform .12s;transform-origin:top left;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.ctx-hdr{padding:9px 12px;border-bottom:1px solid var(--border);background:var(--bg3)}
-.ctx-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s;font-size:11px}
-.ctx-item:hover{background:rgba(255,255,255,.04)}
+.am-av{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;border-radius:10px}
+.am-nm{font-size:10px;color:var(--label3);margin-bottom:3px;font-weight:500}
+.am-bl{background:var(--bg2);padding:8px 11px;font-size:12px;line-height:1.6;border-radius:0 10px 10px 10px;border-left:2px solid var(--bg4)}
+.am-bl.ok{border-left-color:var(--ios-green)}
+.am-bl.warn{border-left-color:var(--ios-orange)}
+.am-bl.err{border-left-color:var(--ios-red)}
+.a-sum{background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:14px;margin-top:14px;font-size:11px;line-height:1.9;font-family:var(--mono);white-space:pre-wrap;color:var(--label2)}
+.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.an-cell{background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:10px 12px}
+.an-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--label3);margin-bottom:4px}
+.an-val{font-family:var(--mono);font-size:18px;font-weight:700}
+.an-dsc{font-size:10px;color:var(--label3);margin-top:3px;line-height:1.4}
+.al-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.al-card{border:0.5px solid var(--sep);border-radius:var(--r2);padding:12px;background:var(--bg2)}
+.jm-recap{background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:10px;margin-bottom:12px;font-size:11px}
+
+/* ── CONTEXT MENU ── */
+#chart-ctx-menu{position:fixed;z-index:9000;background:rgba(44,44,46,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:0.5px solid rgba(84,84,88,.5);border-radius:var(--r2);min-width:220px;overflow:hidden;display:none;transition:opacity .12s,transform .12s;transform-origin:top left;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.ctx-hdr{padding:10px 14px;border-bottom:0.5px solid var(--sep)}
+.ctx-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;border-bottom:0.5px solid var(--sep2);transition:background .1s;font-size:12px}
+.ctx-item:hover{background:var(--fill)}
 .ctx-item:last-child{border:none}
-.ctx-sec{padding:4px 12px;background:var(--bg3);font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-/* ── HOTKEY ────────────────────────────── */
-#hotkey-flash{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) scale(1.2);background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.5);color:#818cf8;font-family:var(--mono);font-size:20px;font-weight:700;padding:8px 18px;border-radius:8px;z-index:9998;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
-#hotkey-help{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(3px)}
-.hk-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;min-width:420px;max-width:580px}
+.ctx-sec{padding:4px 14px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label3)}
+
+/* ── TOASTS ── */
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+#toast-wrap > div{pointer-events:all;animation:fadeUp .25s;background:rgba(44,44,46,.92);backdrop-filter:blur(20px);border:0.5px solid var(--sep);border-radius:var(--r2);padding:10px 14px;max-width:300px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+/* ── HOTKEY ── */
+#hotkey-flash{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) scale(1.15);background:rgba(94,92,230,.2);border:0.5px solid rgba(94,92,230,.5);color:var(--ios-indigo);font-family:var(--mono);font-size:22px;font-weight:700;padding:8px 20px;border-radius:12px;z-index:9998;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;backdrop-filter:blur(10px)}
+#hotkey-help{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}
+.hk-modal{background:var(--bg1);border:0.5px solid var(--sep);border-radius:var(--r3);padding:24px;min-width:400px;max-width:540px}
 .hk-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .hk-row{display:flex;align-items:center;gap:8px;padding:4px 0}
-kbd{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:2px 9px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500}
-.hk-sec{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;grid-column:1/3}
-/* ── TOAST ─────────────────────────────── */
-#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
-#toast-wrap > div{pointer-events:all;animation:fadeIn .25s ease}
-/* ── MULTI CHART ───────────────────────── */
-#multichart-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border);min-height:0}
-.mc-panel{display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
-.mc-panel-hdr{height:30px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:6px;flex-shrink:0}
-.mc-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;outline:none;border-radius:4px;max-width:90px}
-.mc-tf-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;outline:none;border-radius:4px}
-.mc-focus-btn{padding:2px 7px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:var(--green);border-radius:4px;font-size:9px;cursor:pointer;font-family:var(--sans)}
-/* ── BACKTEST ──────────────────────────── */
-.bt-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end}
-.bt-results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
-.bt-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
-/* ── WL SEARCH ─────────────────────────── */
-.wl-search-wrap{padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
-.wl-search-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:var(--r);font-size:11px;outline:none}
-.wl-search-wrap input:focus{border-color:rgba(99,102,241,.4)}
+kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);padding:3px 10px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:500}
+.hk-sec{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--label3);padding:8px 0 4px;border-bottom:0.5px solid var(--sep);margin-bottom:4px;grid-column:1/3}
+
+/* ── MULTI CHART ── */
+#multichart-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--sep);min-height:0}
+.mc-panel{display:flex;flex-direction:column;background:var(--bg0);overflow:hidden}
+.mc-panel-hdr{height:32px;background:var(--bg1);border-bottom:0.5px solid var(--sep);display:flex;align-items:center;padding:0 10px;gap:7px;flex-shrink:0}
+.mc-sel{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);font-family:var(--mono);font-size:10px;padding:3px 6px;outline:none;border-radius:7px;max-width:90px}
+.mc-tf-sel{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);font-family:var(--mono);font-size:10px;padding:3px 5px;outline:none;border-radius:7px}
+.mc-focus-btn{padding:3px 8px;background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.2);color:var(--ios-green);border-radius:6px;font-size:10px;cursor:pointer}
+
+/* ── BACKTEST ── */
+.bt-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:14px;align-items:end}
+.bt-card{background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:10px 12px}
+
+/* ── UTILITY ── */
+.btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:0.5px solid var(--sep);color:var(--label2);padding:7px 13px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;border-radius:var(--r2);transition:all .15s}
+.btn:hover{background:var(--fill);color:var(--label)}
+.btn.p{background:var(--ios-indigo);border-color:var(--ios-indigo);color:#fff}
+.btn.p:hover{opacity:.85}
+.btn.d{border-color:rgba(255,69,58,.3);color:var(--ios-red)}
+.scan-btn-sm{padding:4px 10px;background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.2);color:var(--ios-green);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.scan-btn-sm:hover{background:rgba(48,209,88,.18)}
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- ── TOP BAR ─────────────────────────── -->
-  <div class="topbar">
-    <div class="logo">BCS</div>
-    <div class="market-strip">
-      <div class="mpill"><div class="dot-live" id="mkt-dot"></div><span class="lbl">MOEX</span><span class="mkt-st" id="mkt-st" style="color:var(--green)">ОТКРЫТ</span></div>
-      <div class="mpill"><span class="lbl">IMOEX</span><span class="val" id="imoex-v">—</span></div>
-      <div class="mpill"><span class="lbl">USD/RUB</span><span class="val" id="usd-v">—</span></div>
-      <div class="mpill"><span class="lbl">BRENT</span><span class="val" id="brent-val">—</span><span class="chg" id="brent-chg" style="color:var(--muted)"></span></div>
-      <div class="mpill"><span class="lbl">ОФЗ</span><span id="ofz-nav" style="color:var(--amber)">—</span></div>
-      <div class="mpill" style="opacity:.7"><span class="lbl">Сигналов</span><span style="color:var(--amber)" id="sig-cnt">0</span></div>
-    </div>
-    <div class="topbar-r">
-      <div class="tb-clk" id="clk">—</div>
-      <button class="tb-kb" onclick="toggleHotkeyHelp()" title="Горячие клавиши">⌨</button>
-      <div class="tb-av" id="nav-av" onclick="showPage('cab')">А</div>
-      <div class="tb-nm" id="nav-nm" onclick="showPage('cab')">—</div>
-    </div>
-  </div>
-  <!-- ticker hidden but functional (for rTick) -->
+  <!-- ticker hidden, functional -->
   <div style="display:none"><div id="ticker"></div></div>
 
-  <!-- ── NAV TABS ───────────────────────── -->
-  <div class="navtabs">
-    <button class="ntab on" id="nav-term" onclick="showPage('term')"><span class="ico">📈</span>Терминал</button>
-    <button class="ntab" id="nav-sig"  onclick="showPage('sig')"><span class="ico">⚡</span>Сигналы</button>
-    <button class="ntab" id="nav-cab"  onclick="showPage('cab')"><span class="ico">💼</span>Кабинет</button>
-    <div class="nt-sep"></div>
-    <button class="nt-audit" onclick="runAudit()">⚡ Аудит агентов</button>
+  <!-- ── STATUS BAR ── -->
+  <div class="statusbar">
+    <div class="sb-logo">BCS</div>
+    <div class="sb-markets">
+      <div class="sbm"><span class="sbm-l">IMOEX</span><span class="sbm-v g" id="imoex-v">—</span></div>
+      <div class="sbm"><span class="sbm-l">USD/RUB</span><span class="sbm-v" id="usd-v" style="color:var(--label2)">—</span></div>
+      <div class="sbm"><span class="sbm-l">BRENT</span><span class="sbm-v a" id="brent-val">—</span><span class="sbm-c a" id="brent-chg"></span></div>
+      <div class="sbm"><span class="sbm-l">ОФЗ</span><span id="ofz-nav" style="color:var(--ios-teal);font-size:13px;font-weight:600">—</span></div>
+      <div class="sbm"><span class="sbm-l">Сигналов</span><span class="sbm-v a" id="sig-cnt">0</span></div>
+    </div>
+    <div class="statusbar-right">
+      <div class="live-pill"><div class="live-dot" id="mkt-dot"></div><span class="live-txt" id="mkt-st">—</span></div>
+      <div class="sb-clk" id="clk">—</div>
+      <button class="kb-btn" onclick="toggleHotkeyHelp()" title="Горячие клавиши">⌨</button>
+      <div class="sb-av" id="nav-av" onclick="showPage('cab')">А</div>
+      <div class="sb-nm" id="nav-nm" onclick="showPage('cab')">—</div>
+    </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       TERMINAL PAGE
-  ══════════════════════════════════════ -->
-  <div class="page" id="page-term">
-    <div class="term-grid">
+  <!-- ── NAV ── -->
+  <div class="navrow">
+    <button class="ntab on" id="nav-term" onclick="showPage('term')">📈 Терминал</button>
+    <button class="ntab" id="nav-sig" onclick="showPage('sig')">⚡ Сигналы</button>
+    <button class="ntab" id="nav-cab" onclick="showPage('cab')">💼 Кабинет</button>
+    <div class="nav-sep"></div>
+    <button class="audit-pill" onclick="runAudit()">⚡ Аудит агентов</button>
+  </div>
 
-      <!-- ── LEFT COL ── -->
-      <div class="left-col">
-        <div class="sb-block">
-          <div class="sb-title">Статистика</div>
-          <div class="stat-grid">
-            <div class="sc"><div class="sc-lbl">Открытых</div><div class="sc-val" id="open-cnt">0</div></div>
-            <div class="sc"><div class="sc-lbl">Сигналов</div><div class="sc-val am" id="sig-cnt2">0</div></div>
-            <div class="sc"><div class="sc-lbl">Агент IQ</div><div class="sc-val pu" id="ag-iq">0%</div></div>
-            <div class="sc"><div class="sc-lbl">Авто-сделок</div><div class="sc-val bl" id="ag-cnt">0</div></div>
+  <!-- ══════════════ TERMINAL PAGE ══════════════ -->
+  <div class="page" id="page-term" style="flex-direction:column">
+    <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+
+      <!-- LEFT PANEL -->
+      <div class="left-panel">
+        <!-- Signal Hero -->
+        <div class="signal-hero">
+          <div class="card-label"><div class="cio-pulse"></div>CIO — последний сигнал<span id="cio-st" style="margin-left:auto;font-size:10px;color:var(--ios-green)">Готов</span></div>
+          <div id="cio-result" style="display:none"></div>
+          <div id="cio-placeholder">
+            <div class="signal-main">
+              <div class="dir-pill dp-long" style="opacity:.35">—</div>
+              <div class="signal-id">
+                <div class="sig-sym" id="ch-sym2" style="font-size:22px;font-weight:700;color:var(--label)">SBER</div>
+                <div class="sig-name" id="ch-name2">Нажмите «Анализ» для сигнала</div>
+              </div>
+              <div class="sig-conf-block"><div class="sig-conf-num" style="font-size:20px;color:var(--label4)">—%</div><div class="sig-conf-lbl">уверенность</div></div>
+            </div>
+            <div style="font-size:11px;color:var(--label3);text-align:center;padding:8px 0">Запустите CIO анализ ниже →</div>
           </div>
         </div>
 
-        <div class="scan-block">
-          <div class="scan-hdr">
-            <div class="sb-title" style="margin:0">Топ сигналы</div>
-            <button class="scan-btn-sm" id="scan-btn" onclick="runAutoScan()">🔍 СКАН</button>
+        <!-- CIO Input -->
+        <div class="cio-area">
+          <div class="cio-row">
+            <select class="cio-sel" id="cio-sym"></select>
+            <button class="cio-run-btn" id="cio-btn" onclick="runCIO()">⚡ Анализ</button>
           </div>
-          <div id="scan-status" style="font-size:9px;color:var(--dim);margin-bottom:5px">Нажмите скан...</div>
-          <div id="scan-results"><div style="font-size:10px;color:var(--dim)">Нажмите скан...</div></div>
+          <input type="password" class="cio-key" id="groq-key" placeholder="Groq API ключ (gsk_...)" oninput="sGK(this.value)"/>
         </div>
 
-        <div class="sb-block">
-          <div class="sb-title">Секторы</div>
-          <div class="sector-wrap" id="sectors"></div>
+        <!-- Consensus -->
+        <div class="section-block">
+          <div class="section-hdr" style="display:flex;justify-content:space-between">Консенсус агентов<span id="consensus-sym" style="color:var(--ios-indigo)">SBER</span></div>
+          <div id="consensus-panel"><div style="font-size:11px;color:var(--label3)">Загрузка...</div></div>
         </div>
 
-        <div class="pos-block">
-          <div style="padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between">
-            <div class="sb-title" style="margin:0">Позиции</div>
-            <button class="btn" onclick="showPage('cab');showCab('open')" style="font-size:10px;padding:2px 8px">+ Новая</button>
+        <!-- Scan results -->
+        <div class="section-block">
+          <div class="section-hdr" style="display:flex;justify-content:space-between;align-items:center">
+            Топ сигналы
+            <div style="display:flex;align-items:center;gap:6px"><span id="scan-status" style="font-size:9px;color:var(--label4)"></span><button class="scan-btn-sm" id="scan-btn" onclick="runAutoScan()">Скан</button></div>
           </div>
-          <div id="pos-list"></div>
+          <div id="scan-results"><div style="font-size:11px;color:var(--label3)">Нажмите «Скан»...</div></div>
         </div>
-      </div>
 
-      <!-- ── CHART COL ── -->
-      <div class="chart-col">
-        <div class="chart-hdr">
-          <span class="c-sym" id="ch-sym">SBER</span>
-          <span class="c-name" id="ch-name">Сбербанк</span>
-          <span style="font-size:8.5px;color:var(--dim)">ПКМ = вход</span>
-          <span class="c-price up" id="ch-price">—</span>
-          <span class="c-chg up" id="ch-chg">—</span>
-          <span id="week52-header" class="c52-info"></span>
+        <!-- Watchlist -->
+        <div class="wl-search"><input id="wl-search" placeholder="Поиск акции..." oninput="filterWL(this.value)"/></div>
+        <div class="wl-area" id="wl-list"></div>
+
+        <!-- Signals mini -->
+        <div class="sig-mini">
+          <div class="sig-mini-hdr"><div class="section-hdr" style="margin:0">Движение ≥ 1.5%</div><span style="font-size:12px;color:var(--ios-orange)" id="sig-cnt3">0</span></div>
+          <div id="sig-list"></div>
+        </div>
+
+        <!-- OFZ -->
+        <div class="section-block" style="flex-shrink:0">
+          <div class="section-hdr">ОФЗ доходности</div>
+          <div id="ofz-list"><div style="font-size:11px;color:var(--label3)">Загрузка...</div></div>
+        </div>
+      </div><!-- /left-panel -->
+
+      <!-- CHART SIDE -->
+      <div class="chart-side">
+        <div class="chart-header">
+          <div><div class="ch-sym" id="ch-sym">SBER</div><div class="ch-name" id="ch-name">Сбербанк · ПКМ = вход</div></div>
+          <div class="ch-price g" id="ch-price">—</div>
+          <div class="ch-chg chup" id="ch-chg">—</div>
+          <div id="week52-header"></div>
           <div id="imoex-perf" style="display:flex;align-items:center;gap:4px"></div>
           <div class="tf-wrap">
             <button class="tf" onclick="setTF('1m')"  data-tf="1m">1М</button>
@@ -413,342 +471,211 @@ kbd{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padd
             <button class="tf on" onclick="setTF('1Y')" data-tf="1Y">1Г</button>
             <button class="tf" onclick="setTF('3Y')"  data-tf="3Y">3Г</button>
             <button class="tf" onclick="setTF('5Y')"  data-tf="5Y">5Г</button>
-            <button class="tf" onclick="setTF('MAX')" data-tf="MAX">МАКС</button>
+            <button class="tf" onclick="setTF('MAX')" data-tf="MAX">Макс</button>
           </div>
-          <div class="hdr-btns">
-            <select class="mc-sel" id="ch-sel" onchange="sSym(this.value)" style="max-width:120px;font-size:10px;padding:3px 6px"></select>
-            <button id="multi-btn" class="hbtn" onclick="toggleMultiChart()">⊞ 2×2</button>
-            <button id="imoex-toggle-btn" class="hbtn" onclick="toggleImoex()">≡ IMOEX</button>
-            <button class="hbtn" onclick="showAn(curSym)">📊</button>
-            <button class="hbtn amber" onclick="openAlertModal(curSym)" style="position:relative">
-              🔔<span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
+          <div class="ch-tools">
+            <select class="mc-sel" id="ch-sel" onchange="sSym(this.value)" style="max-width:110px;font-size:11px"></select>
+            <button id="multi-btn" class="cht" onclick="toggleMultiChart()">⊞ 2×2</button>
+            <button id="imoex-toggle-btn" class="cht" onclick="toggleImoex()">≡ IMOEX</button>
+            <button class="cht" onclick="showAn(curSym)">📊</button>
+            <button class="cht amber" onclick="openAlertModal(curSym)" style="position:relative">
+              🔔<span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--ios-red);color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
             </button>
           </div>
         </div>
 
-        <!-- MULTI-CHART GRID -->
+        <!-- MULTI GRID -->
         <div id="multichart-grid" class="hidden">
-          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-0" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">SBER</div><select id="mc-sym-0" class="mc-sel" onchange="loadMultiChart(0,this.value,document.getElementById('mc-tf-0').value)"></select><select id="mc-tf-0" class="mc-tf-sel" onchange="loadMultiChart(0,document.getElementById('mc-sym-0').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(0)">⊙</button></div><div id="mc-0" style="flex:1;min-height:0"></div></div>
-          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-1" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">LKOH</div><select id="mc-sym-1" class="mc-sel" onchange="loadMultiChart(1,this.value,document.getElementById('mc-tf-1').value)"></select><select id="mc-tf-1" class="mc-tf-sel" onchange="loadMultiChart(1,document.getElementById('mc-sym-1').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(1)">⊙</button></div><div id="mc-1" style="flex:1;min-height:0"></div></div>
-          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-2" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">YNDX</div><select id="mc-sym-2" class="mc-sel" onchange="loadMultiChart(2,this.value,document.getElementById('mc-tf-2').value)"></select><select id="mc-tf-2" class="mc-tf-sel" onchange="loadMultiChart(2,document.getElementById('mc-sym-2').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(2)">⊙</button></div><div id="mc-2" style="flex:1;min-height:0"></div></div>
-          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-3" style="flex:1;font-size:11px;font-weight:600;color:var(--text)">GMKN</div><select id="mc-sym-3" class="mc-sel" onchange="loadMultiChart(3,this.value,document.getElementById('mc-tf-3').value)"></select><select id="mc-tf-3" class="mc-tf-sel" onchange="loadMultiChart(3,document.getElementById('mc-sym-3').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="3Mo">3МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option><option value="5Y">5Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(3)">⊙</button></div><div id="mc-3" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-0" style="flex:1;font-size:11px;font-weight:600">SBER</div><select id="mc-sym-0" class="mc-sel" onchange="loadMultiChart(0,this.value,document.getElementById('mc-tf-0').value)"></select><select id="mc-tf-0" class="mc-tf-sel" onchange="loadMultiChart(0,document.getElementById('mc-sym-0').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(0)">⊙</button></div><div id="mc-0" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-1" style="flex:1;font-size:11px;font-weight:600">LKOH</div><select id="mc-sym-1" class="mc-sel" onchange="loadMultiChart(1,this.value,document.getElementById('mc-tf-1').value)"></select><select id="mc-tf-1" class="mc-tf-sel" onchange="loadMultiChart(1,document.getElementById('mc-sym-1').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(1)">⊙</button></div><div id="mc-1" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-2" style="flex:1;font-size:11px;font-weight:600">YNDX</div><select id="mc-sym-2" class="mc-sel" onchange="loadMultiChart(2,this.value,document.getElementById('mc-tf-2').value)"></select><select id="mc-tf-2" class="mc-tf-sel" onchange="loadMultiChart(2,document.getElementById('mc-sym-2').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(2)">⊙</button></div><div id="mc-2" style="flex:1;min-height:0"></div></div>
+          <div class="mc-panel"><div class="mc-panel-hdr"><div id="mc-hdr-3" style="flex:1;font-size:11px;font-weight:600">GMKN</div><select id="mc-sym-3" class="mc-sel" onchange="loadMultiChart(3,this.value,document.getElementById('mc-tf-3').value)"></select><select id="mc-tf-3" class="mc-tf-sel" onchange="loadMultiChart(3,document.getElementById('mc-sym-3').value,this.value)"><option value="1m">1М</option><option value="10m">10М</option><option value="5D">5Д</option><option value="1Mo">1МС</option><option value="1Y" selected>1Г</option><option value="3Y">3Г</option></select><button class="mc-focus-btn" onclick="focusMultiChart(3)">⊙</button></div><div id="mc-3" style="flex:1;min-height:0"></div></div>
         </div>
 
         <!-- SINGLE CHART -->
         <div id="single-chart-wrap">
           <div id="chart-container" style="flex:1;min-height:0"></div>
-          <div class="subchart-wrap" style="height:50px"><span class="subchart-label">VOL</span><div id="vol-container" style="height:100%;width:100%"></div></div>
-          <div class="subchart-wrap" style="height:72px"><span class="subchart-label">RSI(14)</span><div id="rsi-container" style="height:100%;width:100%"></div></div>
-          <div class="subchart-wrap" style="height:72px"><span class="subchart-label">MACD(12,26,9)</span><div id="macd-container" style="height:100%;width:100%"></div></div>
+          <div class="sub-wrap" style="height:50px"><span class="sub-lbl">Vol</span><div id="vol-container" style="height:100%;width:100%"></div></div>
+          <div class="sub-wrap" style="height:72px"><span class="sub-lbl">RSI 14</span><div id="rsi-container" style="height:100%;width:100%"></div></div>
+          <div class="sub-wrap" style="height:72px"><span class="sub-lbl">MACD</span><div id="macd-container" style="height:100%;width:100%"></div></div>
           <div id="week52-bar"></div>
-          <div class="ind-bar" id="ind-bar"><span style="font-size:10px;color:var(--dim)">Загрузка...</span></div>
+          <div class="ind-bar" id="ind-bar"><span style="font-size:11px;color:var(--label3)">Загрузка...</span></div>
         </div>
-      </div><!-- /chart-col -->
-
-      <!-- ── RIGHT COL ── -->
-      <div class="right-col">
-        <!-- Consensus -->
-        <div style="border-bottom:1px solid var(--border);flex-shrink:0">
-          <div class="rp-head"><span class="rp-title">Консенсус агентов</span><span class="rp-sub" id="consensus-sym">SBER</span></div>
-          <div class="consensus-panel" id="consensus-panel" style="padding:6px 12px 10px"><div style="font-size:10px;color:var(--dim)">Загрузка...</div></div>
-        </div>
-
-        <!-- Watchlist -->
-        <div class="rp-head" style="flex-shrink:0"><span class="rp-title">Watchlist</span></div>
-        <div class="wl-search-wrap"><input id="wl-search" placeholder="Поиск тикера..." oninput="filterWL(this.value)"/></div>
-        <div class="wl-block" id="wl-list"></div>
-
-        <!-- Signals mini -->
-        <div style="border-top:1px solid var(--border);flex-shrink:0">
-          <div class="rp-head"><span class="rp-title">Сигналы AI</span><span style="font-size:11px;color:var(--amber)" id="sig-cnt3">0</span></div>
-          <div id="sig-list"></div>
-        </div>
-
-        <!-- OFZ -->
-        <div style="border-top:1px solid var(--border);flex-shrink:0">
-          <div class="rp-head"><span class="rp-title">ОФЗ доходности</span></div>
-          <div id="ofz-list" style="padding:4px 12px"><div style="font-size:10px;color:var(--dim)">Загрузка...</div></div>
-        </div>
-
-        <!-- CIO -->
-        <div class="cio-section" style="border-top:1px solid var(--border)">
-          <div class="cio-hdr"><div class="cio-dot"></div><span class="cio-title-txt">CIO ДИРЕКТОР</span><span id="cio-st" style="color:var(--amber);font-size:10px">Готов</span></div>
-          <div class="cio-sym-row">
-            <select class="cio-sel" id="cio-sym" style="flex:1"></select>
-          </div>
-          <button class="cio-btn" id="cio-btn" onclick="runCIO()">⚡ Анализ с TA</button>
-          <input type="password" class="cio-key" id="groq-key" placeholder="gsk_... (Groq API)" oninput="sGK(this.value)"/>
-          <div id="cio-result" class="cio-result hidden"></div>
-        </div>
-      </div>
-
-      <!-- ── AGENTS BAR ── -->
-      <div class="bot-row">
-        <div class="ag-info">
-          <div class="ag-info-title">Агенты</div>
-          <div class="ag-iq-big" id="ag-iq-lbl">0.0%</div>
-          <div class="ag-info-sub">Глобальный IQ</div>
-          <div class="ag-status-row" style="margin-top:4px">
-            <div class="ag-dot" id="ag-status-dot"></div>
-            <span id="ag-run-status" style="font-size:9px">Остановлен</span>
-          </div>
-        </div>
-        <div class="ag-scroll" id="ag-scroll"></div>
-        <div class="ag-evo">
-          <div class="ag-evo-tabs">
-            <button class="etab on" onclick="swEvo('log')">События</button>
-            <button class="etab" onclick="swEvo('sk')">Навыки</button>
-            <button class="etab" onclick="swEvo('tr')">Сделки</button>
-            <button class="etab" onclick="swEvo('kn')">Знания</button>
-          </div>
-          <div id="evo-log" class="evo-body"></div>
-          <div id="evo-sk" class="evo-body hidden"><div class="sk-grid" id="sk-grid"></div></div>
-          <div id="evo-tr" class="evo-body hidden"></div>
-          <div id="evo-kn" class="evo-body hidden"></div>
-        </div>
-        <div class="ag-run-area">
-          <button class="run-btn" id="ag-run-btn" onclick="toggleAg()">▶ СТАРТ</button>
-          <button class="btn" onclick="swEvo('log')" style="font-size:10px;padding:4px 10px">События</button>
-        </div>
-      </div>
+      </div><!-- /chart-side -->
 
     </div>
+
+    <!-- AGENTS BAR (full width) -->
+    <div class="agents-bar" style="border-top:0.5px solid var(--sep)">
+      <div class="ag-summary"><div class="ag-iq-big" id="ag-iq-lbl">0%</div><div class="ag-iq-lbl">IQ агентов</div></div>
+      <div class="ag-scroll" id="ag-scroll"></div>
+      <div class="evo-term">
+        <div class="evo-tabs">
+          <button class="etab on" onclick="swEvo('log')">События</button>
+          <button class="etab" onclick="swEvo('sk')">Навыки</button>
+          <button class="etab" onclick="swEvo('tr')">Сделки</button>
+          <button class="etab" onclick="swEvo('kn')">Знания</button>
+        </div>
+        <div id="evo-log" class="evo-body"></div>
+        <div id="evo-sk" class="evo-body hidden"><div class="sk-grid" id="sk-grid"></div></div>
+        <div id="evo-tr" class="evo-body hidden"></div>
+        <div id="evo-kn" class="evo-body hidden"></div>
+      </div>
+      <div class="ag-run-area">
+        <button class="ag-run-btn" id="ag-run-btn" onclick="toggleAg()">▶ Старт</button>
+        <button class="ag-events-btn" onclick="swEvo('log')">Журнал</button>
+      </div>
+    </div>
+    <!-- hidden elements for JS compat -->
+    <div style="display:none">
+      <span id="ag-iq">—</span><span id="ag-cnt">0</span><span id="sig-cnt2">0</span>
+      <span id="open-cnt">0</span><span id="day-pnl">—</span>
+      <div id="ag-status-dot"></div><div id="sectors"></div><div id="pos-list"></div>
+      <div id="scan-results-sig"></div>
+    </div>
+
   </div><!-- /page-term -->
 
-  <!-- ══════════════════════════════════════
-       SIGNALS PAGE
-  ══════════════════════════════════════ -->
-  <div class="page hidden" id="page-sig">
-    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
-      <button class="ntab on" id="sig-tab-signals" onclick="switchSigTab('signals')" style="border-bottom-width:2px">Сигналы</button>
-      <button class="ntab" id="sig-tab-backtest" onclick="switchSigTab('backtest')" style="border-bottom-width:2px">📊 Бэктест</button>
+  <!-- ══════════════ SIGNALS PAGE ══════════════ -->
+  <div class="page hidden" id="page-sig" style="flex-direction:column">
+    <div class="sig-tab-bar">
+      <button class="sig-ntab on" id="sig-tab-signals" onclick="switchSigTab('signals')">Сигналы</button>
+      <button class="sig-ntab" id="sig-tab-backtest" onclick="switchSigTab('backtest')">📊 Бэктест</button>
     </div>
     <div id="sig-view-signals" style="display:grid;grid-template-columns:1fr 1fr 280px;flex:1;overflow:hidden;min-height:0">
-      <div style="border-right:1px solid var(--border);overflow-y:auto;padding:14px">
-        <div class="page-section-title">
-          Топ по силе сигнала
-          <button class="btn" onclick="runAutoScan()" style="font-size:10px;padding:2px 9px">🔍 Пересканировать</button>
-        </div>
-        <div id="scan-results-sig"></div>
-        <div class="page-section-title" style="margin-top:16px">Движение ≥ 1.5%</div>
+      <div style="border-right:0.5px solid var(--sep);overflow-y:auto;padding:16px">
+        <div class="page-sec-title">Топ по силе сигнала<button class="scan-btn-sm" onclick="runAutoScan()">🔍 Скан</button></div>
+        <div id="scan-results-sig2" style="margin-bottom:16px"></div>
+        <div class="page-sec-title">Движение ≥ 1.5%</div>
         <div id="sig-full"></div>
       </div>
-      <div style="border-right:1px solid var(--border);overflow-y:auto;padding:14px">
-        <div class="page-section-title">Паттерны на <span id="pat-sym" style="color:var(--green)">—</span></div>
+      <div style="border-right:0.5px solid var(--sep);overflow-y:auto;padding:16px">
+        <div class="page-sec-title">Паттерны на <span id="pat-sym" style="color:var(--ios-green)">—</span></div>
         <div id="pat-list"></div>
-        <div class="page-section-title" style="margin-top:16px">База TA</div>
+        <div class="page-sec-title" style="margin-top:16px">База TA (27 паттернов)</div>
         <div id="ta-kb"></div>
       </div>
-      <div style="overflow-y:auto;padding:14px">
-        <div class="page-section-title">CIO Анализ</div>
-        <select class="cio-sel" id="cio-sym2" style="width:100%;margin-bottom:6px"></select>
-        <button class="cio-btn" id="cio-btn2" onclick="runCIO2()">⚡ Анализ с TA</button>
-        <input type="password" class="cio-key" id="groq-key2" placeholder="gsk_..." style="margin-bottom:8px" oninput="sGK(this.value)"/>
-        <div id="cio-r2" class="cio-result hidden"></div>
-        <div class="page-section-title" style="margin-top:14px">Новости рынка</div>
+      <div style="overflow-y:auto;padding:16px">
+        <div class="page-sec-title">CIO анализ</div>
+        <select class="sel" id="cio-sym2" style="margin-bottom:8px"></select>
+        <button class="btn p" id="cio-btn2" onclick="runCIO2()" style="width:100%;justify-content:center;margin-bottom:8px">⚡ Анализ с TA</button>
+        <input type="password" class="inp" id="groq-key2" placeholder="gsk_..." style="margin-bottom:8px" oninput="sGK(this.value)"/>
+        <div id="cio-r2" class="cio-result" style="display:none"></div>
+        <div class="page-sec-title" style="margin-top:14px">Новости рынка</div>
         <div id="news-list"></div>
       </div>
     </div>
-    <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:16px">
+    <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:20px">
       <div class="bt-controls">
-        <div><label class="fl">Акция</label><select id="bt-sym" class="sel" style="width:100%"></select></div>
-        <div><label class="fl">Период</label><select id="bt-period" class="sel" style="width:100%"><option value="6M">6 месяцев</option><option value="1Y" selected>1 год</option><option value="2Y">2 года</option><option value="3Y">3 года</option><option value="5Y">5 лет</option></select></div>
-        <div><label class="fl">Порог сигнала</label><select id="bt-thresh" class="sel" style="width:100%"><option value="55">55% (агрессивный)</option><option value="60" selected>60% (стандарт)</option><option value="65">65% (умеренный)</option><option value="70">70% (консерватив.)</option></select></div>
-        <div style="display:flex;align-items:flex-end"><button id="bt-run-btn" onclick="runBacktest()" class="cio-btn" style="margin:0;white-space:nowrap;padding:7px 16px;width:auto">▶ Запустить</button></div>
+        <div><label class="fl">Акция</label><select id="bt-sym" class="sel"></select></div>
+        <div><label class="fl">Период</label><select id="bt-period" class="sel"><option value="6M">6 мес</option><option value="1Y" selected>1 год</option><option value="2Y">2 года</option><option value="3Y">3 года</option><option value="5Y">5 лет</option></select></div>
+        <div><label class="fl">Порог сигнала</label><select id="bt-thresh" class="sel"><option value="55">55% — агрессивный</option><option value="60" selected>60% — стандарт</option><option value="65">65% — умеренный</option><option value="70">70% — консерват.</option></select></div>
+        <div style="display:flex;align-items:flex-end"><button id="bt-run-btn" onclick="runBacktest()" class="btn p">▶ Запустить</button></div>
       </div>
-      <div id="bt-status" style="font-size:10px;color:var(--dim);margin-bottom:10px">Выберите параметры и запустите бэктест</div>
-      <div id="bt-results"><div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:32px;margin-bottom:8px">📊</div><div style="font-size:12px">Нажмите «Запустить» для тестирования стратегии на исторических данных</div></div></div>
+      <div id="bt-status" style="font-size:12px;color:var(--label3);margin-bottom:12px">Выберите параметры и запустите бэктест</div>
+      <div id="bt-results"><div style="text-align:center;padding:48px;color:var(--label3)"><div style="font-size:40px;margin-bottom:10px">📊</div><div style="font-size:13px">Нажмите «Запустить»</div></div></div>
     </div>
-  </div><!-- /page-sig -->
+  </div>
 
-  <!-- ══════════════════════════════════════
-       CABINET PAGE
-  ══════════════════════════════════════ -->
-  <div class="page hidden" id="page-cab">
+  <!-- ══════════════ CABINET PAGE ══════════════ -->
+  <div class="page hidden" id="page-cab" style="overflow-y:auto;background:var(--bg0)">
     <div class="cab-layout">
-      <!-- Sidebar -->
       <div>
-        <div class="cab-sidebar-card">
-          <div class="cab-avatar" id="cab-init">А</div>
+        <div class="ios-card">
+          <div class="cab-av" id="cab-init">А</div>
           <div class="cab-name" id="cab-nm">—</div>
           <div class="cab-email" id="cab-em">Локальный режим</div>
         </div>
-        <div class="cab-sidebar-card">
+        <div class="ios-card">
           <div class="stat-row"><span class="sl">Сделок</span><span class="sv" id="st-tr">0</span></div>
-          <div class="stat-row"><span class="sl">Win Rate</span><span class="sv up" id="st-wr">—</span></div>
+          <div class="stat-row"><span class="sl">Win Rate</span><span class="sv g" id="st-wr">—</span></div>
           <div class="stat-row"><span class="sl">Avg P&L</span><span class="sv" id="st-pnl">—</span></div>
-          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:8px"><span class="sl" style="color:var(--purple)">CIO Сигналов</span><span class="sv" id="hist-sig-count">0</span></div>
-          <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO Win Rate</span><span class="sv" id="hist-sig-wr">—</span></div>
-          <div class="stat-row"><span class="sl" style="color:var(--purple)">CIO Avg P&L</span><span class="sv" id="hist-sig-pnl">—</span></div>
-          <div class="stat-row"><span class="sl">Авто-сделок</span><span class="sv am" id="st-ag">0</span></div>
+          <div class="stat-row" style="border-top:0.5px solid var(--sep2);margin-top:6px;padding-top:10px"><span class="sl" style="color:var(--ios-purple)">CIO сигналов</span><span class="sv pu" id="hist-sig-count">0</span></div>
+          <div class="stat-row"><span class="sl" style="color:var(--ios-purple)">CIO Win Rate</span><span class="sv" id="hist-sig-wr">—</span></div>
+          <div class="stat-row"><span class="sl" style="color:var(--ios-purple)">CIO Avg P&L</span><span class="sv" id="hist-sig-pnl">—</span></div>
+          <div class="stat-row"><span class="sl">Авто-сделок</span><span class="sv a" id="st-ag">0</span></div>
         </div>
-        <div class="cab-nav">
-          <button class="cab-nav-btn primary" onclick="showCab('open')">+ Открыть сделку</button>
-          <button class="cab-nav-btn purple" onclick="showCab('history');renderSignalHistory()">📊 Сигналы CIO</button>
-          <button class="cab-nav-btn" onclick="showCab('trades')">📋 Сделки</button>
-          <button class="cab-nav-btn" onclick="showCab('settings')">⚙️ Настройки</button>
-          <button class="cab-nav-btn danger" onclick="doLogout()">← Сменить имя</button>
+        <div class="ios-btn-list">
+          <button class="ios-btn primary" onclick="showCab('open')">+ Открыть сделку <span class="ios-btn-arr">›</span></button>
+          <button class="ios-btn purple" onclick="showCab('history');renderSignalHistory()">📊 Сигналы CIO <span class="ios-btn-arr">›</span></button>
+          <button class="ios-btn" onclick="showCab('trades')">📋 Сделки <span class="ios-btn-arr">›</span></button>
+          <button class="ios-btn" onclick="showCab('settings')">⚙️ Настройки <span class="ios-btn-arr">›</span></button>
+          <button class="ios-btn danger" onclick="doLogout()">← Сменить имя</button>
         </div>
       </div>
-      <!-- Main area -->
       <div style="min-width:0">
-        <!-- Trades -->
         <div id="cab-trades">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Открытые позиции</div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:12px">Открытые позиции</div>
           <div id="open-list"></div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin:16px 0 8px">История сделок</div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin:18px 0 10px">История сделок</div>
           <div id="hist-list"></div>
         </div>
-        <!-- CIO History -->
-        <div id="cab-history" class="hidden" style="max-height:calc(100vh-200px);overflow-y:auto">
-          <div style="font-size:10px;color:var(--dim);padding:8px">Загрузка...</div>
-        </div>
-        <!-- Open Trade Form -->
+        <div id="cab-history" class="hidden" style="max-height:calc(100vh-180px);overflow-y:auto"><div style="font-size:12px;color:var(--label3);padding:8px">Загрузка...</div></div>
         <div id="cab-open" class="hidden">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Новая сделка</div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:14px">Новая сделка</div>
           <div class="form-grid">
-            <div><label class="fl">Акция</label><select id="ot-sym" class="sel" style="width:100%"></select></div>
-            <div><label class="fl">Направление</label><select id="ot-dir" class="sel" style="width:100%"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
+            <div><label class="fl">Акция</label><select id="ot-sym" class="sel"></select></div>
+            <div><label class="fl">Направление</label><select id="ot-dir" class="sel"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
             <div><label class="fl">Вход ₽</label><input type="number" id="ot-en" class="inp" placeholder="0.00"/></div>
             <div><label class="fl">Стоп ₽</label><input type="number" id="ot-st" class="inp" placeholder="0.00"/></div>
             <div><label class="fl">Цель 1 ₽</label><input type="number" id="ot-t1" class="inp" placeholder="0.00"/></div>
             <div><label class="fl">Объём ₽</label><input type="number" id="ot-vl" class="inp" placeholder="10000"/></div>
           </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn p" onclick="openTrade()">Открыть сделку</button>
-            <button class="btn" onclick="fillCIO()">Из CIO</button>
-            <button class="btn" onclick="showCab('trades')">Назад</button>
-          </div>
+          <div style="display:flex;gap:8px"><button class="btn p" onclick="openTrade()">Открыть</button><button class="btn" onclick="fillCIO()">Из CIO</button><button class="btn" onclick="showCab('trades')">Назад</button></div>
         </div>
-        <!-- Settings -->
         <div id="cab-settings" class="hidden">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Настройки</div>
-          <div style="display:grid;gap:12px;max-width:400px">
-            <div><label class="fl">Groq API Key</label><input type="password" id="s-gk" class="inp" placeholder="gsk_..." style="width:100%" onblur="sGK(this.value)"/></div>
-            <div style="display:flex;align-items:center;gap:10px"><label class="fl" style="margin:0">Автономные агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
-            <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:16px">Настройки</div>
+          <div style="display:grid;gap:12px;max-width:420px">
+            <div><label class="fl">Groq API Key</label><input type="password" id="s-gk" class="inp" placeholder="gsk_..." onblur="sGK(this.value)"/></div>
+            <div style="display:flex;align-items:center;gap:12px"><label class="fl" style="margin:0">Авто-агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
+            <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel" style="width:120px"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
             <button class="btn p" onclick="saveSettings()" style="width:fit-content">Сохранить</button>
-            <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-              <div style="font-size:11px;color:var(--red);margin-bottom:6px">Опасная зона</div>
-              <button class="btn d" onclick="clearTrades()">Удалить все сделки</button>
-            </div>
+            <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
           </div>
         </div>
       </div>
     </div>
-  </div><!-- /page-cab -->
-
-  <!-- ══════════════════════════════════════
-       MODALS
-  ══════════════════════════════════════ -->
-  <!-- Analytics -->
-  <div class="mbg hidden" id="an-modal">
-    <div class="mbox" style="max-width:680px">
-      <div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div>
-      <div class="mbody" id="an-body"></div>
-    </div>
   </div>
 
-  <!-- Audit -->
-  <div class="mbg hidden" id="audit-modal">
-    <div class="mbox">
-      <div class="mhdr"><span class="mt">⚡ Совещание агентов — Аудит</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div>
-      <div class="mbody">
-        <div style="font-size:10px;color:var(--dim);margin-bottom:10px" id="audit-sub">Агенты подключаются...</div>
-        <div id="audit-feed"></div>
-        <div id="audit-sum" class="a-sum hidden"></div>
-      </div>
-    </div>
-  </div>
+  <!-- ══════════════ MODALS ══════════════ -->
+  <div class="mbg hidden" id="an-modal"><div class="mbox" style="max-width:680px"><div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div><div class="mbody" id="an-body"></div></div></div>
+  <div class="mbg hidden" id="audit-modal"><div class="mbox"><div class="mhdr"><span class="mt">⚡ Совещание агентов</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div><div class="mbody"><div style="font-size:11px;color:var(--label3);margin-bottom:12px" id="audit-sub">Подключение...</div><div id="audit-feed"></div><div id="audit-sum" class="a-sum hidden"></div></div></div></div>
+  <div class="mbg hidden" id="alert-modal"><div class="mbox" style="max-width:460px"><div class="mhdr"><span class="mt">🔔 Алерты — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--ios-green);font-size:12px"></span></span><button class="mc" onclick="closeAlertModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="al-grid"><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-green);margin-bottom:8px">Выше ▲</div><input type="number" id="al-price-above" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)" class="btn p" style="width:100%;justify-content:center">+ Алерт выше</button></div><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-red);margin-bottom:8px">Ниже ▼</div><input type="number" id="al-price-below" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)" class="btn d" style="width:100%;justify-content:center">+ Алерт ниже</button></div></div><div class="ios-card" style="margin:0"><div style="font-size:11px;font-weight:500;color:var(--ios-orange);margin-bottom:8px">Движение %</div><div style="display:flex;gap:8px"><input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)" class="btn" style="flex:1;justify-content:center;color:var(--ios-orange)">+ На движение</button></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;font-weight:500;color:var(--label3)">Активные алерты</span><button onclick="clearTriggered()" class="btn" style="font-size:11px;padding:3px 9px">Очистить</button></div><div id="alerts-list-modal"></div></div></div></div></div>
+  <div class="mbg hidden" id="journal-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="font-size:11px;font-weight:500;color:var(--label3);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jm-ai-entry" style="color:var(--label)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--ios-red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--ios-green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--ios-purple)">—</b></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" step="0.01"/></div><div><label class="fl">Объём ₽</label><input type="number" id="jm-volume" class="inp" placeholder="10000"/></div></div><div><label class="fl">Как исполнили?</label><select id="jm-tag" class="sel"><option value="exact">✅ Точно по AI</option><option value="modified">⚠️ Изменил вход</option><option value="partial">½ Частично</option></select></div><div><label class="fl">Заметка</label><input type="text" id="jm-note" class="inp" placeholder="Почему сейчас..."/></div><input type="hidden" id="jm-signal-id"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitExecution()" style="flex:1;justify-content:center">Записать</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div></div></div></div>
+  <div class="mbg hidden" id="journal-close-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jcm-entry">—</b></span><span id="jcm-cur" style="color:var(--ios-green)"></span></div></div><div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" step="0.01"/></div><div><label class="fl">Итог / причина</label><textarea id="jcm-result-note" class="inp" style="height:72px;resize:none" placeholder="Что сработало..."></textarea></div><input type="hidden" id="jcm-signal-id2"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitClose()" style="flex:1;justify-content:center">Закрыть</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div></div></div></div>
 
-  <!-- Alert Modal -->
-  <div class="mbg hidden" id="alert-modal">
-    <div class="mbox" style="max-width:480px">
-      <div class="mhdr"><span class="mt">🔔 Алерты — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--green);font-size:11px"></span></span><button class="mc" onclick="closeAlertModal()">✕</button></div>
-      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
-        <div class="al-type-grid">
-          <div class="al-card" style="border-color:rgba(52,211,153,.2)"><div style="font-size:10px;font-weight:600;color:var(--green);margin-bottom:6px">ВЫШЕ ЦЕНЫ ▲</div><input type="number" id="al-price-above" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)" style="width:100%;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green);padding:7px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт выше</button></div>
-          <div class="al-card" style="border-color:rgba(248,113,113,.2)"><div style="font-size:10px;font-weight:600;color:var(--red);margin-bottom:6px">НИЖЕ ЦЕНЫ ▼</div><input type="number" id="al-price-below" class="inp" style="width:100%;margin-bottom:6px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)" style="width:100%;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red);padding:7px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт ниже</button></div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px"><div style="font-size:10px;font-weight:600;color:var(--amber);margin-bottom:6px">ДВИЖЕНИЕ НА %</div><div style="display:flex;gap:6px"><input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/><span style="font-size:11px;color:var(--muted);padding:5px">%</span><button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)" style="flex:1;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);color:var(--amber);padding:6px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer">+ Алерт на движение</button></div></div>
-        <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:600;color:var(--dim)">АКТИВНЫЕ АЛЕРТЫ</span><button onclick="clearTriggered()" style="background:transparent;border:1px solid var(--border);color:var(--dim);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer">Очистить</button></div><div id="alerts-list-modal"></div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Journal Execution Modal -->
-  <div class="mbg hidden" id="journal-modal">
-    <div class="mbox" style="max-width:500px">
-      <div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div>
-      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
-        <div class="jm-recap"><div style="font-size:10px;font-weight:600;color:var(--dim);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:16px;font-family:var(--mono);font-size:11px"><span>Вход: <b id="jm-ai-entry" style="color:var(--text)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--purple)">—</b></span></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Фактическая цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" style="width:100%" step="0.01"/></div><div><label class="fl">Объём сделки ₽</label><input type="number" id="jm-volume" class="inp" style="width:100%" placeholder="10000"/></div></div>
-        <div><label class="fl">Как выполнили сигнал?</label><select id="jm-tag" class="sel" style="width:100%"><option value="exact">✅ Точно по рекомендации AI</option><option value="modified">⚠️ Изменил цену входа</option><option value="partial">½ Зашёл частичным объёмом</option></select></div>
-        <div><label class="fl">Заметка (необязательно)</label><input type="text" id="jm-note" class="inp" style="width:100%" placeholder="Почему именно сейчас..."/></div>
-        <input type="hidden" id="jm-signal-id"/>
-        <div style="display:flex;gap:6px"><button class="btn p" onclick="submitExecution()" style="flex:1">▶ Записать исполнение</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Journal Close Modal -->
-  <div class="mbg hidden" id="journal-close-modal">
-    <div class="mbox" style="max-width:500px">
-      <div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div>
-      <div class="mbody" style="display:flex;flex-direction:column;gap:10px">
-        <div class="jm-recap"><div style="display:flex;gap:16px;font-family:var(--mono);font-size:11px"><span>Вход: <b id="jcm-entry" style="color:var(--text)">—</b></span><span id="jcm-cur" style="color:var(--green)"></span></div></div>
-        <div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" style="width:100%" step="0.01"/></div>
-        <div><label class="fl">Причина закрытия / итоговая заметка</label><textarea id="jcm-result-note" class="inp" style="width:100%;height:70px;resize:none" placeholder="Что сработало / не сработало?"></textarea></div>
-        <input type="hidden" id="jcm-signal-id2"/>
-        <div style="display:flex;gap:6px"><button class="btn p" onclick="submitClose()" style="flex:1">■ Закрыть и записать</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Chart Context Menu -->
+  <!-- Context Menu -->
   <div id="chart-ctx-menu">
-    <div class="ctx-hdr"><div style="display:flex;align-items:center;justify-content:space-between"><div><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)" id="ctxm-price">—</span> <span style="font-size:10px;font-weight:600;color:var(--muted)" id="ctxm-sym">—</span></div><div style="text-align:right"><div style="font-size:10px;color:var(--dim)" id="ctxm-diff">—</div><div style="font-size:10px;color:var(--dim)">R:R <span id="ctxm-rr" style="color:var(--text);font-family:var(--mono)">—</span></div></div></div></div>
-    <div class="ctx-item" onclick="ctxOpenTrade('LONG')"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px">🟢</span><div><div style="font-weight:600;color:var(--green);font-size:11px">Открыть LONG</div><div style="font-size:9px;color:var(--dim)">Стоп: <span id="ctxm-long-stop">—</span> → <span id="ctxm-long-tg">—</span></div></div></div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;color:var(--muted)">B</kbd></div>
-    <div class="ctx-item" onclick="ctxOpenTrade('SHORT')"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px">🔴</span><div><div style="font-weight:600;color:var(--red);font-size:11px">Открыть SHORT</div><div style="font-size:9px;color:var(--dim)">Стоп: <span id="ctxm-short-stop">—</span> → <span id="ctxm-short-tg">—</span></div></div></div><kbd style="background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;color:var(--muted)">S</kbd></div>
-    <div class="ctx-sec">Быстрые действия</div>
-    <div class="ctx-item" onclick="ctxSetAlert('above')"><span style="font-size:11px">🔔</span> <span style="font-size:11px;color:var(--amber)">Алерт выше этой цены</span></div>
-    <div class="ctx-item" onclick="ctxSetAlert('below')"><span style="font-size:11px">🔔</span> <span style="font-size:11px;color:var(--amber)">Алерт ниже этой цены</span></div>
-    <div class="ctx-item" onclick="ctxCIOAtPrice()"><span style="font-size:11px">⚡</span> <span style="font-size:11px;color:var(--purple)">CIO анализ для этой цены</span></div>
+    <div class="ctx-hdr"><div style="display:flex;align-items:center;justify-content:space-between"><div><span style="font-family:var(--mono);font-size:15px;font-weight:700" id="ctxm-price">—</span> <span style="font-size:11px;color:var(--label3)" id="ctxm-sym">—</span></div><div style="text-align:right"><div style="font-size:11px;color:var(--label3)" id="ctxm-diff">—</div><div style="font-size:11px;color:var(--label3)">R:R <span id="ctxm-rr" style="color:var(--label);font-family:var(--mono)">—</span></div></div></div></div>
+    <div class="ctx-item" onclick="ctxOpenTrade('LONG')"><div style="display:flex;align-items:center;gap:8px"><span>🟢</span><div><div style="font-weight:600;color:var(--ios-green);font-size:12px">Открыть LONG</div><div style="font-size:10px;color:var(--label3)">Стоп: <span id="ctxm-long-stop">—</span> → <span id="ctxm-long-tg">—</span></div></div></div><kbd>B</kbd></div>
+    <div class="ctx-item" onclick="ctxOpenTrade('SHORT')"><div style="display:flex;align-items:center;gap:8px"><span>🔴</span><div><div style="font-weight:600;color:var(--ios-red);font-size:12px">Открыть SHORT</div><div style="font-size:10px;color:var(--label3)">Стоп: <span id="ctxm-short-stop">—</span> → <span id="ctxm-short-tg">—</span></div></div></div><kbd>S</kbd></div>
+    <div class="ctx-sec">Быстро</div>
+    <div class="ctx-item" onclick="ctxSetAlert('above')"><span>🔔</span> <span style="font-size:12px;color:var(--ios-orange)">Алерт выше цены</span></div>
+    <div class="ctx-item" onclick="ctxSetAlert('below')"><span>🔔</span> <span style="font-size:12px;color:var(--ios-orange)">Алерт ниже цены</span></div>
+    <div class="ctx-item" onclick="ctxCIOAtPrice()"><span>⚡</span> <span style="font-size:12px;color:var(--ios-purple)">CIO анализ</span></div>
   </div>
 
-  <!-- Hotkey Flash -->
   <div id="hotkey-flash"></div>
-
-  <!-- Hotkey Help -->
   <div id="hotkey-help" class="hidden" onclick="this.classList.add('hidden')">
     <div class="hk-modal" onclick="event.stopPropagation()">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <span style="font-size:14px;font-weight:600;color:var(--indigo)">⌨ Горячие клавиши</span>
-        <button onclick="document.getElementById('hotkey-help').classList.add('hidden')" class="mc">✕</button>
-      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><span style="font-size:15px;font-weight:600;color:var(--ios-indigo)">⌨ Горячие клавиши</span><button onclick="document.getElementById('hotkey-help').classList.add('hidden')" class="mc">✕</button></div>
       <div class="hk-grid">
         <div class="hk-sec">Торговля</div>
-        <div class="hk-row"><kbd>B</kbd><span style="font-size:11px;color:var(--text)">Открыть LONG</span></div>
-        <div class="hk-row"><kbd>S</kbd><span style="font-size:11px;color:var(--text)">Открыть SHORT</span></div>
-        <div class="hk-row"><kbd>C</kbd><span style="font-size:11px;color:var(--text)">CIO анализ</span></div>
-        <div class="hk-row"><kbd>A</kbd><span style="font-size:11px;color:var(--text)">Алерты</span></div>
+        <div class="hk-row"><kbd>B</kbd><span style="font-size:12px">LONG</span></div><div class="hk-row"><kbd>S</kbd><span style="font-size:12px">SHORT</span></div>
+        <div class="hk-row"><kbd>C</kbd><span style="font-size:12px">CIO анализ</span></div><div class="hk-row"><kbd>A</kbd><span style="font-size:12px">Алерты</span></div>
         <div class="hk-sec">Таймфреймы</div>
-        <div class="hk-row"><kbd>1</kbd><span style="font-size:11px;color:var(--muted)">1 мин</span> <kbd>2</kbd><span style="font-size:11px;color:var(--muted)">10 мин</span></div>
-        <div class="hk-row"><kbd>3</kbd><span style="font-size:11px;color:var(--muted)">5 дней</span> <kbd>4</kbd><span style="font-size:11px;color:var(--muted)">1 мес</span></div>
-        <div class="hk-row"><kbd>5</kbd><span style="font-size:11px;color:var(--muted)">3 мес</span> <kbd>6</kbd><span style="font-size:11px;color:var(--text);font-weight:500">1 год</span></div>
-        <div class="hk-row"><kbd>7</kbd><span style="font-size:11px;color:var(--muted)">3 года</span> <kbd>8</kbd><span style="font-size:11px;color:var(--muted)">5 лет</span> <kbd>9</kbd><span style="font-size:11px;color:var(--muted)">МАКС</span></div>
+        <div class="hk-row"><kbd>1</kbd><span style="font-size:12px">1 мин</span></div><div class="hk-row"><kbd>2</kbd><span style="font-size:12px">10 мин</span></div>
+        <div class="hk-row"><kbd>3</kbd><span style="font-size:12px">5 дней</span></div><div class="hk-row"><kbd>6</kbd><span style="font-size:12px;font-weight:500">1 год</span></div>
+        <div class="hk-row"><kbd>9</kbd><span style="font-size:12px">МАКС</span></div><div class="hk-row"></div>
         <div class="hk-sec">Навигация</div>
-        <div class="hk-row"><kbd>↑↓</kbd><span style="font-size:11px;color:var(--text)">Следующая/предыдущая акция</span></div>
-        <div class="hk-row"><kbd>M</kbd><span style="font-size:11px;color:var(--text)">Мультиграфик 2×2</span></div>
-        <div class="hk-row"><kbd>I</kbd><span style="font-size:11px;color:var(--text)">IMOEX overlay</span></div>
-        <div class="hk-row"><kbd>SPACE</kbd><span style="font-size:11px;color:var(--text)">Обновить данные</span></div>
-        <div class="hk-row"><kbd>ESC</kbd><span style="font-size:11px;color:var(--text)">Закрыть окно</span></div>
-        <div class="hk-row"><kbd>?</kbd><span style="font-size:11px;color:var(--text)">Эта справка</span></div>
+        <div class="hk-row"><kbd>↑↓</kbd><span style="font-size:12px">Следующая акция</span></div>
+        <div class="hk-row"><kbd>M</kbd><span style="font-size:12px">2×2 мультиграф.</span></div>
+        <div class="hk-row"><kbd>SPACE</kbd><span style="font-size:12px">Обновить</span></div>
+        <div class="hk-row"><kbd>ESC</kbd><span style="font-size:12px">Закрыть окно</span></div>
+        <div class="hk-row"><kbd>?</kbd><span style="font-size:12px">Эта справка</span></div>
       </div>
     </div>
   </div>
-
-  <!-- Toast -->
   <div id="toast-wrap"></div>
 
 </div>
@@ -1041,9 +968,9 @@ function rSigs(){
   var mini=sigs.slice(0,5).map(function(x){
     var dir=x.c>0?'LONG':'SHORT';
     var col=x.c>0?'var(--green)':'var(--red)';
-    return '<div class="sig-item" onclick="sSym(\''+x.s+'\')">'+
+    return '<div class="sr" onclick="sSym(\''+x.s+'\')">'+
       '<span class="sr-sym">'+x.s+'</span>'+
-      '<span class="si-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
+      '<span class="sr-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
       '<div style="flex:1;font-size:8px;color:var(--dim)">'+(ST[x.s]&&ST[x.s].n||'')+'</div>'+
       '<span style="font-family:var(--mono);font-size:9.5px;color:'+col+'">'+(x.c>=0?'+':'')+x.c.toFixed(2)+'%</span>'+
     '</div>';
@@ -1054,9 +981,9 @@ function rSigs(){
   var full=sigs.map(function(x){
     var dir=x.c>0?'LONG':'SHORT';
     var col=x.c>0?'var(--green)':'var(--red)';
-    return '<div class="sig-item" onclick="sSym(\''+x.s+'\');showPage(\'term\')">'+
+    return '<div class="sr" onclick="sSym(\''+x.s+'\');showPage(\'term\')">'+
       '<span class="sr-sym">'+x.s+'</span>'+
-      '<span class="si-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
+      '<span class="sr-dir '+dir.toLowerCase()+'">'+dir+'</span>'+
       '<div style="flex:1;font-size:8.5px;color:var(--dim)">'+(ST[x.s]&&ST[x.s].n||'')+'</div>'+
       '<span style="font-size:10px;color:'+col+';font-weight:600">'+(x.c>=0?'+':'')+x.c.toFixed(2)+'%</span>'+
     '</div>';
@@ -1165,12 +1092,12 @@ function rInd(data){
   var pats=dPats(data.slice(-20));
   var rc=rsi>70?'bear':rsi<30?'bull':'neut';
   var rl=rsi>70?'ПЕРЕКУПЛ':rsi<30?'ПЕРЕПРОДАН':'НОРМА';
-  var html='<span class="ind-tag '+(rc==="bull"?"it-bull":rc==="bear"?"it-bear":"it-neut")+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
+  var html='<span class="ind '+rc+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
     '<span class="ind '+(ma20>ma50?'bull':'bear')+'">MA20 '+(ma20>ma50?'>':'<')+' MA50</span>'+
     '<span class="ind sig">СВЕЧА: '+(dc>=0?'+':'')+dc+'%</span>'+
-    '<span class="ind-tag '+(last.close>ma20?'it-bull':'it-bear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
-    pats.slice(0,2).map(function(p){return '<span class="ind-tag '+(p.t==="bull"?"it-bull":p.t==="bear"?"it-bear":"it-sig")+'">'+p.n+'</span>';}).join('')+
-    '<span class="ind-tag it-neut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
+    '<span class="ind '+(last.close>ma20?'bull':'bear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
+    pats.slice(0,2).map(function(p){return '<span class="ind '+p.t+'">'+p.n+'</span>';}).join('')+
+    '<span class="ind neut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
   el.innerHTML=html;
   // Re-render IMOEX overlay if active
   if(typeof imoexEnabled!=='undefined'&&imoexEnabled) renderImoexOverlay();
@@ -1942,6 +1869,11 @@ async function _rCIO(sym, resEl, btnEl){
     }
 
     renderSignalCard(sym, data, resEl);
+    // Show signal card in left panel hero too
+    var ph = document.getElementById('cio-placeholder');
+    if(ph) ph.style.display = 'none';
+    var cr = document.getElementById('cio-result');
+    if(cr){ cr.style.display = 'block'; }
     // Auto-save to history
     autoSaveSignal(sym, data.direction, data.entry, data.stop,
                    data.target1, data.target2, data.confidence, data.reasoning);
@@ -2069,7 +2001,7 @@ function showPage(p){
     if(pel)pel.classList.toggle('hidden',pg!==p);
     if(nel)nel.classList.toggle('on',pg===p);
   });
-  if(p==='sig'){rTaKb();rPats();}
+  if(p==='sig'){rTaKb();rPats();renderScanResults();}
   if(p==='cab'){lCabTr();updCabUI();}
 }
 
@@ -3024,7 +2956,7 @@ function renderScanResults(){
   var el = document.getElementById('scan-results');
   if(!el) return;
   // Also update signals page
-  var el2 = document.getElementById('scan-results-sig');
+  var el2 = document.getElementById('scan-results-sig2') || document.getElementById('scan-results-sig');
   if(el2) el2.innerHTML = el ? el.innerHTML : '';
   if(!scanResults.length){
     el.innerHTML='<div style="font-size:8.5px;color:var(--dim);padding:6px 0">Нет сильных сигналов</div>';
