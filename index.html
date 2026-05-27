@@ -628,6 +628,7 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
           <div style="display:grid;gap:12px;max-width:420px">
             <div><label class="fl">Groq API Key</label><input type="password" id="s-gk" class="inp" placeholder="gsk_..." onblur="sGK(this.value)"/></div>
             <div style="display:flex;align-items:center;gap:12px"><label class="fl" style="margin:0">Авто-агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
+            <div><label class="fl">Twelvedata API Key (для Brent)</label><input type="text" id="s-tdkey" class="inp" placeholder="Опционально: ключ twelvedata.com" oninput="localStorage.setItem('twelvedata_key',this.value)"/></div>
             <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel" style="width:120px"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
             <button class="btn p" onclick="saveSettings()" style="width:fit-content">Сохранить</button>
             <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
@@ -706,50 +707,50 @@ const MOEX='https://iss.moex.com/iss';
 
 // ── Stocks ────────────────────────────────────
 const ST={
-  SBER:{n:'Сбербанк',s:'Финансы',pe:4.8,pb:0.9,roe:22,div:11.2},
-  VTBR:{n:'ВТБ',s:'Финансы',pe:3.2,pb:0.5,roe:18,div:5.1},
-  TCSG:{n:'Т-Банк',s:'Финансы',pe:12.1,pb:3.2,roe:28,div:0},
-  MOEX:{n:'МосБиржа',s:'Финансы',pe:9.4,pb:3.1,roe:33,div:8.5},
-  BSPB:{n:'Банк СПБ',s:'Финансы',pe:3.5,pb:0.7,roe:21,div:6.4},
-  LKOH:{n:'Лукойл',s:'Нефть/Газ',pe:5.8,pb:1.2,roe:21,div:14.5},
-  GAZP:{n:'Газпром',s:'Нефть/Газ',pe:3.1,pb:0.3,roe:8,div:6.8},
-  ROSN:{n:'Роснефть',s:'Нефть/Газ',pe:5.4,pb:0.9,roe:17,div:8.2},
-  NVTK:{n:'Новатэк',s:'Нефть/Газ',pe:8.2,pb:1.8,roe:22,div:5.3},
-  SNGS:{n:'Сургутнефтегаз',s:'Нефть/Газ',pe:2.1,pb:0.4,roe:18,div:22.4},
-  TATN:{n:'Татнефть',s:'Нефть/Газ',pe:6.2,pb:1.4,roe:24,div:12.8},
-  GMKN:{n:'Норникель',s:'Металлы',pe:7.4,pb:4.2,roe:57,div:5.8},
-  ALRS:{n:'Алроса',s:'Металлы',pe:6.8,pb:1.1,roe:17,div:4.2},
-  PLZL:{n:'Полюс',s:'Металлы',pe:9.1,pb:3.5,roe:39,div:3.4},
-  NLMK:{n:'НЛМК',s:'Металлы',pe:5.2,pb:1.3,roe:25,div:8.9},
-  CHMF:{n:'Северсталь',s:'Металлы',pe:5.8,pb:2.1,roe:36,div:11.4},
-  MAGN:{n:'ММК',s:'Металлы',pe:4.9,pb:0.9,roe:19,div:7.6},
-  PHOR:{n:'ФосАгро',s:'Химия',pe:7.3,pb:3.8,roe:52,div:12.1},
+  SBER:{n:'Сбербанк',s:'Финансы',pe:4.8,pb:0.9,roe:22,div:11.2,eps:62.5},
+  VTBR:{n:'ВТБ',s:'Финансы',pe:3.2,pb:0.5,roe:18,div:5.1,eps:0.01},
+  TCSG:{n:'Т-Банк',s:'Финансы',pe:12.1,pb:3.2,roe:28,div:0,eps:231.4},
+  MOEX:{n:'МосБиржа',s:'Финансы',pe:9.4,pb:3.1,roe:33,div:8.5,eps:24.47},
+  BSPB:{n:'Банк СПБ',s:'Финансы',pe:3.5,pb:0.7,roe:21,div:6.4,eps:74.29},
+  LKOH:{n:'Лукойл',s:'Нефть/Газ',pe:5.8,pb:1.2,roe:21,div:14.5,eps:1206.9},
+  GAZP:{n:'Газпром',s:'Нефть/Газ',pe:3.1,pb:0.3,roe:8,div:6.8,eps:54.84},
+  ROSN:{n:'Роснефть',s:'Нефть/Газ',pe:5.4,pb:0.9,roe:17,div:8.2,eps:107.41},
+  NVTK:{n:'Новатэк',s:'Нефть/Газ',pe:8.2,pb:1.8,roe:22,div:5.3,eps:146.34},
+  SNGS:{n:'Сургутнефтегаз',s:'Нефть/Газ',pe:2.1,pb:0.4,roe:18,div:22.4,eps:13.33},
+  TATN:{n:'Татнефть',s:'Нефть/Газ',pe:6.2,pb:1.4,roe:24,div:12.8,eps:104.84},
+  GMKN:{n:'Норникель',s:'Металлы',pe:7.4,pb:4.2,roe:57,div:5.8,eps:202.7},
+  ALRS:{n:'Алроса',s:'Металлы',pe:6.8,pb:1.1,roe:17,div:4.2,eps:8.82},
+  PLZL:{n:'Полюс',s:'Металлы',pe:9.1,pb:3.5,roe:39,div:3.4,eps:1318.68},
+  NLMK:{n:'НЛМК',s:'Металлы',pe:5.2,pb:1.3,roe:25,div:8.9,eps:38.46},
+  CHMF:{n:'Северсталь',s:'Металлы',pe:5.8,pb:2.1,roe:36,div:11.4,eps:275.86},
+  MAGN:{n:'ММК',s:'Металлы',pe:4.9,pb:0.9,roe:19,div:7.6,eps:12.24},
+  PHOR:{n:'ФосАгро',s:'Химия',pe:7.3,pb:3.8,roe:52,div:12.1,eps:1027.4},
   RUAL:{n:'Русал',s:'Металлы',pe:null,pb:0.4,roe:-2,div:0},
-  YNDX:{n:'Яндекс',s:'Технологии',pe:22.4,pb:4.8,roe:22,div:0},
+  YNDX:{n:'Яндекс',s:'Технологии',pe:22.4,pb:4.8,roe:22,div:0,eps:200.89},
   OZON:{n:'Ozon',s:'Технологии',pe:null,pb:null,roe:-15,div:0},
-  HEAD:{n:'HeadHunter',s:'Технологии',pe:18.5,pb:9.2,roe:51,div:6.8},
-  ASTR:{n:'Астра',s:'Технологии',pe:28.1,pb:6.4,roe:23,div:2.1},
-  POSI:{n:'Позитив',s:'Технологии',pe:24.2,pb:7.1,roe:29,div:4.5},
-  MGNT:{n:'Магнит',s:'Ритейл',pe:8.4,pb:2.1,roe:25,div:7.8},
-  FIVE:{n:'X5 Group',s:'Ритейл',pe:7.2,pb:2.8,roe:39,div:14.2},
-  MTSS:{n:'МТС',s:'Телеком',pe:6.8,pb:null,roe:null,div:17.4},
-  RTKM:{n:'Ростелеком',s:'Телеком',pe:9.4,pb:1.2,roe:13,div:8.2},
-  HYDR:{n:'РусГидро',s:'Энергетика',pe:5.1,pb:0.5,roe:10,div:6.8},
-  FEES:{n:'ФСК',s:'Энергетика',pe:3.8,pb:0.3,roe:8,div:5.4},
-  IRAO:{n:'Интер РАО',s:'Энергетика',pe:4.2,pb:0.5,roe:13,div:5.8},
-  UPRO:{n:'Юнипро',s:'Энергетика',pe:8.9,pb:1.1,roe:12,div:12.1},
+  HEAD:{n:'HeadHunter',s:'Технологии',pe:18.5,pb:9.2,roe:51,div:6.8,eps:227.03},
+  ASTR:{n:'Астра',s:'Технологии',pe:28.1,pb:6.4,roe:23,div:2.1,eps:19.57},
+  POSI:{n:'Позитив',s:'Технологии',pe:24.2,pb:7.1,roe:29,div:4.5,eps:115.7},
+  MGNT:{n:'Магнит',s:'Ритейл',pe:8.4,pb:2.1,roe:25,div:7.8,eps:654.76},
+  FIVE:{n:'X5 Group',s:'Ритейл',pe:7.2,pb:2.8,roe:39,div:14.2,eps:388.89},
+  MTSS:{n:'МТС',s:'Телеком',pe:6.8,pb:null,roe:null,div:17.4,eps:41.18},
+  RTKM:{n:'Ростелеком',s:'Телеком',pe:9.4,pb:1.2,roe:13,div:8.2,eps:10.11},
+  HYDR:{n:'РусГидро',s:'Энергетика',pe:5.1,pb:0.5,roe:10,div:6.8,eps:0.14},
+  FEES:{n:'ФСК',s:'Энергетика',pe:3.8,pb:0.3,roe:8,div:5.4,eps:0.05},
+  IRAO:{n:'Интер РАО',s:'Энергетика',pe:4.2,pb:0.5,roe:13,div:5.8,eps:0.9},
+  UPRO:{n:'Юнипро',s:'Энергетика',pe:8.9,pb:1.1,roe:12,div:12.1,eps:0.27},
   AFLT:{n:'Аэрофлот',s:'Транспорт',pe:null,pb:1.8,roe:-5,div:0},
-  FLOT:{n:'Совкомфлот',s:'Транспорт',pe:4.1,pb:0.8,roe:20,div:9.4},
-  LSRG:{n:'ЛСР',s:'Недвижимость',pe:7.8,pb:1.1,roe:14,div:8.4},
+  FLOT:{n:'Совкомфлот',s:'Транспорт',pe:4.1,pb:0.8,roe:20,div:9.4,eps:34.15},
+  LSRG:{n:'ЛСР',s:'Недвижимость',pe:7.8,pb:1.1,roe:14,div:8.4,eps:89.74},
   PIKK:{n:'ПИК',s:'Недвижимость',pe:null,pb:1.5,roe:-3,div:0},
   SMLT:{n:'Самолёт',s:'Недвижимость',pe:null,pb:2.8,roe:-8,div:0},
-  BELU:{n:'Белуга',s:'Потреб.',pe:12.4,pb:3.2,roe:26,div:5.8},
-  AQUA:{n:'Инарктика',s:'Потреб.',pe:8.2,pb:2.4,roe:29,div:8.1},
-  MDMG:{n:'MD Medical',s:'Медицина',pe:14.8,pb:3.4,roe:23,div:5.2},
-  GLTR:{n:'Globaltrans',s:'Транспорт',pe:5.4,pb:1.4,roe:26,div:0},
-  SELG:{n:'Селигдар',s:'Металлы',pe:14.2,pb:2.1,roe:15,div:3.8},
-  BANE:{n:'Башнефть',s:'Нефть/Газ',pe:4.1,pb:0.6,roe:15,div:9.2},
-  OGKB:{n:'ОГК-2',s:'Энергетика',pe:3.9,pb:0.4,roe:11,div:7.2},
+  BELU:{n:'Белуга',s:'Потреб.',pe:12.4,pb:3.2,roe:26,div:5.8,eps:44.35},
+  AQUA:{n:'Инарктика',s:'Потреб.',pe:8.2,pb:2.4,roe:29,div:8.1,eps:73.17},
+  MDMG:{n:'MD Medical',s:'Медицина',pe:14.8,pb:3.4,roe:23,div:5.2,eps:67.57},
+  GLTR:{n:'Globaltrans',s:'Транспорт',pe:5.4,pb:1.4,roe:26,div:0,eps:148.15},
+  SELG:{n:'Селигдар',s:'Металлы',pe:14.2,pb:2.1,roe:15,div:3.8,eps:4.79},
+  BANE:{n:'Башнефть',s:'Нефть/Газ',pe:4.1,pb:0.6,roe:15,div:9.2,eps:585.37},
+  OGKB:{n:'ОГК-2',s:'Энергетика',pe:3.9,pb:0.4,roe:11,div:7.2,eps:0.15},
   MVID:{n:'М.Видео',s:'Ритейл',pe:null,pb:0.6,roe:-12,div:0},
   SPBE:{n:'СПБ Биржа',s:'Финансы',pe:null,pb:0.8,roe:-5,div:0},
   VKCO:{n:'VK',s:'Технологии',pe:null,pb:1.2,roe:-8,div:0},
@@ -2347,93 +2348,125 @@ function updateChartLivePrice(){
 var moexFundamentals={};
 async function fetchFundamentals(){
   try{
-    // Fetch securities info with available financial data
-    var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME,LOTSIZE,PREVPRICE,PREVLEGALCLOSEPRICE,LISTLEVEL,FACEVALUE';
-    var r=await fetch(url);
-    var d=await r.json();
+    var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,ISSUESIZE,LOTSIZE,FACEVALUE,LISTLEVEL,PREVPRICE,CURRENCYID';
+    var r=await fetch(url);var d=await r.json();
     var cols=d.securities.columns;
     d.securities.data.forEach(function(row){
       var o={};cols.forEach(function(c,i){o[c]=row[i];});
-      if(o.SECID){
-        moexFundamentals[o.SECID]={
-          lotSize:o.LOTSIZE,
-          prevPrice:o.PREVPRICE,
-          legalClose:o.PREVLEGALCLOSEPRICE,
-          listLevel:o.LISTLEVEL,
-          faceValue:o.FACEVALUE
-        };
-      }
+      if(!o.SECID)return;
+      moexFundamentals[o.SECID]={
+        issueSize:parseFloat(o.ISSUESIZE)||0,
+        lotSize:parseInt(o.LOTSIZE)||1,
+        faceValue:parseFloat(o.FACEVALUE)||0,
+        listLevel:parseInt(o.LISTLEVEL)||3,
+        prevPrice:parseFloat(o.PREVPRICE)||0,
+        currency:o.CURRENCYID||'RUB'
+      };
     });
-    // Update nav indicators
-    updateMacroBar();
-    console.log('Fundamentals loaded for',Object.keys(moexFundamentals).length,'securities');
-  }catch(e){console.warn('fetchFundamentals error',e);}
+    console.log('[MOEX ISS] Fundamentals:',Object.keys(moexFundamentals).length,'securities');
+  }catch(ex){console.warn('fetchFundamentals',ex);}
+}
+
+function getLiveMultipliers(sym){
+  var info=ST[sym]||{};
+  var p=prices[sym];var mf=moexFundamentals[sym]||{};
+  var price=p?p.p:(mf.prevPrice||0);
+  var pe_live=null;
+  if(info.eps&&info.eps>0&&price>0) pe_live=parseFloat((price/info.eps).toFixed(1));
+  else pe_live=info.pe||null;
+  var mcap_str=null;
+  if(mf.issueSize>0&&price>0){
+    var bn=price*mf.issueSize/1e9;
+    mcap_str=bn>=1000?(bn/1000).toFixed(1)+'T':(bn).toFixed(0)+'B';
+  }
+  return {pe_live:pe_live,pe_static:info.pe,pb:info.pb,roe:info.roe,div:info.div,
+          eps:info.eps,issueSize:mf.issueSize,lotSize:mf.lotSize||1,
+          listLevel:mf.listLevel||3,mcap_str:mcap_str,price:price};
 }
 
 // ── TASK 2: Brent oil price from MOEX futures ─────────────
 var brentPrice=null,brentChange=null;
 async function fetchBrent(){
+  // Primary: MOEX FORTS Brent futures
   try{
-    // Brent futures on MOEX: symbol BRK (nearest) or BRN series
     var url=MOEX+'/engines/futures/markets/forts/securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,LASTCHANGE';
-    var r=await fetch(url);
-    var d=await r.json();
-    var cols=d.marketdata.columns;
-    var brents=[];
+    var r=await fetch(url);var d=await r.json();
+    var cols=d.marketdata.columns;var brents=[];
     d.marketdata.data.forEach(function(row){
       var o={};cols.forEach(function(c,i){o[c]=row[i];});
-      // BRK, BRN, BRF, BRG... - Brent futures
-      if(o.SECID&&/^BR[A-Z]\d*$/.test(o.SECID)&&o.LAST){
+      if(o.SECID&&/^BR[A-Z]\d*$/.test(o.SECID)&&o.LAST)
         brents.push({id:o.SECID,price:o.LAST,change:parseFloat(o.CHANGE||o.LASTCHANGE||0)});
-      }
     });
     if(brents.length){
-      // Take the one with lowest volume (nearest expiry usually most liquid)
       var nearest=brents[0];
-      brentPrice=nearest.price;
-      brentChange=nearest.change;
-      // Update display
-      var el=document.getElementById('brent-val');
-      if(el){
-        el.textContent=brentPrice.toFixed(2);
-        el.style.color=brentChange>=0?'var(--green)':'var(--red)';
-      }
-      var chgEl=document.getElementById('brent-chg');
-      if(chgEl){
-        chgEl.textContent=(brentChange>=0?'+':'')+brentChange.toFixed(2)+'%';
-        chgEl.style.color=brentChange>=0?'var(--green)':'var(--red)';
-      }
+      var bv=document.getElementById('brent-val');
+      var bc=document.getElementById('brent-chg');
+      if(bv)bv.textContent=nearest.price+'$';
+      if(bc){bc.textContent=(nearest.change>=0?'+':'')+nearest.change.toFixed(2)+'%';
+             bc.style.color=nearest.change>=0?'var(--ios-green)':'var(--ios-red)';}
+      return;
     }
-  }catch(e){console.warn('fetchBrent error',e);}
+  }catch(ex){console.warn('Brent MOEX error',ex);}
+  // Fallback: twelvedata API (requires key in settings)
+  var tdKey=localStorage.getItem('twelvedata_key')||'';
+  if(!tdKey)return;
+  try{
+    var url2='https://api.twelvedata.com/price?symbol=BNO&apikey='+tdKey;
+    var r2=await fetch(url2);var d2=await r2.json();
+    if(d2.price){
+      var bv2=document.getElementById('brent-val');
+      var bc2=document.getElementById('brent-chg');
+      if(bv2)bv2.textContent=parseFloat(d2.price).toFixed(2)+'$';
+      if(bc2)bc2.textContent='';
+    }
+  }catch(ex2){console.warn('Brent twelvedata error',ex2);}
 }
 
 // ── TASK 3: OFZ yields from MOEX bonds ────────────────────
 var ofzData=[];
 async function fetchOFZ(){
   try{
-    var url=MOEX+'/engines/stock/markets/bonds/boards/TQOB/securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,YIELD,DURATION';
-    var r=await fetch(url);
-    var d=await r.json();
-    var cols=d.marketdata.columns;
+    // Get both securities (maturity, coupon) and marketdata (yield, price)
+    var url=MOEX+'/engines/stock/markets/bonds/boards/TQOB/securities.json'+
+      '?iss.meta=off&iss.only=securities,marketdata'+
+      '&securities.columns=SECID,SHORTNAME,MATDATE,COUPONPERCENT,COUPONVALUE,COUPONPERIOD,FACEVALUE'+
+      '&marketdata.columns=SECID,LAST,CHANGE,YIELD,DURATION';
+    var r=await fetch(url);var d=await r.json();
+    var sCols=d.securities.columns;var mCols=d.marketdata.columns;
+    // Index securities by SECID
+    var secInfo={};
+    d.securities.data.forEach(function(row){
+      var o={};sCols.forEach(function(c,i){o[c]=row[i];});
+      if(o.SECID)secInfo[o.SECID]=o;
+    });
     var results=[];
     d.marketdata.data.forEach(function(row){
-      var o={};cols.forEach(function(c,i){o[c]=row[i];});
-      if(o.SECID&&o.YIELD&&parseFloat(o.YIELD)>0){
-        results.push({
-          id:o.SECID,
-          price:parseFloat(o.LAST||0),
-          yield:parseFloat(o.YIELD||0),
-          duration:parseFloat(o.DURATION||0),
-          change:parseFloat(o.CHANGE||0)
-        });
-      }
+      var o={};mCols.forEach(function(c,i){o[c]=row[i];});
+      if(!o.SECID||!o.YIELD||parseFloat(o.YIELD)<=0)return;
+      var sec=secInfo[o.SECID]||{};
+      var mat=sec.MATDATE?new Date(sec.MATDATE):null;
+      var yearsToMat=mat?((mat-Date.now())/(365.25*86400000)):0;
+      if(yearsToMat<0)return; // expired
+      results.push({
+        id:o.SECID,
+        name:sec.SHORTNAME||o.SECID,
+        price:parseFloat(o.LAST||0),
+        yield:parseFloat(o.YIELD),
+        duration:parseFloat(o.DURATION||0),
+        change:parseFloat(o.CHANGE||0),
+        coupon:parseFloat(sec.COUPONPERCENT||0),
+        matDate:sec.MATDATE||'',
+        yearsToMat:parseFloat(yearsToMat.toFixed(1))
+      });
     });
-    // Sort by duration for yield curve view
     results.sort(function(a,b){return a.duration-b.duration;});
-    ofzData=results.slice(0,20);
+    ofzData=results.slice(0,30);
     renderOFZ();
-  }catch(e){console.warn('fetchOFZ error',e);}
+    console.log('[MOEX ISS] OFZ loaded:',ofzData.length,'bonds');
+  }catch(ex){console.warn('fetchOFZ error',ex);}
 }
+
+
 
 function renderOFZ(){
   var el=document.getElementById('ofz-list');
@@ -2461,10 +2494,11 @@ function renderOFZ(){
 // ── TASK 4: Multiple RSS sources + ticker filtering ───────
 var allNews=[];
 var RSS_SOURCES=[
-  {name:'РБК',  url:'https://rssexport.rbc.ru/rbcnews/news/30/full.rss'},
-  {name:'РИА',  url:'https://ria.ru/export/rss2/archive/index.xml'},
+  {name:'РБК',       url:'https://rssexport.rbc.ru/rbcnews/news/30/full.rss'},
+  {name:'РИА',       url:'https://ria.ru/export/rss2/archive/index.xml'},
   {name:'Интерфакс', url:'https://www.interfax.ru/rss.asp'},
-  {name:'Коммерсантъ', url:'https://www.kommersant.ru/RSS/news.xml'}
+  {name:'Ведомости', url:'https://www.vedomosti.ru/rss/news'},
+  {name:'Коммерсантъ',url:'https://www.kommersant.ru/RSS/news.xml'}
 ];
 var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 
