@@ -370,6 +370,12 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
 .btn.d{border-color:rgba(255,69,58,.3);color:var(--ios-red)}
 .scan-btn-sm{padding:4px 10px;background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.2);color:var(--ios-green);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)}
 .scan-btn-sm:hover{background:rgba(48,209,88,.18)}
+.ver-badge{font-size:9px;font-weight:600;color:var(--label4);font-family:var(--mono);padding:2px 7px;background:var(--fill2);border:0.5px solid var(--sep2);border-radius:6px;letter-spacing:.03em;flex-shrink:0}
+.bcs-pill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;flex-shrink:0}
+.bcs-pill.off{background:rgba(255,159,10,.08);border:0.5px solid rgba(255,159,10,.2);color:var(--ios-orange)}
+.bcs-pill.on{background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.25);color:var(--ios-green)}
+.bcs-pill .bp-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.bcs-pill.on .bp-dot{animation:pulse 2s infinite}
 </style>
 </head>
 <body>
@@ -389,7 +395,9 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
     </div>
     <div class="statusbar-right">
       <div class="live-pill"><div class="live-dot" id="mkt-dot"></div><span class="live-txt" id="mkt-st">—</span></div>
+      <div id="bcs-pill" class="bcs-pill off" onclick="showPage('cab');showCab('settings')" title="БКС Брокер — нажмите для настройки"><div class="bp-dot"></div><span id="bcs-pill-txt">БКС</span></div>
       <div class="sb-clk" id="clk">—</div>
+      <span class="ver-badge" id="ver-badge">v3.1</span>
       <button class="kb-btn" onclick="toggleHotkeyHelp()" title="Горячие клавиши">⌨</button>
       <div class="sb-av" id="nav-av" onclick="showPage('cab')">А</div>
       <div class="sb-nm" id="nav-nm" onclick="showPage('cab')">—</div>
@@ -628,7 +636,29 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
       </div>
       <div style="min-width:0">
         <div id="cab-trades">
-          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:12px">Открытые позиции</div>
+          <!-- БКС Live блок -->
+          <div id="bcs-live-block">
+            <div id="bcs-connect-banner" style="padding:14px;background:rgba(255,159,10,.06);border:0.5px solid rgba(255,159,10,.2);border-radius:var(--r2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--ios-orange);margin-bottom:3px">📈 БКС Брокер не подключён</div>
+                <div style="font-size:11px;color:var(--label3)">Подключите токен для отображения реального портфеля</div>
+              </div>
+              <button onclick="showCab('settings')" class="btn" style="color:var(--ios-orange);border-color:rgba(255,159,10,.3);white-space:nowrap">Подключить →</button>
+            </div>
+          </div>
+          <div id="bcs-positions-wrap" class="hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:13px;font-weight:600;color:var(--ios-orange)">📈 БКС Live портфель</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="bcs-balance-lbl" style="font-size:11px;color:var(--label3)"></span>
+                <span id="bcs-update-lbl" style="font-size:10px;color:var(--label4)"></span>
+                <button onclick="fetchBCSPortfolio(true)" class="btn" style="font-size:11px;padding:3px 9px">↻</button>
+              </div>
+            </div>
+            <div id="bcs-positions-list"></div>
+            <div id="bcs-stats-row" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
+          </div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:12px;margin-top:4px">Сделки (журнал)</div>
           <div id="open-list"></div>
           <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin:18px 0 10px">История сделок</div>
           <div id="hist-list"></div>
@@ -672,6 +702,29 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
                 <button onclick="toggleKeyVis('s-tdkey',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0">👁</button>
               </div>
               <div style="font-size:10px;color:var(--label3);margin-top:4px">Используется как резервный источник цены нефти Brent (основной — MOEX FORTS BRc1).</div>
+            </div>
+            <!-- BCS Broker Token -->
+            <div class="ios-card" style="margin:0;border-color:rgba(255,159,10,.25)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:12px;font-weight:600;color:var(--ios-orange)">📈 БКС Брокер — Live портфель</div>
+                <span id="bcs-settings-st" style="font-size:10px;color:var(--label3)">не подключён</span>
+              </div>
+              <label class="fl">API Token</label>
+              <div style="display:flex;gap:6px;margin-bottom:6px">
+                <input type="password" id="s-bcs-token" class="inp" placeholder="Токен из БКС Мир Инвестиций..." style="flex:1" oninput="sBCSToken(this.value)"/>
+                <button onclick="toggleKeyVis('s-bcs-token',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0">👁</button>
+              </div>
+              <label class="fl">ID счёта (если несколько счетов)</label>
+              <div style="display:flex;gap:6px;margin-bottom:8px">
+                <input type="text" id="s-bcs-acc" class="inp" placeholder="Например: 123456 (необязательно)" style="flex:1" oninput="localStorage.setItem('bcs_account',this.value)"/>
+                <input type="text" id="s-bcs-baseurl" class="inp" placeholder="API URL (необязательно)" style="width:160px" oninput="localStorage.setItem('bcs_api_url',this.value)"/>
+              </div>
+              <button onclick="testBCSToken()" id="bcs-test-btn" class="btn" style="width:100%;justify-content:center;background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.3);color:var(--ios-orange);padding:9px">⚡ Подключить к БКС</button>
+              <div id="bcs-conn-status" style="margin-top:8px;font-size:11px"></div>
+              <div style="font-size:10px;color:var(--label3);margin-top:6px;line-height:1.6">
+                Токен: Личный кабинет БКС → Настройки → API доступ → Создать токен.<br>
+                После подключения портфель обновляется каждые 30 сек.
+              </div>
             </div>
             <!-- Risk & Agents -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2262,6 +2315,22 @@ function updCabUI(){
   var tdEl=document.getElementById('s-tdkey');if(tdEl&&tdkey)tdEl.value=tdkey;
   var risk=localStorage.getItem('risk_pct')||'2';
   var riskEl=document.getElementById('s-risk');if(riskEl)riskEl.value=risk;
+  // BCS fields
+  var btoken=localStorage.getItem('bcs_token')||'';
+  var btkEl=document.getElementById('s-bcs-token');if(btkEl&&btoken)btkEl.value=btoken;
+  var bacc=localStorage.getItem('bcs_account')||'';
+  var baccEl=document.getElementById('s-bcs-acc');if(baccEl&&bacc)baccEl.value=bacc;
+  var burl=localStorage.getItem('bcs_api_url')||'';
+  var burlEl=document.getElementById('s-bcs-baseurl');if(burlEl&&burl)burlEl.value=burl;
+  var bst=document.getElementById('bcs-settings-st');
+  if(bst){
+    if(bcsConnected){bst.textContent='✅ Подключён';bst.style.color='var(--ios-green)';}
+    else if(btoken){bst.textContent='токен сохранён';bst.style.color='var(--ios-orange)';}
+    else{bst.textContent='не подключён';bst.style.color='var(--label3)';}
+  }
+  // Cab email — show BCS account ID if connected
+  var cem=document.getElementById('cab-em');
+  if(cem)cem.textContent=bcsConnected?'БКС Мир Инвестиций 🟢':'Локальный режим';
   updKeyStatus();
 }
 
@@ -5340,6 +5409,292 @@ function showApp(){
 }
 
 showApp();
+
+// ═══════════════════════════════════════════════════
+// BCS BROKER INTEGRATION — Real Portfolio
+// ═══════════════════════════════════════════════════
+
+var APP_VERSION = '3.1';
+var BCS_RELAY = 'https://bcs-relay.onrender.com';
+var BCS_SECRET = 'bcs-secret-2026';
+var bcsConnected = false;
+var bcsRefreshTimer = null;
+
+// Дефолтные URL для проверки (пробуем по очереди)
+var BCS_API_CANDIDATES = [
+  'https://api.bcs.ru/v1/portfolio',
+  'https://api.bcs.ru/v1/accounts',
+  'https://invest.bcs.ru/api/v2/portfolio',
+  'https://invest.bcs.ru/api/v2/accounts',
+  'https://api.bcs.ru/v1/user/portfolio',
+  'https://api.tradernet.com/api/v2/client/accounts'
+];
+
+function sBCSToken(v){
+  if(v&&v.trim())localStorage.setItem('bcs_token',v.trim());
+  var st=document.getElementById('bcs-settings-st');
+  if(st){st.textContent=v?'⚡ Сохранён — нажмите «Подключить»':'не подключён';st.style.color=v?'var(--ios-orange)':'var(--label3)';}
+}
+
+async function bcsProxyFetch(url){
+  var token=localStorage.getItem('bcs_token')||'';
+  if(!token)return null;
+  try{
+    var r=await fetch(BCS_RELAY+'/bcs-proxy?url='+encodeURIComponent(url),{
+      headers:{'X-Relay-Secret':BCS_SECRET,'X-BCS-Token':token}
+    });
+    var d=await r.json();
+    return d;
+  }catch(e){return null;}
+}
+
+// Попытка прямого запроса (если у БКС есть CORS)
+async function bcsDirectFetch(url){
+  var token=localStorage.getItem('bcs_token')||'';
+  if(!token)return null;
+  try{
+    var r=await fetch(url,{headers:{'Authorization':'Bearer '+token,'Accept':'application/json'},mode:'cors'});
+    if(r.ok)return{ok:true,data:await r.json()};
+  }catch(e){}
+  return null;
+}
+
+async function testBCSToken(){
+  var token=document.getElementById('s-bcs-token').value.trim()||localStorage.getItem('bcs_token')||'';
+  if(!token){showToast('Нет токена','Введите токен БКС в поле выше',null);return;}
+  localStorage.setItem('bcs_token',token);
+  var btn=document.getElementById('bcs-test-btn');
+  var statusEl=document.getElementById('bcs-conn-status');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Подключение...';}
+  if(statusEl)statusEl.innerHTML='<span style="color:var(--label3)">Проверяю связь с БКС...</span>';
+
+  // Берём кастомный URL, если задан
+  var customUrl=document.getElementById('s-bcs-baseurl').value.trim()||localStorage.getItem('bcs_api_url')||'';
+  var urlsToTry=customUrl?[customUrl]:BCS_API_CANDIDATES;
+
+  var success=false;
+  var lastErr='';
+
+  for(var i=0;i<urlsToTry.length;i++){
+    var url=urlsToTry[i];
+    if(statusEl)statusEl.innerHTML='<span style="color:var(--label3)">Пробую: '+url+'</span>';
+
+    // Сначала пробуем через relay (надёжнее)
+    var res=await bcsProxyFetch(url);
+    if(res&&res.ok){
+      success=true;
+      localStorage.setItem('bcs_api_url',url);
+      onBCSConnected(res.data||res,url);
+      break;
+    }
+    if(res&&res.error&&res.error!=='Connection error'){
+      // Сервер ответил (401/403) — токен известен, URL правильный
+      if(res.status===401||res.status===403){
+        lastErr='Ошибка авторизации ('+res.status+'). Проверьте токен.';
+      }else{
+        lastErr=(res.error||JSON.stringify(res)).slice(0,120);
+      }
+      break;
+    }
+    lastErr='Endpoint не отвечает: '+url;
+  }
+
+  if(!success){
+    if(statusEl)statusEl.innerHTML=
+      '<div style="color:var(--ios-red);margin-bottom:6px">❌ '+escHtml(lastErr)+'</div>'+
+      '<div style="font-size:10px;color:var(--label3);line-height:1.6">'+
+        'Возможные причины:<br>'+
+        '• Relay-сервер не обновлён (задеплойте app.py)<br>'+
+        '• БКС API URL отличается — введите его вручную<br>'+
+        '• Токен истёк — получите новый в ЛК БКС<br>'+
+        '<b style="color:var(--ios-orange)">Рыночные данные MOEX уже реальные — токен БКС нужен только для портфеля</b>'+
+      '</div>';
+    showToast('Не удалось подключить БКС',lastErr.slice(0,80),null);
+  }
+
+  if(btn){btn.disabled=false;btn.textContent='⚡ Подключить к БКС';}
+}
+
+function onBCSConnected(data,url){
+  bcsConnected=true;
+  var statusEl=document.getElementById('bcs-conn-status');
+  var st=document.getElementById('bcs-settings-st');
+
+  if(statusEl)statusEl.innerHTML='<div style="color:var(--ios-green)">✅ Успешно подключено! URL: '+escHtml(url)+'</div>';
+  if(st){st.textContent='✅ Подключён';st.style.color='var(--ios-green)';}
+
+  updateBCSPill(true);
+  showToast('БКС подключён','Загружаю портфель...',null);
+  addEv('trade',null,'БКС Брокер подключён: '+url);
+
+  processPortfolioData(data);
+
+  // Авто-обновление каждые 30 сек
+  if(bcsRefreshTimer)clearInterval(bcsRefreshTimer);
+  bcsRefreshTimer=setInterval(function(){fetchBCSPortfolio(false);},30000);
+}
+
+async function fetchBCSPortfolio(showLoader){
+  var token=localStorage.getItem('bcs_token')||'';
+  if(!token)return;
+  var url=localStorage.getItem('bcs_api_url')||BCS_API_CANDIDATES[0];
+  if(showLoader){
+    var lbl=document.getElementById('bcs-update-lbl');
+    if(lbl)lbl.textContent='обновляю...';
+  }
+  var res=await bcsProxyFetch(url);
+  if(res&&res.ok){
+    processPortfolioData(res.data||res);
+  }
+  var lbl=document.getElementById('bcs-update-lbl');
+  if(lbl)lbl.textContent='обн. '+new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+}
+
+function processPortfolioData(data){
+  if(!data)return;
+  // Нормализуем — БКС может вернуть разные форматы
+  var positions=data.positions||data.portfolio||data.items||
+    (data.data&&(data.data.positions||data.data.portfolio))||[];
+  var balance=data.balance||data.totalValue||data.equity||
+    (data.data&&(data.data.balance||data.data.equity))||null;
+
+  if(!Array.isArray(positions)){
+    // Может быть объект с ключами-тикерами
+    if(typeof positions==='object'){
+      positions=Object.entries(positions).map(function(e){
+        return Object.assign({ticker:e[0]},e[1]);
+      });
+    }else{positions=[];}
+  }
+
+  renderBCSPositions(positions,balance);
+  localStorage.setItem('bcs_last_data',JSON.stringify({positions:positions,balance:balance,ts:Date.now()}));
+}
+
+function renderBCSPositions(positions,balance){
+  var banner=document.getElementById('bcs-connect-banner');
+  var wrap=document.getElementById('bcs-positions-wrap');
+  var listEl=document.getElementById('bcs-positions-list');
+  var statsEl=document.getElementById('bcs-stats-row');
+  var balLbl=document.getElementById('bcs-balance-lbl');
+
+  if(banner)banner.style.display='none';
+  if(wrap)wrap.classList.remove('hidden');
+
+  // Баланс
+  if(balLbl&&balance!==null){
+    var bv=parseFloat(balance);
+    balLbl.textContent='Портфель: '+(bv?bv.toLocaleString('ru')+'₽':'—');
+  }
+
+  if(!positions.length){
+    if(listEl)listEl.innerHTML='<div style="font-size:11px;color:var(--label3);padding:8px 0">Позиций нет или формат не распознан</div>';
+    return;
+  }
+
+  // Считаем P&L
+  var totalPnl=0,pnlCnt=0;
+  var rows=positions.map(function(pos){
+    var sym=(pos.ticker||pos.secid||pos.symbol||pos.isin||pos.name||'').toUpperCase().replace(/\.[A-Z]+$/,'');
+    var qty=parseFloat(pos.quantity||pos.balance||pos.qty||pos.amount||0);
+    var avgP=parseFloat(pos.averagePrice||pos.avg_price||pos.avgPrice||pos.cost||pos.buy_price||0);
+    var curP=prices[sym]?prices[sym].p:parseFloat(pos.currentPrice||pos.cur_price||pos.price||0);
+    var pnlPct=avgP>0&&curP>0?(curP-avgP)/avgP*100:null;
+    var pnlAbs=avgP>0&&curP>0&&qty?(curP-avgP)*Math.abs(qty):null;
+    if(pnlPct!==null){totalPnl+=pnlPct;pnlCnt++;}
+    var col=pnlPct===null?'var(--label3)':pnlPct>=0?'var(--ios-green)':'var(--ios-red)';
+    var name=(ST[sym]&&ST[sym].n)||pos.shortName||pos.name||sym;
+    return {sym:sym,qty:qty,avgP:avgP,curP:curP,pnlPct:pnlPct,pnlAbs:pnlAbs,col:col,name:name,raw:pos};
+  }).filter(function(p){return p.qty!==0;});
+
+  if(listEl){
+    listEl.innerHTML=rows.map(function(p){
+      return '<div class="tr" onclick="sSym(\''+p.sym+'\')" style="cursor:pointer">'+
+        '<span class="tr-sym">'+p.sym+'</span>'+
+        '<span class="tr-dir '+(p.qty>0?'tr-long':'tr-short')+'">'+(p.qty>0?'LONG':'SHORT')+'</span>'+
+        '<div class="tr-info">'+
+          (p.avgP?'Вход: '+p.avgP.toFixed(2)+'₽':'')+
+          (p.curP?' → '+p.curP.toFixed(2)+'₽':'')+
+          ' × '+Math.abs(p.qty)+
+          (p.pnlAbs!==null?' | '+(p.pnlAbs>=0?'+':'')+p.pnlAbs.toFixed(0)+'₽':'')+
+        '</div>'+
+        '<span class="tr-pnl" style="color:'+p.col+'">'+
+          (p.pnlPct!==null?(p.pnlPct>=0?'+':'')+p.pnlPct.toFixed(2)+'%':'—')+
+        '</span>'+
+      '</div>';
+    }).join('');
+  }
+
+  // Статистика
+  var avgPnl=pnlCnt>0?totalPnl/pnlCnt:0;
+  var wins=rows.filter(function(p){return p.pnlPct>0;}).length;
+  if(statsEl){
+    statsEl.innerHTML=
+      _bcsStatBox('Позиций',rows.length,'var(--label2)')+
+      _bcsStatBox('В плюсе',wins,'var(--ios-green)')+
+      _bcsStatBox('Avg P&L',(avgPnl>=0?'+':'')+avgPnl.toFixed(2)+'%',avgPnl>=0?'var(--ios-green)':'var(--ios-red)')+
+      _bcsStatBox('Источник','БКС Live','var(--ios-orange)');
+  }
+
+  addEv('trade',null,'БКС портфель: '+rows.length+' позиций, Avg '+avgPnl.toFixed(2)+'%');
+}
+
+function _bcsStatBox(label,val,col){
+  return '<div style="background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:8px 12px;flex:1;min-width:80px">'+
+    '<div style="font-size:9px;color:var(--label3);text-transform:uppercase;letter-spacing:.06em">'+label+'</div>'+
+    '<div style="font-size:14px;font-weight:700;color:'+col+';font-family:var(--mono);margin-top:2px">'+val+'</div>'+
+  '</div>';
+}
+
+function updateBCSPill(connected,label){
+  var pill=document.getElementById('bcs-pill');
+  var txt=document.getElementById('bcs-pill-txt');
+  if(!pill)return;
+  if(connected){
+    pill.className='bcs-pill on';
+    if(txt)txt.textContent=label||'БКС ●';
+  }else{
+    pill.className='bcs-pill off';
+    if(txt)txt.textContent='БКС';
+  }
+}
+
+function initBCS(){
+  var token=localStorage.getItem('bcs_token')||'';
+  var url=localStorage.getItem('bcs_api_url')||'';
+
+  // Восстановить поля
+  if(token){
+    ['s-bcs-token'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=token;});
+    var st=document.getElementById('bcs-settings-st');
+    if(st){st.textContent='токен сохранён';st.style.color='var(--ios-orange)';}
+  }
+  if(url){var el=document.getElementById('s-bcs-baseurl');if(el)el.value=url;}
+  var acc=localStorage.getItem('bcs_account')||'';
+  if(acc){var el=document.getElementById('s-bcs-acc');if(el)el.value=acc;}
+
+  // Если есть кешированные данные — показать сразу
+  var cached=localStorage.getItem('bcs_last_data');
+  if(cached&&token){
+    try{
+      var d=JSON.parse(cached);
+      var age=(Date.now()-(d.ts||0))/60000;
+      renderBCSPositions(d.positions||[],d.balance||null);
+      updateBCSPill(true,'БКС');
+      bcsConnected=true;
+      var lbl=document.getElementById('bcs-update-lbl');
+      if(lbl)lbl.textContent='кэш '+Math.round(age)+'мин назад';
+
+      // Обновить в фоне
+      setTimeout(function(){fetchBCSPortfolio(false);},2000);
+      if(bcsRefreshTimer)clearInterval(bcsRefreshTimer);
+      bcsRefreshTimer=setInterval(function(){fetchBCSPortfolio(false);},30000);
+    }catch(e){}
+  }
+}
+
+// Инициализация BCS при запуске
+setTimeout(initBCS, 1000);
 
 </script>
 
