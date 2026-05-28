@@ -185,8 +185,8 @@ body{background:var(--bg0);color:var(--label);font-family:var(--sans);font-size:
 .cht.amber{color:var(--ios-orange)}
 
 /* Chart containers */
-#single-chart-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
-#chart-container{flex:1;min-height:0;background:var(--bg0)}
+#single-chart-wrap{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#chart-container{flex:1;min-height:150px;background:var(--bg0)}
 .sub-wrap{flex-shrink:0;position:relative;background:var(--bg0);border-top:0.5px solid var(--sep)}
 .sub-lbl{position:absolute;top:5px;left:12px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label4);z-index:2;pointer-events:none;font-family:var(--sans)}
 .ind-bar{height:32px;min-height:32px;background:rgba(28,28,30,.85);backdrop-filter:blur(20px);border-top:0.5px solid var(--sep);display:flex;align-items:center;gap:5px;padding:0 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
@@ -295,7 +295,7 @@ body{background:var(--bg0);color:var(--label);font-family:var(--sans);font-size:
 .mt{font-size:14px;font-weight:600;color:var(--ios-indigo);letter-spacing:-.01em}
 .mc{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label3);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .mc:hover{background:var(--bg3)}
-.mbody{overflow-y:auto;padding:18px;flex:1;background:var(--bg0)}
+.mbody{overflow-y:auto;padding:16px;flex:1;background:var(--bg0);min-height:0}
 .am{display:flex;gap:10px;margin-bottom:12px;opacity:0;transition:opacity .4s;align-items:flex-start}
 .am.show{opacity:1}
 .am-av{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;border-radius:10px}
@@ -650,8 +650,8 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
   <div class="mbg hidden" id="an-modal"><div class="mbox" style="max-width:680px"><div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div><div class="mbody" id="an-body"></div></div></div>
   <div class="mbg hidden" id="audit-modal"><div class="mbox"><div class="mhdr"><span class="mt">⚡ Совещание агентов</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div><div class="mbody"><div style="font-size:11px;color:var(--label3);margin-bottom:12px" id="audit-sub">Подключение...</div><div id="audit-feed"></div><div id="audit-sum" class="a-sum hidden"></div></div></div></div>
   <div class="mbg hidden" id="alert-modal"><div class="mbox" style="max-width:460px"><div class="mhdr"><span class="mt">🔔 Алерты — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--ios-green);font-size:12px"></span></span><button class="mc" onclick="closeAlertModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="al-grid"><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-green);margin-bottom:8px">Выше ▲</div><input type="number" id="al-price-above" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)" class="btn p" style="width:100%;justify-content:center">+ Алерт выше</button></div><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-red);margin-bottom:8px">Ниже ▼</div><input type="number" id="al-price-below" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)" class="btn d" style="width:100%;justify-content:center">+ Алерт ниже</button></div></div><div class="ios-card" style="margin:0"><div style="font-size:11px;font-weight:500;color:var(--ios-orange);margin-bottom:8px">Движение %</div><div style="display:flex;gap:8px"><input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)" class="btn" style="flex:1;justify-content:center;color:var(--ios-orange)">+ На движение</button></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;font-weight:500;color:var(--label3)">Активные алерты</span><button onclick="clearTriggered()" class="btn" style="font-size:11px;padding:3px 9px">Очистить</button></div><div id="alerts-list-modal"></div></div></div></div></div>
-  <div class="mbg hidden" id="journal-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="font-size:11px;font-weight:500;color:var(--label3);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jm-ai-entry" style="color:var(--label)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--ios-red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--ios-green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--ios-purple)">—</b></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" step="0.01"/></div><div><label class="fl">Объём ₽</label><input type="number" id="jm-volume" class="inp" placeholder="10000"/></div></div><div><label class="fl">Как исполнили?</label><select id="jm-tag" class="sel"><option value="exact">✅ Точно по AI</option><option value="modified">⚠️ Изменил вход</option><option value="partial">½ Частично</option></select></div><div><label class="fl">Заметка</label><input type="text" id="jm-note" class="inp" placeholder="Почему сейчас..."/></div><input type="hidden" id="jm-signal-id"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitExecution()" style="flex:1;justify-content:center">Записать</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div></div></div></div>
-  <div class="mbg hidden" id="journal-close-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jcm-entry">—</b></span><span id="jcm-cur" style="color:var(--ios-green)"></span></div></div><div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" step="0.01"/></div><div><label class="fl">Итог / причина</label><textarea id="jcm-result-note" class="inp" style="height:72px;resize:none" placeholder="Что сработало..."></textarea></div><input type="hidden" id="jcm-signal-id2"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitClose()" style="flex:1;justify-content:center">Закрыть</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div></div></div></div>
+  <div class="mbg hidden" id="journal-modal"><div class="mbox" style="max-width:560px;height:auto"><div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="font-size:11px;font-weight:500;color:var(--label3);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jm-ai-entry" style="color:var(--label)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--ios-red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--ios-green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--ios-purple)">—</b></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" step="0.01"/></div><div><label class="fl">Объём ₽</label><input type="number" id="jm-volume" class="inp" placeholder="10000"/></div></div><div><label class="fl">Как исполнили?</label><select id="jm-tag" class="sel"><option value="exact">✅ Точно по AI</option><option value="modified">⚠️ Изменил вход</option><option value="partial">½ Частично</option></select></div><div><label class="fl">Заметка</label><input type="text" id="jm-note" class="inp" placeholder="Почему сейчас..."/></div><input type="hidden" id="jm-signal-id"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitExecution()" style="flex:1;justify-content:center">Записать</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div></div></div></div>
+  <div class="mbg hidden" id="journal-close-modal"><div class="mbox" style="max-width:560px"><div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jcm-entry">—</b></span><span id="jcm-cur" style="color:var(--ios-green)"></span></div></div><div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" step="0.01"/></div><div><label class="fl">Итог / причина</label><textarea id="jcm-result-note" class="inp" style="height:72px;resize:none" placeholder="Что сработало..."></textarea></div><input type="hidden" id="jcm-signal-id2"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitClose()" style="flex:1;justify-content:center">Закрыть</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div></div></div></div>
 
   <!-- Context Menu -->
   <div id="chart-ctx-menu">
@@ -4201,11 +4201,12 @@ function initCh(){
   var volEl  = document.getElementById('vol-container');
   var rsiEl  = document.getElementById('rsi-container');
   var macdEl = document.getElementById('macd-container');
-  if(!mainEl||chart) return;
+  if(!mainEl) return;
+  if(chart){try{chart.remove();}catch(e){} chart=null; cs=null; volSer=null; rsiSer=null; macdLine=null; macdSig=null; macdHist=null; volChart=null; rsiChart=null; macdChart=null;}
 
   // ── Main chart ──
   var mainOpts = commonChartOpts(mainEl);
-  mainOpts.height = mainEl.offsetHeight||280;
+  mainOpts.height = mainEl.getBoundingClientRect().height || mainEl.offsetHeight || 320;
   mainOpts.layout.textColor = 'var(--label3)';
   mainOpts.timeScale.visible = false; // hide time on main, show on bottom
   chart = LightweightCharts.createChart(mainEl, mainOpts);
@@ -5824,6 +5825,28 @@ function renderAgentPerformance(){
     rows;
 }
 
+
+// Auto-resize charts when window resizes
+(function(){
+  var resizeTimer;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      if(chart){
+        var el = document.getElementById('chart-container');
+        if(el){
+          var h = el.getBoundingClientRect().height;
+          if(h > 50) chart.resize(el.offsetWidth, h);
+        }
+      }
+      if(volChart){
+        var v = document.getElementById('vol-container');
+        if(v) volChart.resize(v.offsetWidth, v.offsetHeight||50);
+      }
+    }, 150);
+  });
+})();
+
 function showApp(){
   if(!ld().name){
     var n=prompt('Добро пожаловать в BCS Terminal!\nВведите ваше имя:','Трейдер');
@@ -5835,8 +5858,8 @@ function showApp(){
   rSectors();
   rAgCards();
   renderConsensusPanel(curSym);
-  initCh();
-  setTimeout(initChartContextMenu, 500);
+  setTimeout(function(){ initCh(); loadH(curSym, curTF); }, 200);
+  setTimeout(initChartContextMenu, 700);
   rTaKb();
   updCabUI();
   lCabTr();
@@ -5879,7 +5902,6 @@ function showApp(){
   initHotkeys();
   updateAlertBadge();
   updateHistoryStats();
-  initHotkeys();
   setInterval(function(){
     var t=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     var el=document.getElementById('clk');if(el)el.textContent=t;
