@@ -201,7 +201,7 @@ body{background:var(--bg0);color:var(--label);font-family:var(--sans);font-size:
 
 /* Chart containers */
 #single-chart-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
-#chart-container{flex:1;min-height:0;background:var(--bg0)}
+#chart-container{flex:1;min-height:260px;background:var(--bg0)}
 .sub-wrap{flex-shrink:0;position:relative;background:var(--bg0);border-top:0.5px solid var(--sep)}
 .sub-lbl{position:absolute;top:5px;left:12px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label4);z-index:2;pointer-events:none;font-family:var(--sans)}
 .ind-bar{height:32px;min-height:32px;background:rgba(28,28,30,.85);backdrop-filter:blur(20px);border-top:0.5px solid var(--sep);display:flex;align-items:center;gap:5px;padding:0 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
@@ -370,6 +370,26 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
 .btn.d{border-color:rgba(255,69,58,.3);color:var(--ios-red)}
 .scan-btn-sm{padding:4px 10px;background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.2);color:var(--ios-green);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)}
 .scan-btn-sm:hover{background:rgba(48,209,88,.18)}
+/* ── AGENTS PAGE ── */
+.ag-card-full{background:var(--bg1);border:0.5px solid var(--sep);border-radius:var(--r2);padding:12px;cursor:pointer;transition:all .2s}
+.ag-card-full:hover{background:var(--bg2);border-color:var(--sep2)}
+.ag-card-full.sel{border-color:rgba(94,92,230,.5);background:rgba(94,92,230,.08)}
+.ag-card-full .ac-icon{font-size:22px;margin-bottom:6px}
+.ag-card-full .ac-name{font-size:12px;font-weight:600;color:var(--label);margin-bottom:2px}
+.ag-card-full .ac-role{font-size:10px;color:var(--label3);margin-bottom:8px}
+.ag-card-full .ac-iq-bar{height:3px;background:var(--fill);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.ag-card-full .ac-iq-fill{height:3px;border-radius:2px;transition:width 1.5s}
+.ag-card-full .ac-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--label3)}
+.ag-stat-box{background:var(--bg1);border:0.5px solid var(--sep);border-radius:var(--r2);padding:14px 16px}
+.ag-stat-box .asb-val{font-size:26px;font-weight:700;font-family:var(--disp);letter-spacing:-.02em;color:var(--label);margin-bottom:2px}
+.ag-stat-box .asb-lbl{font-size:10px;color:var(--label3);font-weight:500}
+/* VERSION BADGE */
+.ver-badge{font-size:9px;font-weight:600;color:var(--label4);font-family:var(--mono);padding:2px 7px;background:var(--fill2);border:0.5px solid var(--sep2);border-radius:6px;letter-spacing:.03em;flex-shrink:0}
+.bcs-pill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;flex-shrink:0}
+.bcs-pill.off{background:rgba(255,159,10,.08);border:0.5px solid rgba(255,159,10,.2);color:var(--ios-orange)}
+.bcs-pill.on{background:rgba(48,209,88,.1);border:0.5px solid rgba(48,209,88,.25);color:var(--ios-green)}
+.bcs-pill .bp-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.bcs-pill.on .bp-dot{animation:pulse 2s infinite}
 .ver-badge{font-size:9px;font-weight:600;color:var(--label4);font-family:var(--mono);padding:2px 7px;background:var(--fill2);border:0.5px solid var(--sep2);border-radius:6px;letter-spacing:.03em;flex-shrink:0}
 .bcs-pill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;flex-shrink:0}
 .bcs-pill.off{background:rgba(255,159,10,.08);border:0.5px solid rgba(255,159,10,.2);color:var(--ios-orange)}
@@ -408,9 +428,10 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
   <div class="navrow">
     <button class="ntab on" id="nav-term" onclick="showPage('term')">📈 Терминал</button>
     <button class="ntab" id="nav-sig" onclick="showPage('sig')">⚡ Сигналы</button>
+    <button class="ntab" id="nav-ag" onclick="showPage('ag')">🤖 Агенты</button>
     <button class="ntab" id="nav-cab" onclick="showPage('cab')">💼 Кабинет</button>
     <div class="nav-sep"></div>
-    <button class="audit-pill" onclick="runAudit()">⚡ Аудит агентов</button>
+    <button class="audit-pill" onclick="runAudit()">⚡ Аудит</button>
   </div>
 
   <!-- ══════════════ TERMINAL PAGE ══════════════ -->
@@ -504,6 +525,7 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
             <button id="multi-btn" class="cht" onclick="toggleMultiChart()">⊞ 2×2</button>
             <button id="imoex-toggle-btn" class="cht" onclick="toggleImoex()">≡ IMOEX</button>
             <button class="cht" onclick="showAn(curSym)">📊</button>
+            <button class="cht" onclick="openImgUploadModal()" title="Загрузить скриншот графика для AI-анализа" style="color:var(--ios-purple)">📷</button>
             <button class="cht amber" onclick="openAlertModal(curSym)" style="position:relative">
               🔔<span id="alert-badge" style="position:absolute;top:-5px;right:-5px;background:var(--ios-red);color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-family:var(--mono);display:none;align-items:center;justify-content:center;font-weight:700">0</span>
             </button>
@@ -735,6 +757,96 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
             <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ AGENTS PAGE ══════════════ -->
+  <div class="page hidden" id="page-ag" style="overflow-y:auto;background:var(--bg0)">
+    <div style="max-width:1100px;margin:0 auto;padding:20px">
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="ag-stats-row"></div>
+      <!-- Global IQ bar -->
+      <div class="ios-card" style="margin-bottom:16px;padding:14px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:var(--label)">Глобальный IQ агентов</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="ag-run-btn" id="ag-run-btn2" onclick="toggleAg()">▶ Старт</button>
+            <button class="btn" onclick="swEvo('log')">Журнал событий</button>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px">
+          <div id="ag-iq-bar-fill" style="height:8px;background:linear-gradient(90deg,var(--ios-indigo),var(--ios-purple));border-radius:4px;transition:width 1s;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--label3)">
+          <span>Обучение через торговлю и анализ</span>
+          <span id="ag-iq-pct2">0%</span>
+        </div>
+      </div>
+      <!-- Agent grid + detail -->
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--label3);margin-bottom:12px">Все агенты (нажмите для деталей)</div>
+          <div id="ag-grid-full" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+        </div>
+        <div id="ag-detail-panel">
+          <div class="ios-card" style="text-align:center;padding:32px 16px">
+            <div style="font-size:32px;margin-bottom:8px">🤖</div>
+            <div style="font-size:13px;color:var(--label3)">Нажмите на агента<br>для просмотра деталей</div>
+          </div>
+        </div>
+      </div>
+      <!-- Event log full -->
+      <div class="ios-card" style="margin-top:16px;padding:0;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--sep)">
+          <div style="font-size:12px;font-weight:600;color:var(--label)">Журнал событий</div>
+          <div style="display:flex;gap:4px">
+            <button class="etab on" id="ag-tab-log" onclick="agTab('log')">События</button>
+            <button class="etab" id="ag-tab-tr" onclick="agTab('tr')">Сделки</button>
+            <button class="etab" id="ag-tab-sk" onclick="agTab('sk')">Навыки</button>
+            <button class="etab" id="ag-tab-prompts" onclick="agTab('prompts')">Промты</button>
+          </div>
+        </div>
+        <div id="ag-page-log" style="height:260px;overflow-y:auto;padding:8px"></div>
+        <div id="ag-page-tr" class="hidden" style="height:260px;overflow-y:auto;padding:8px"></div>
+        <div id="ag-page-sk" class="hidden" style="padding:12px"><div class="sk-grid" id="ag-page-sk-grid"></div></div>
+        <div id="ag-page-prompts" class="hidden" style="height:260px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ IMAGE UPLOAD MODAL ══════════════ -->
+  <div class="mbg hidden" id="imgupload-modal">
+    <div class="mbox" style="max-width:620px">
+      <div class="mhdr">
+        <span class="mt">📷 Анализ графика — AI Vision</span>
+        <button class="mc" onclick="closeMod('imgupload-modal')">✕</button>
+      </div>
+      <div class="mbody" style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;color:var(--label3)">
+          Загрузите скриншот любого графика — AI проанализирует тренд, уровни, паттерны и даст торговый сигнал.
+          Требуется Groq API ключ с поддержкой vision (<b style="color:var(--label2)">llama-3.2-11b-vision-preview</b>).
+        </div>
+        <!-- Drop zone -->
+        <div id="img-drop-zone"
+          style="border:2px dashed rgba(94,92,230,.35);border-radius:var(--r3);padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(94,92,230,.03)"
+          onclick="document.getElementById('img-file-input').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--ios-indigo)';this.style.background='rgba(94,92,230,.08)'"
+          ondragleave="this.style.borderColor='rgba(94,92,230,.35)';this.style.background='rgba(94,92,230,.03)'"
+          ondrop="handleImgDrop(event)">
+          <div style="font-size:36px;margin-bottom:10px">📊</div>
+          <div style="font-size:14px;font-weight:500;color:var(--label2)">Перетащите скриншот графика</div>
+          <div style="font-size:11px;color:var(--label3);margin-top:5px">или нажмите для выбора файла · PNG, JPG, WebP</div>
+        </div>
+        <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImgFile(this.files[0])">
+        <!-- Preview -->
+        <img id="img-preview" style="max-height:280px;width:100%;object-fit:contain;display:none;border-radius:var(--r2);border:0.5px solid var(--sep)">
+        <!-- Analyze button -->
+        <button id="img-analyze-btn" class="btn p" style="width:100%;justify-content:center;padding:11px;display:none;font-size:13px" onclick="runImgAnalysis()">
+          🔍 Анализировать с AI
+        </button>
+        <!-- Result -->
+        <div id="img-result"></div>
       </div>
     </div>
   </div>
@@ -1488,17 +1600,13 @@ async function anlLoss(ag,trade){
   var gk=localStorage.getItem('groq_key')||'';
   if(!gk)return;
   try{
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:120,
-        messages:[{role:'user',content:'Агент '+ag.n+' убыток '+((trade.pnl||0).toFixed(2))+'% по '+trade.sym+'. 1 причина и 1 урок. 2 предложения.'}]})
-    });
+    var r=await groqFetch({model:'llama-3.3-70b-versatile',max_tokens:120,
+      messages:[{role:'user',content:'Агент '+ag.n+' убыток '+((trade.pnl||0).toFixed(2))+'% по '+trade.sym+'. 1 причина и 1 урок. 2 предложения.'}]});
     var d=await r.json();
     var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'';
     if(txt){trade.analysis=txt;addEv('loss',ag,'Анализ: '+txt.slice(0,70));rAgTr();}
     aLearn(ag,3);
-  }catch(e){}
+  }catch(e){console.warn('anlLoss:',e.message);}
 }
 
 // ── Smart Audit ───────────────────────────────
@@ -1626,18 +1734,11 @@ async function runAudit(){
       'Найденные проблемы:\n'+
       msgs.filter(function(m){return m.tp!=='ok';}).map(function(m){return '- '+m.a.r+': '+m.fix;}).join('\n');
 
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        max_tokens:1200,
-        messages:[
-          {role:'system',content:systemContext},
-          {role:'user',content:auditResults+'\n\nСформируй готовый промт для разработчика — что нужно добавить/исправить в коде сайта. Формат: пронумерованный список задач с техническими деталями (какой API, какой endpoint, как интегрировать). В конце — одна главная приоритетная задача.'}
-        ]
-      })
-    });
+    var r=await groqFetch({model:'llama-3.3-70b-versatile',max_tokens:1200,
+      messages:[
+        {role:'system',content:systemContext},
+        {role:'user',content:auditResults+'\n\nСформируй готовый промт для разработчика — что нужно добавить/исправить в коде сайта. Формат: пронумерованный список задач с техническими деталями (какой API, какой endpoint, как интегрировать). В конце — одна главная приоритетная задача.'}
+      ]});
     var d=await r.json();
     var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'Не удалось получить ответ';
 
@@ -1665,6 +1766,36 @@ function copyAuditPrompt(btn){
     btn.textContent='✅ СКОПИРОВАНО';
     setTimeout(function(){btn.textContent='📋 СКОПИРОВАТЬ ПРОМТ';},2000);
   });
+}
+
+// ── Groq API with retry + ECONNRESET fix ──────
+async function groqFetch(payload){
+  var gk=localStorage.getItem('groq_key')||'';
+  if(!gk)throw new Error('Groq API ключ не задан. Добавьте ключ в Настройках.');
+  var lastErr;
+  for(var attempt=0;attempt<3;attempt++){
+    try{
+      var controller=new AbortController();
+      var tid=setTimeout(function(){controller.abort();},30000);
+      var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
+        body:JSON.stringify(payload),
+        signal:controller.signal
+      });
+      clearTimeout(tid);
+      if(r.status===429){
+        var wait=parseInt(r.headers.get('retry-after')||'3',10)*1000;
+        await new Promise(function(res){setTimeout(res,wait);});
+        continue;
+      }
+      return r;
+    }catch(e){
+      lastErr=e;
+      if(attempt<2)await new Promise(function(res){setTimeout(res,900*(attempt+1));});
+    }
+  }
+  throw lastErr||new Error('Не удалось подключиться к Groq API');
 }
 
 // ── CIO Analysis ──────────────────────────────
@@ -1949,16 +2080,8 @@ async function _rCIO(sym, resEl, btnEl){
       '"horizon":"4-6 часов","risk":"2% депозита","confidence":75,'+
       '"reasoning":"кратко 1 предложение с конкретными аргументами TA+FA"}';
 
-    var r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        max_tokens:300,
-        temperature:0.3,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
+    var r = await groqFetch({model:'llama-3.3-70b-versatile',max_tokens:300,temperature:0.3,
+      messages:[{role:'user',content:prompt}]});
     var d = await r.json();
     var raw = d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'{}';
 
@@ -2100,7 +2223,7 @@ function closeMod(id){document.getElementById(id).classList.add('hidden');}
 
 // ── Navigation ────────────────────────────────
 function showPage(p){
-  ['term','sig','cab'].forEach(function(pg){
+  ['term','sig','ag','cab'].forEach(function(pg){
     var pel=document.getElementById('page-'+pg);
     var nel=document.getElementById('nav-'+pg);
     if(pel)pel.classList.toggle('hidden',pg!==p);
@@ -2108,6 +2231,7 @@ function showPage(p){
   });
   if(p==='sig'){rTaKb();rPats();renderScanResults();}
   if(p==='cab'){lCabTr();updCabUI();}
+  if(p==='ag'){renderAgPage();}
 }
 
 function swEvo(t){
@@ -4285,9 +4409,11 @@ function calcRSIFull(closes){
 
 // ── Common chart options ──────────────────────────
 function commonChartOpts(el, height){
+  var w = el.offsetWidth || (el.parentElement && el.parentElement.offsetWidth) || 600;
+  var h = height || el.offsetHeight || 70;
   return {
-    width: el.offsetWidth,
-    height: height||el.offsetHeight||70,
+    width: w,
+    height: h,
     layout:{ background:{type:'solid',color:'#030810'}, textColor:'rgba(255,255,255,0)' },
     grid:{ vertLines:{color:'rgba(0,255,136,.03)'}, horzLines:{color:'rgba(0,255,136,.03)'} },
     crosshair:{ mode:LightweightCharts.CrosshairMode.Normal },
@@ -4304,9 +4430,18 @@ function initCh(){
   var macdEl = document.getElementById('macd-container');
   if(!mainEl||chart) return;
 
+  // Double rAF ensures browser has completed layout before reading dimensions
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ _doInitCh(mainEl,volEl,rsiEl,macdEl); });
+  });
+}
+
+function _doInitCh(mainEl,volEl,rsiEl,macdEl){
+  if(chart) return;
+
   // ── Main chart ──
-  var mainOpts = commonChartOpts(mainEl);
-  mainOpts.height = mainEl.offsetHeight||280;
+  var mainH = Math.max(mainEl.offsetHeight, 260);
+  var mainOpts = commonChartOpts(mainEl, mainH);
   mainOpts.layout.textColor = 'var(--label3)';
   mainOpts.timeScale.visible = false; // hide time on main, show on bottom
   chart = LightweightCharts.createChart(mainEl, mainOpts);
@@ -4403,10 +4538,11 @@ function initCh(){
 
   // ── Resize observer ──
   var ro=new ResizeObserver(function(){
-    if(mainEl&&chart)  chart.applyOptions({width:mainEl.offsetWidth,height:mainEl.offsetHeight});
-    if(volEl&&volChart)   volChart.applyOptions({width:volEl.offsetWidth,height:volEl.offsetHeight});
-    if(rsiEl&&rsiChart)   rsiChart.applyOptions({width:rsiEl.offsetWidth,height:rsiEl.offsetHeight});
-    if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth,height:macdEl.offsetHeight});
+    var w=mainEl.offsetWidth||600, h=Math.max(mainEl.offsetHeight,260);
+    if(chart)  chart.applyOptions({width:w,height:h});
+    if(volEl&&volChart)   volChart.applyOptions({width:volEl.offsetWidth||w,height:volEl.offsetHeight||50});
+    if(rsiEl&&rsiChart)   rsiChart.applyOptions({width:rsiEl.offsetWidth||w,height:rsiEl.offsetHeight||72});
+    if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth||w,height:macdEl.offsetHeight||72});
   });
   [mainEl,volEl,rsiEl,macdEl].filter(Boolean).forEach(function(el){ro.observe(el);});
 
@@ -5406,6 +5542,236 @@ function showApp(){
     var t=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     var el=document.getElementById('clk');if(el)el.textContent=t;
   },1000);
+}
+
+// ═══════════════════════════════════════════════════
+// AGENTS PAGE — Full statistics & development
+// ═══════════════════════════════════════════════════
+
+function renderAgPage(){
+  // Stats row
+  var statsEl=document.getElementById('ag-stats-row');
+  if(statsEl){
+    var iqAll=AGs.reduce(function(s,a){return s+aIQ(a);},0)/AGs.length;
+    var totalTr=AGs.reduce(function(s,a){return s+a.tr;},0);
+    var totalWi=AGs.reduce(function(s,a){return s+a.wi;},0);
+    var wr=totalTr>0?Math.round(totalWi/totalTr*100):0;
+    statsEl.innerHTML=
+      _agStatBox('Глобальный IQ',iqAll.toFixed(1)+'%','var(--ios-indigo)')+
+      _agStatBox('Агентов',AGs.length,'var(--label2)')+
+      _agStatBox('Авто-сделок',agTrades.length,'var(--ios-orange)')+
+      _agStatBox('Win Rate',totalTr>0?wr+'%':'—',wr>=50?'var(--ios-green)':'var(--ios-red)');
+    // IQ bar
+    var fill=document.getElementById('ag-iq-bar-fill');
+    var pct=document.getElementById('ag-iq-pct2');
+    if(fill)fill.style.width=iqAll.toFixed(1)+'%';
+    if(pct)pct.textContent=iqAll.toFixed(1)+'%';
+  }
+  // Run button
+  var rb2=document.getElementById('ag-run-btn2');
+  if(rb2){rb2.textContent=agOn?'■ Стоп':'▶ Старт';rb2.className='ag-run-btn'+(agOn?' off':'');}
+  // Agent grid
+  renderAgGrid();
+  // Sync logs
+  agTab('log');
+}
+
+function _agStatBox(label,val,col){
+  return '<div class="ag-stat-box">'+
+    '<div class="asb-val" style="color:'+col+'">'+val+'</div>'+
+    '<div class="asb-lbl">'+label+'</div>'+
+  '</div>';
+}
+
+function renderAgGrid(){
+  var el=document.getElementById('ag-grid-full');
+  if(!el)return;
+  el.innerHTML=AGs.map(function(a){
+    var iq=aIQ(a);
+    var wr=a.tr>0?Math.round(a.wi/a.tr*100):0;
+    var sel=selAg===a.id?' sel':'';
+    return '<div class="ag-card-full'+sel+'" onclick="selAgPage(\''+a.id+'\')" title="'+a.needs+'">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between">'+
+        '<div class="ac-icon">'+a.e+'</div>'+
+        '<div class="ag-dot'+(agOn?' on':'')+'" style="margin-top:4px"></div>'+
+      '</div>'+
+      '<div class="ac-name">'+a.n+'</div>'+
+      '<div class="ac-role">'+a.r+'</div>'+
+      '<div class="ac-iq-bar"><div class="ac-iq-fill" style="width:'+iq+'%;background:'+a.c+'"></div></div>'+
+      '<div class="ac-stats">'+
+        '<span>IQ: <b style="color:var(--label2)">'+iq.toFixed(0)+'%</b></span>'+
+        (a.tr>0?'<span style="color:'+(wr>=50?'var(--ios-green)':'var(--ios-red)')+'">W: '+wr+'%</span>':'<span>—</span>')+
+        '<span>'+a.tr+' сдел.</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function selAgPage(id){
+  selAg=(selAg===id)?null:id;
+  renderAgGrid();
+  var panel=document.getElementById('ag-detail-panel');
+  if(!panel)return;
+  if(!selAg){
+    panel.innerHTML='<div class="ios-card" style="text-align:center;padding:32px 16px">'+
+      '<div style="font-size:32px;margin-bottom:8px">🤖</div>'+
+      '<div style="font-size:13px;color:var(--label3)">Нажмите на агента<br>для просмотра деталей</div>'+
+    '</div>';
+    return;
+  }
+  var a=AGs.filter(function(x){return x.id===id;})[0];
+  if(!a)return;
+  var iq=aIQ(a);
+  var wr=a.tr>0?Math.round(a.wi/a.tr*100):0;
+  var evs=agEvs.filter(function(e){return e.ag===a.n;}).slice(0,12);
+  panel.innerHTML='<div class="ios-card" style="padding:16px">'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'+
+      '<div style="font-size:32px">'+a.e+'</div>'+
+      '<div>'+
+        '<div style="font-size:15px;font-weight:600;color:var(--label)">'+a.n+'</div>'+
+        '<div style="font-size:11px;color:'+a.c+'">'+a.r+'</div>'+
+      '</div>'+
+      '<div style="margin-left:auto;text-align:right">'+
+        '<div style="font-size:22px;font-weight:700;color:var(--ios-indigo)">'+iq.toFixed(1)+'%</div>'+
+        '<div style="font-size:9px;color:var(--label3)">IQ</div>'+
+      '</div>'+
+    '</div>'+
+    // Skills
+    '<div style="margin-bottom:14px">'+
+    Object.entries(a.sk).map(function(e){
+      var k=e[0],v=e[1];
+      var sk={pr:'Паттерны',tm:'Тайминг',rm:'Риск',sk:'Сектора'};
+      return '<div style="margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--label3);margin-bottom:3px">'+
+          '<span>'+sk[k]+'</span><span style="color:var(--label2)">'+v.toFixed(1)+'%</span>'+
+        '</div>'+
+        '<div style="height:4px;background:var(--fill);border-radius:2px;overflow:hidden">'+
+          '<div style="height:4px;width:'+v+'%;background:'+a.c+';transition:width 1.5s;border-radius:2px"></div>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    '</div>'+
+    // Stats
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;font-size:11px">'+
+      '<div style="background:var(--bg2);border-radius:var(--r1);padding:8px;text-align:center">'+
+        '<div style="font-weight:700;color:var(--label);font-size:16px">'+a.tr+'</div>'+
+        '<div style="color:var(--label3)">Сделок</div>'+
+      '</div>'+
+      '<div style="background:var(--bg2);border-radius:var(--r1);padding:8px;text-align:center">'+
+        '<div style="font-weight:700;color:'+(wr>=50?'var(--ios-green)':'var(--ios-red)')+';font-size:16px">'+(a.tr>0?wr+'%':'—')+'</div>'+
+        '<div style="color:var(--label3)">Win Rate</div>'+
+      '</div>'+
+      '<div style="background:var(--bg2);border-radius:var(--r1);padding:8px;text-align:center">'+
+        '<div style="font-weight:700;color:var(--ios-orange);font-size:16px">'+iq.toFixed(0)+'%</div>'+
+        '<div style="color:var(--label3)">IQ</div>'+
+      '</div>'+
+    '</div>'+
+    // Warning
+    '<div style="font-size:9px;color:var(--ios-red);padding:6px 8px;background:rgba(255,69,58,.06);border-left:2px solid var(--ios-red);border-radius:0 var(--r1) var(--r1) 0;margin-bottom:12px">'+
+      '⚠️ '+a.needs+
+    '</div>'+
+    // Recent events
+    '<div style="font-size:10px;font-weight:600;color:var(--label3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Последние события</div>'+
+    (evs.length?evs.map(function(e){
+      return '<div style="font-size:9.5px;padding:4px 0;border-bottom:0.5px solid var(--sep2);color:var(--label3)">'+
+        '<span style="color:var(--label4);margin-right:6px">'+e.t+'</span>'+e.txt+
+      '</div>';
+    }).join(''):'<div style="font-size:11px;color:var(--label3)">Событий нет</div>')+
+  '</div>';
+}
+
+function agTab(t){
+  ['log','tr','sk','prompts'].forEach(function(x){
+    var el=document.getElementById('ag-page-'+x);
+    var btn=document.getElementById('ag-tab-'+x);
+    if(el)el.classList.toggle('hidden',x!==t);
+    if(btn)btn.classList.toggle('on',x===t);
+  });
+  if(t==='tr'){
+    var el=document.getElementById('ag-page-tr');
+    if(el)el.innerHTML=document.getElementById('evo-tr').innerHTML;
+  }
+  if(t==='sk'){
+    var el=document.getElementById('ag-page-sk-grid');
+    if(el)el.innerHTML=document.getElementById('sk-grid').innerHTML;
+  }
+  if(t==='prompts'){
+    var el=document.getElementById('ag-page-prompts');
+    if(el&&!el.innerHTML)renderPrompts();
+    if(el)el.innerHTML=document.getElementById('evo-prompts').innerHTML;
+  }
+  if(t==='log'){
+    var el=document.getElementById('ag-page-log');
+    if(el)el.innerHTML=document.getElementById('evo-log').innerHTML;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// IMAGE UPLOAD & AI VISION ANALYSIS
+// ═══════════════════════════════════════════════════
+
+var _imgB64=null, _imgMime=null;
+
+function openImgUploadModal(){
+  document.getElementById('imgupload-modal').classList.remove('hidden');
+}
+
+function handleImgDrop(e){
+  e.preventDefault();
+  var el=document.getElementById('img-drop-zone');
+  if(el){el.style.borderColor='rgba(94,92,230,.35)';el.style.background='rgba(94,92,230,.03)';}
+  var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(file)handleImgFile(file);
+}
+
+function handleImgFile(file){
+  if(!file||!file.type.startsWith('image/'))return;
+  _imgMime=file.type;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    _imgB64=ev.target.result.split(',')[1];
+    var prev=document.getElementById('img-preview');
+    var btn=document.getElementById('img-analyze-btn');
+    var dz=document.getElementById('img-drop-zone');
+    if(prev){prev.src=ev.target.result;prev.style.display='block';}
+    if(btn)btn.style.display='flex';
+    if(dz)dz.style.display='none';
+    document.getElementById('img-result').innerHTML='';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runImgAnalysis(){
+  if(!_imgB64){showToast('Нет изображения','Загрузите скриншот графика',null);return;}
+  var btn=document.getElementById('img-analyze-btn');
+  var res=document.getElementById('img-result');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Анализирую...';}
+  if(res)res.innerHTML='<div style="font-size:11px;color:var(--label3);padding:12px;text-align:center">Отправляю изображение в AI...</div>';
+  try{
+    var r=await groqFetch({
+      model:'llama-3.2-11b-vision-preview',
+      max_tokens:1500,
+      messages:[{role:'user',content:[
+        {type:'text',text:'Ты — профессиональный трейдер MOEX (Московская биржа). Проанализируй этот биржевой график и дай развёрнутый анализ:\n\n1. **Тренд** — восходящий/нисходящий/боковик, сила тренда\n2. **Уровни** — ключевые поддержка и сопротивление (с примерными значениями если видны)\n3. **Паттерны TA** — название, что означает, надёжность\n4. **Индикаторы** — RSI, MACD, объёмы если видны\n5. **Торговый сигнал** — LONG или SHORT, обоснование\n6. **Уровни входа** — цена входа, стоп-лосс, цель (в % или ценовых уровнях)\n\nПиши на русском языке, структурированно.'},
+        {type:'image_url',image_url:{url:'data:'+_imgMime+';base64,'+_imgB64}}
+      ]}]
+    });
+    var d=await r.json();
+    if(d.error){throw new Error(d.error.message||JSON.stringify(d.error));}
+    var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'Нет ответа';
+    if(res)res.innerHTML=
+      '<div style="background:var(--bg2);border:0.5px solid var(--sep);border-radius:var(--r2);padding:14px;margin-top:4px">'+
+        '<div style="font-size:11px;font-weight:600;color:var(--ios-purple);margin-bottom:10px">AI Анализ графика</div>'+
+        '<div style="white-space:pre-wrap;font-size:12px;line-height:1.8;color:var(--label2)">'+escHtml(txt)+'</div>'+
+        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'img-result\').querySelector(\'div>div:last-child\').textContent).then(function(){showToast(\'Скопировано\',\'\',null)})" '+
+          'class="btn" style="margin-top:10px;font-size:11px">📋 Скопировать</button>'+
+      '</div>';
+    addEv('learn',AGs.filter(function(a){return a.id==='4';})[0],'AI Vision: анализ загруженного графика выполнен');
+  }catch(e){
+    if(res)res.innerHTML='<div style="color:var(--ios-red);font-size:12px;padding:8px;background:rgba(255,69,58,.06);border-radius:var(--r1)">Ошибка: '+escHtml(e.message)+'</div>';
+    showToast('Ошибка анализа',e.message.slice(0,80),null);
+  }
+  if(btn){btn.disabled=false;btn.textContent='🔍 Анализировать снова';}
 }
 
 showApp();
