@@ -82,7 +82,10 @@ body::before{
   background-size:44px 44px;
   pointer-events:none;z-index:0;
 }
-::-webkit-scrollbar{width:2px;height:2px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,229,255,.55)}
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
 .hidden{display:none!important}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -153,7 +156,7 @@ body::before{
 .page{flex:1;overflow:hidden;display:flex;min-height:0}
 
 /* ── LEFT PANEL ── */
-.left-panel{width:320px;min-width:320px;display:flex;flex-direction:column;overflow:hidden;background:rgba(13,16,30,.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid rgba(123,92,255,.15)}
+.left-panel{width:320px;min-width:320px;display:flex;flex-direction:column;overflow:hidden;background:rgba(13,16,30,.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid rgba(123,92,255,.15);overflow-y:auto;overflow-x:hidden}
 
 /* Signal Hero Card */
 .signal-hero{padding:14px 16px;border-bottom:1px solid rgba(123,92,255,.12);flex-shrink:0}
@@ -636,6 +639,26 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(123,92,255,.3);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(123,92,255,.5)}
+
+/* ── Expand / fullscreen panels ── */
+.expand-btn{position:absolute;top:8px;right:8px;z-index:20;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25);border-radius:8px;
+  transition:all .2s}
+.expand-btn:hover{background:rgba(0,229,255,.18);box-shadow:0 0 12px rgba(0,229,255,.3)}
+.expand-btn svg{width:15px;height:15px;stroke:#00e5ff;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.panel-expanded{
+  position:fixed !important;inset:24px !important;z-index:9000 !important;
+  width:auto !important;height:auto !important;max-height:none !important;
+  margin:0 !important;border-radius:20px !important;
+  background:linear-gradient(145deg,rgba(15,18,32,.97),rgba(5,6,15,.98)) !important;
+  backdrop-filter:blur(30px) !important;border:1px solid rgba(0,229,255,.3) !important;
+  box-shadow:0 0 60px rgba(0,0,0,.7),0 0 40px rgba(0,229,255,.15) !important;
+  overflow-y:auto !important;padding:20px !important}
+.expand-backdrop{position:fixed;inset:0;z-index:8999;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(4px);display:none}
+.expand-backdrop.on{display:block}
+
 </style>
 </head>
 <body>
@@ -737,13 +760,13 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         </div>
 
         <!-- Consensus -->
-        <div class="section-block">
+        <div class="section-block" style="display:none">
           <div class="section-hdr" style="display:flex;justify-content:space-between">Консенсус агентов<span id="consensus-sym" style="color:var(--ios-indigo)">SBER</span></div>
           <div id="consensus-panel"><div style="font-size:11px;color:var(--label3)">Загрузка...</div></div>
         </div>
 
         <!-- Scan results -->
-        <div class="section-block">
+        <div class="section-block" style="display:none">
           <div class="section-hdr" style="display:flex;justify-content:space-between;align-items:center">
             Топ сигналы
             <div style="display:flex;align-items:center;gap:6px"><span id="scan-status" style="font-size:9px;color:var(--label4)"></span><button class="scan-btn-sm" id="scan-btn" onclick="runAutoScan()">Скан</button></div>
@@ -833,7 +856,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
     </div>
 
     <!-- AGENTS BAR (full width) -->
-    <div class="agents-bar" style="border-top:0.5px solid var(--sep)">
+    <div class="agents-bar" id="term-agents-bar" style="border-top:0.5px solid var(--sep);display:none">
       <div class="ag-summary"><div class="ag-iq-big" id="ag-iq-lbl">0%</div><div class="ag-iq-lbl">IQ агентов</div></div>
       <div class="ag-scroll" id="ag-scroll"></div>
       <div class="evo-term">
@@ -6759,5 +6782,54 @@ setTimeout(initBCS, 1000);
     <div id="hotkeys-panel"></div>
     <textarea id="audit-prompt-text"></textarea>
   </div>
+
+<div class="expand-backdrop" id="expand-backdrop" onclick="collapsePanel()"></div>
+<script>
+var _expandedEl=null;
+function expandPanel(el){
+  if(!el)return;
+  if(_expandedEl===el){collapsePanel();return;}
+  if(_expandedEl)collapsePanel();
+  _expandedEl=el;
+  el.classList.add('panel-expanded');
+  document.getElementById('expand-backdrop').classList.add('on');
+  // resize charts inside if any
+  setTimeout(function(){
+    try{if(typeof chart!=='undefined'&&chart&&chart.resize){var r=el.getBoundingClientRect();chart.resize(r.width-40,r.height-120);}}catch(e){}
+    window.dispatchEvent(new Event('resize'));
+  },120);
+}
+function collapsePanel(){
+  if(_expandedEl){
+    _expandedEl.classList.remove('panel-expanded');
+    _expandedEl=null;
+    document.getElementById('expand-backdrop').classList.remove('on');
+    setTimeout(function(){window.dispatchEvent(new Event('resize'));},120);
+  }
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')collapsePanel();});
+// Inject expand buttons into key panels
+function injectExpandBtns(){
+  var svg='<svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M16 21h5v-5M8 21H3v-5"/></svg>';
+  var targets=[
+    document.querySelector('.left-panel'),
+    document.querySelector('.chart-side'),
+    document.querySelector('.chart-wrap')
+  ];
+  targets.forEach(function(el){
+    if(el&&!el.querySelector('.expand-btn')){
+      if(getComputedStyle(el).position==='static')el.style.position='relative';
+      var b=document.createElement('div');
+      b.className='expand-btn';
+      b.title='Развернуть (Esc — закрыть)';
+      b.innerHTML=svg;
+      b.onclick=function(ev){ev.stopPropagation();expandPanel(el);};
+      el.appendChild(b);
+    }
+  });
+}
+setTimeout(injectExpandBtns,1500);
+</script>
+
 </body>
 </html>
