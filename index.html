@@ -502,6 +502,140 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
 #search-overlay .so-box{width:100%;max-width:540px;border-radius:18px;overflow:hidden;border:1px solid rgba(0,229,255,.25);box-shadow:0 20px 60px rgba(0,0,0,.8)}
 #search-overlay .so-box .nav-search-box{min-width:unset;border-radius:0;border:none;padding:14px 18px;font-size:15px;border-bottom:1px solid rgba(123,92,255,.15)}
 #search-overlay .so-box .nav-search-results{position:static;border:none;border-radius:0;max-height:400px}
+
+/* ══════════════════════════════════════════
+   NEON GLASS ENHANCEMENT LAYER
+   ══════════════════════════════════════════ */
+
+/* Universal glass card */
+.glass{
+  background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.6));
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border:1px solid rgba(123,92,255,.18);
+  border-radius:20px;
+  position:relative;
+  overflow:hidden;
+}
+.glass::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.6),transparent);
+  pointer-events:none;z-index:1;
+}
+
+/* Apply glass to left panel */
+.left-panel{
+  background:linear-gradient(180deg,rgba(123,92,255,.05),rgba(10,13,26,.55));
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+}
+
+/* Section blocks get subtle glass */
+.section-block{
+  background:rgba(123,92,255,.03);
+}
+.signal-hero,.cio-area{
+  background:rgba(123,92,255,.03);
+}
+
+/* ios-card → glass card with cyan top line */
+.ios-card{
+  background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.65)) !important;
+  backdrop-filter:blur(20px) saturate(150%);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);
+  border:1px solid rgba(123,92,255,.18) !important;
+  border-radius:16px !important;
+  position:relative;overflow:hidden;
+}
+.ios-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.5),transparent);
+  pointer-events:none;
+}
+
+/* Page backgrounds transparent so body gradient shows */
+#page-cab,#page-ag{background:transparent !important;}
+.cab-layout{padding:20px}
+
+/* Glow on CIO run button */
+.cio-run-btn{transition:box-shadow .2s}
+.cio-run-btn:hover{box-shadow:0 0 28px rgba(123,92,255,.5)}
+
+/* Buy/sell/ai buttons neon glow */
+.sb-primary{transition:box-shadow .2s,transform .15s}
+.sb-primary:hover{box-shadow:0 0 32px rgba(0,255,163,.45);transform:translateY(-1px)}
+.sb-sec{transition:box-shadow .2s,transform .15s}
+.sb-sec:hover{box-shadow:0 0 32px rgba(255,59,92,.4);transform:translateY(-1px)}
+
+/* Markets & Portfolio pages */
+#page-markets,#page-portfolio{overflow-y:auto;background:transparent}
+.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;padding:20px}
+.mkt-panel{
+  background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.6));
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border:1px solid rgba(123,92,255,.18);
+  border-radius:18px;padding:18px;position:relative;overflow:hidden;
+}
+.mkt-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.5),transparent);
+}
+.mkt-panel-title{
+  font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.mkt-panel-title svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.mkt-row{
+  display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid rgba(123,92,255,.07);cursor:pointer;transition:background .15s;
+  margin:0 -4px;padding-left:4px;padding-right:4px;border-radius:8px;
+}
+.mkt-row:last-child{border:none}
+.mkt-row:hover{background:rgba(0,229,255,.05)}
+.mkt-sym{font-family:var(--mono);font-weight:700;font-size:13px;width:60px;flex-shrink:0}
+.mkt-name{flex:1;font-size:12px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkt-px{font-family:var(--mono);font-size:13px;font-weight:600;flex-shrink:0}
+.mkt-chg{font-family:var(--mono);font-size:11px;font-weight:600;width:54px;text-align:right;flex-shrink:0}
+.mkt-soon{
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  border:1px dashed rgba(123,92,255,.18);border-radius:12px;
+  font-size:12px;color:var(--txt3);margin-top:6px;
+}
+
+/* Portfolio page */
+.pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;padding:20px}
+.pf-summary{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;
+  padding:20px 20px 0;
+}
+.pf-stat{
+  background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.6));
+  backdrop-filter:blur(20px);border:1px solid rgba(123,92,255,.16);
+  border-radius:14px;padding:14px 16px;
+}
+.pf-stat-val{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:2px}
+.pf-stat-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)}
+.pf-connect-banner{
+  margin:20px;padding:20px;
+  background:linear-gradient(145deg,rgba(255,184,0,.06),rgba(10,13,26,.5));
+  border:1px solid rgba(255,184,0,.2);border-radius:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+
+/* Agents page full-width fix */
+#ag-full-wrap{display:flex;flex-direction:column;gap:16px}
+#ag-grid-full{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;width:100%}
+.ag-card-full{background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.65));backdrop-filter:blur(16px);border:1px solid rgba(123,92,255,.16);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.ag-card-full::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(123,92,255,.4),transparent)}
+.ag-card-full:hover{background:linear-gradient(145deg,rgba(123,92,255,.14),rgba(10,13,26,.7));border-color:rgba(123,92,255,.28);box-shadow:0 0 20px rgba(123,92,255,.15)}
+.ag-card-full.sel{border-color:rgba(0,229,255,.4);background:linear-gradient(145deg,rgba(0,229,255,.08),rgba(10,13,26,.7));box-shadow:0 0 24px rgba(0,229,255,.15)}
+
+/* Neon scrollbar */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(123,92,255,.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(123,92,255,.5)}
 </style>
 </head>
 <body>
@@ -540,6 +674,12 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
     </button>
     <button class="ntab" id="nav-sig" onclick="showPage('sig')">
       <svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>Сигналы
+    </button>
+    <button class="ntab" id="nav-markets" onclick="showPage('markets')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Рынки
+    </button>
+    <button class="ntab" id="nav-portfolio" onclick="showPage('portfolio')">
+      <svg viewBox="0 0 24 24"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4"/><path d="M9 12h6"/></svg>Портфель
     </button>
     <button class="ntab" id="nav-ag" onclick="showPage('ag')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Агенты
@@ -902,10 +1042,10 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
   </div>
 
   <!-- ══════════════ AGENTS PAGE ══════════════ -->
-  <div class="page hidden" id="page-ag" style="overflow-y:auto;background:var(--bg0)">
-    <div style="max-width:1100px;margin:0 auto;padding:20px">
+  <div class="page hidden" id="page-ag" style="overflow-y:auto">
+    <div id="ag-full-wrap" style="max-width:1400px;margin:0 auto;padding:20px">
       <!-- Stats row -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="ag-stats-row"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="ag-stats-row"></div>
       <!-- Global IQ bar -->
       <div class="ios-card" style="margin-bottom:16px;padding:14px 16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -915,27 +1055,19 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
             <button class="btn" onclick="swEvo('log')">Журнал событий</button>
           </div>
         </div>
-        <div style="height:8px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px">
-          <div id="ag-iq-bar-fill" style="height:8px;background:linear-gradient(90deg,var(--ios-indigo),var(--ios-purple));border-radius:4px;transition:width 1s;width:0%"></div>
+        <div style="height:6px;background:rgba(123,92,255,.1);border-radius:4px;overflow:hidden;margin-bottom:6px">
+          <div id="ag-iq-bar-fill" style="height:6px;background:linear-gradient(90deg,var(--violet),var(--magenta));border-radius:4px;transition:width 1s;width:0%"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--label3)">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3)">
           <span>Обучение через торговлю и анализ</span>
           <span id="ag-iq-pct2">0%</span>
         </div>
       </div>
-      <!-- Agent grid + detail -->
-      <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
-        <div>
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--label3);margin-bottom:12px">Все агенты (нажмите для деталей)</div>
-          <div id="ag-grid-full" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
-        </div>
-        <div id="ag-detail-panel">
-          <div class="ios-card" style="text-align:center;padding:32px 16px">
-            <div style="font-size:32px;margin-bottom:8px">🤖</div>
-            <div style="font-size:13px;color:var(--label3)">Нажмите на агента<br>для просмотра деталей</div>
-          </div>
-        </div>
-      </div>
+      <!-- Agent grid — full width, auto-fill -->
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3);margin-bottom:12px">Все агенты — нажмите для деталей</div>
+      <div id="ag-grid-full"></div>
+      <!-- Detail panel below grid -->
+      <div id="ag-detail-panel" style="margin-top:16px"></div>
       <!-- Event log full -->
       <div class="ios-card" style="margin-top:16px;padding:0;overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--sep)">
@@ -951,6 +1083,103 @@ kbd{background:var(--bg2);border:0.5px solid var(--sep);color:var(--label);paddi
         <div id="ag-page-tr" class="hidden" style="height:260px;overflow-y:auto;padding:8px"></div>
         <div id="ag-page-sk" class="hidden" style="padding:12px"><div class="sk-grid" id="ag-page-sk-grid"></div></div>
         <div id="ag-page-prompts" class="hidden" style="height:260px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MARKETS PAGE ══════════════ -->
+  <div class="page hidden" id="page-markets" style="overflow-y:auto">
+    <div class="mkt-grid" id="mkt-content">
+      <!-- Акции МосБиржи -->
+      <div class="mkt-panel" id="mkt-stocks">
+        <div class="mkt-panel-title" style="color:var(--cyan)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--cyan);filter:drop-shadow(0 0 4px rgba(0,229,255,.5))"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+          Акции МосБиржи
+        </div>
+        <div id="mkt-stocks-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Валюты -->
+      <div class="mkt-panel" id="mkt-fx">
+        <div class="mkt-panel-title" style="color:var(--magenta)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--magenta);filter:drop-shadow(0 0 4px rgba(255,45,155,.5))"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          Валютные пары
+        </div>
+        <div id="mkt-fx-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Фьючерсы -->
+      <div class="mkt-panel" id="mkt-fut">
+        <div class="mkt-panel-title" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--amber);filter:drop-shadow(0 0 4px rgba(255,184,0,.5))"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+          Фьючерсы
+        </div>
+        <div id="mkt-fut-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- ОФЗ -->
+      <div class="mkt-panel" id="mkt-ofz">
+        <div class="mkt-panel-title" style="color:var(--violet)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--violet);filter:drop-shadow(0 0 4px rgba(123,92,255,.5))"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          ОФЗ Облигации
+        </div>
+        <div id="mkt-ofz-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- США — скоро -->
+      <div class="mkt-panel" style="opacity:.6">
+        <div class="mkt-panel-title" style="color:var(--txt3)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--txt3)"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+          Акции США
+        </div>
+        <div class="mkt-soon">Этап 2 — скоро</div>
+      </div>
+      <!-- Крипто — скоро -->
+      <div class="mkt-panel" style="opacity:.6">
+        <div class="mkt-panel-title" style="color:var(--txt3)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--txt3)"><path d="M9 8h6c1.1 0 2 .9 2 2s-.9 2-2 2H9v4h7c1.1 0 2 .9 2 2s-.9 2-2 2H9V8zM6 8v12"/></svg>
+          Криптовалюты
+        </div>
+        <div class="mkt-soon">Этап 2 — скоро</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PORTFOLIO PAGE ══════════════ -->
+  <div class="page hidden" id="page-portfolio" style="overflow-y:auto">
+    <!-- Summary stats -->
+    <div class="pf-summary" id="pf-summary-row"></div>
+    <!-- Connect banner (shown if no BCS) -->
+    <div id="pf-connect-banner" class="pf-connect-banner hidden">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:4px">БКС Брокер не подключён</div>
+        <div style="font-size:12px;color:var(--txt3)">Подключите токен для отображения реального портфеля</div>
+      </div>
+      <button onclick="showPage('cab');showCab('settings')" class="btn p" style="flex-shrink:0">Подключить →</button>
+    </div>
+    <!-- Portfolio grid -->
+    <div class="pf-grid">
+      <!-- BCS Live positions -->
+      <div class="mkt-panel" id="pf-bcs-block">
+        <div class="mkt-panel-title" style="color:var(--cyan)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--cyan);filter:drop-shadow(0 0 4px rgba(0,229,255,.5))"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4"/></svg>
+          БКС Live Портфель
+          <button onclick="fetchBCSPortfolio(true)" style="margin-left:auto;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);color:var(--cyan);border-radius:8px;padding:2px 10px;font-size:11px;cursor:pointer">↻</button>
+        </div>
+        <div id="pf-bcs-positions"><div style="font-size:11px;color:var(--txt3)">Загрузка позиций...</div></div>
+      </div>
+      <!-- Journal trades -->
+      <div class="mkt-panel" id="pf-journal-block">
+        <div class="mkt-panel-title" style="color:var(--violet)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--violet);filter:drop-shadow(0 0 4px rgba(123,92,255,.5))"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+          Журнал сделок
+          <button onclick="showPage('cab');showCab('open')" style="margin-left:auto;background:rgba(0,255,163,.08);border:1px solid rgba(0,255,163,.2);color:var(--green);border-radius:8px;padding:2px 10px;font-size:11px;cursor:pointer">+ Сделка</button>
+        </div>
+        <div id="pf-journal-list"></div>
+      </div>
+      <!-- Agent trades -->
+      <div class="mkt-panel" id="pf-agent-block">
+        <div class="mkt-panel-title" style="color:var(--magenta)">
+          <svg viewBox="0 0 24 24" style="stroke:var(--magenta);filter:drop-shadow(0 0 4px rgba(255,45,155,.5))"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Авто-сделки агентов
+        </div>
+        <div id="pf-agent-list"></div>
       </div>
     </div>
   </div>
@@ -2397,7 +2626,7 @@ function closeMod(id){document.getElementById(id).classList.add('hidden');}
 
 // ── Navigation ────────────────────────────────
 function showPage(p){
-  ['term','sig','ag','cab'].forEach(function(pg){
+  ['term','sig','ag','cab','markets','portfolio'].forEach(function(pg){
     var pel=document.getElementById('page-'+pg);
     var nel=document.getElementById('nav-'+pg);
     if(pel)pel.classList.toggle('hidden',pg!==p);
@@ -2406,6 +2635,8 @@ function showPage(p){
   if(p==='sig'){rTaKb();rPats();renderScanResults();}
   if(p==='cab'){lCabTr();updCabUI();}
   if(p==='ag'){renderAgPage();}
+  if(p==='markets'){renderMarketsPage();}
+  if(p==='portfolio'){renderPortfolioPage();}
 }
 
 function swEvo(t){
@@ -6327,6 +6558,171 @@ function onSearchKey(e){
   } else if(e.key==='Escape'){hideSearchResults();return;}
   items.forEach(function(el,i){el.classList.toggle('focused',i===_searchIdx);});
   if(items[_searchIdx])items[_searchIdx].scrollIntoView({block:'nearest'});
+}
+
+// ═══════════════════════════════════════════════════
+// MARKETS PAGE
+// ═══════════════════════════════════════════════════
+
+function renderMarketsPage(){
+  renderMktStocks();
+  renderMktFX();
+  renderMktFut();
+  renderMktOFZ();
+}
+
+function _mktRow(sym, name, px, chg, onclick){
+  var pxStr = px ? px.toFixed(2)+'₽' : '—';
+  var chgStr = chg!=null ? (chg>=0?'+':'')+chg.toFixed(2)+'%' : '';
+  var col = chg>0?'var(--green)':chg<0?'var(--red)':'var(--txt3)';
+  return '<div class="mkt-row" onclick="'+onclick+'">' +
+    '<span class="mkt-sym">'+sym+'</span>' +
+    '<span class="mkt-name">'+name+'</span>' +
+    '<span class="mkt-px">'+pxStr+'</span>' +
+    '<span class="mkt-chg" style="color:'+col+'">'+chgStr+'</span>' +
+  '</div>';
+}
+
+function renderMktStocks(){
+  var el=document.getElementById('mkt-stocks-list'); if(!el)return;
+  var syms=Object.keys(ST).slice(0,20);
+  el.innerHTML=syms.map(function(sym){
+    var info=ST[sym]; var p=prices[sym];
+    return _mktRow(sym, info.n||sym, p?p.p:null, p?p.c:null,
+      "sSym('"+sym+"');showPage('term')");
+  }).join('');
+}
+
+var _FX_PAIRS=[
+  {sym:'USD000UTSTOM',n:'USD/RUB',id:'usd-v'},
+  {sym:'EUR_RUB__TOM',n:'EUR/RUB'},
+  {sym:'CNYRUB_TOM',n:'CNY/RUB'},
+];
+function renderMktFX(){
+  var el=document.getElementById('mkt-fx-list'); if(!el)return;
+  var rows=_FX_PAIRS.map(function(fx){
+    var usdEl=document.getElementById('usd-v');
+    var px=null;
+    if(fx.sym==='USD000UTSTOM'&&usdEl)px=parseFloat(usdEl.textContent)||null;
+    return _mktRow(fx.n, 'Московская биржа', px, null, "");
+  });
+  // Add Brent
+  var brentEl=document.getElementById('brent-val');
+  var brent=brentEl?parseFloat(brentEl.textContent)||null:null;
+  rows.push(_mktRow('EUR/USD','Кросс-курс',null,null,''));
+  el.innerHTML=rows.join('');
+}
+
+var _FUTURES=[
+  {sym:'BR',n:'Нефть Brent'},
+  {sym:'GD',n:'Золото'},
+  {sym:'NG',n:'Природный газ'},
+];
+function renderMktFut(){
+  var el=document.getElementById('mkt-fut-list'); if(!el)return;
+  var brentEl=document.getElementById('brent-val');
+  var brent=brentEl?parseFloat(brentEl.textContent)||null:null;
+  el.innerHTML=_FUTURES.map(function(f,i){
+    var px=i===0?brent:null;
+    return _mktRow(f.sym, f.n, px, null, '');
+  }).join('');
+}
+
+function renderMktOFZ(){
+  var el=document.getElementById('mkt-ofz-list'); if(!el)return;
+  var ofzEl=document.getElementById('ofz-list');
+  if(ofzEl&&ofzEl.children.length>0){
+    el.innerHTML=ofzEl.innerHTML;
+  } else {
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3)">Загрузка ОФЗ...</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// PORTFOLIO PAGE
+// ═══════════════════════════════════════════════════
+
+function renderPortfolioPage(){
+  renderPfSummary();
+  renderPfBCS();
+  renderPfJournal();
+  renderPfAgentTrades();
+}
+
+function renderPfSummary(){
+  var el=document.getElementById('pf-summary-row'); if(!el)return;
+  var trades=gTrades();
+  var open=trades.filter(function(t){return t.status==='open';});
+  var closed=trades.filter(function(t){return t.status!=='open';});
+  var wins=closed.filter(function(t){return (t.pnl||0)>0;});
+  var totalPnl=closed.reduce(function(s,t){return s+(t.pnl||0);},0);
+  var wr=closed.length>0?Math.round(wins.length/closed.length*100):0;
+  var pnlCol=totalPnl>=0?'var(--green)':'var(--red)';
+  var pfStats=[
+    {v:open.length,l:'Открытых позиций',c:'var(--cyan)'},
+    {v:(totalPnl>=0?'+':'')+totalPnl.toFixed(0)+'₽',l:'Общий P&L',c:pnlCol},
+    {v:wr+'%',l:'Win Rate',c:wr>=50?'var(--green)':'var(--red)'},
+    {v:agTrades.length,l:'Авто-сделок',c:'var(--amber)'},
+  ];
+  el.innerHTML=pfStats.map(function(s){
+    return '<div class="pf-stat"><div class="pf-stat-val" style="color:'+s.c+'">'+s.v+'</div><div class="pf-stat-lbl">'+s.l+'</div></div>';
+  }).join('');
+}
+
+function renderPfBCS(){
+  var bcsEl=document.getElementById('pf-bcs-positions'); if(!bcsEl)return;
+  var banner=document.getElementById('pf-connect-banner');
+  if(!bcsConnected){
+    bcsEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:16px 0;text-align:center">Токен не подключён</div>';
+    if(banner)banner.classList.remove('hidden');
+    return;
+  }
+  if(banner)banner.classList.add('hidden');
+  // Copy from existing bcs-positions-list
+  var srcEl=document.getElementById('bcs-positions-list');
+  if(srcEl)bcsEl.innerHTML=srcEl.innerHTML||'<div style="font-size:11px;color:var(--txt3)">Нет позиций</div>';
+  else bcsEl.innerHTML='<div style="font-size:11px;color:var(--txt3)">Нет данных</div>';
+}
+
+function renderPfJournal(){
+  var el=document.getElementById('pf-journal-list'); if(!el)return;
+  var trades=gTrades();
+  if(!trades.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:16px 0;text-align:center">Сделок нет. Нажмите «+ Сделка»</div>';
+    return;
+  }
+  var list=trades.slice().reverse().slice(0,15);
+  el.innerHTML=list.map(function(t){
+    var isLong=t.direction==='LONG';
+    var col=isLong?'var(--green)':'var(--red)';
+    var pnl=t.pnl!=null?(t.pnl>=0?'+':'')+t.pnl.toFixed(0)+'₽':'—';
+    var pnlCol=t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)';
+    return '<div class="mkt-row">'+
+      '<span class="mkt-sym" style="color:'+col+'">'+t.sym+'</span>'+
+      '<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.2);color:'+col+';margin-right:4px;font-family:var(--mono);font-weight:700">'+t.direction+'</span>'+
+      '<span class="mkt-name">'+t.sym+(t.entry?' · вход '+t.entry.toFixed(2)+'₽':'')+'</span>'+
+      '<span class="mkt-px" style="color:'+pnlCol+'">'+pnl+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+function renderPfAgentTrades(){
+  var el=document.getElementById('pf-agent-list'); if(!el)return;
+  if(!agTrades.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:16px 0;text-align:center">Агенты ещё не совершали сделок</div>';
+    return;
+  }
+  var list=agTrades.slice().reverse().slice(0,15);
+  el.innerHTML=list.map(function(t){
+    var isLong=t.dir==='LONG';
+    var col=isLong?'var(--green)':'var(--red)';
+    return '<div class="mkt-row">'+
+      '<span class="mkt-sym" style="color:'+col+'">'+t.sym+'</span>'+
+      '<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.2);color:'+col+';font-family:var(--mono);font-weight:700">'+t.dir+'</span>'+
+      '<span class="mkt-name" style="flex:1">'+t.ag+' · '+new Date(t.t).toLocaleDateString('ru')+'</span>'+
+      '<span class="mkt-px" style="color:var(--txt3)">'+t.en.toFixed(2)+'₽</span>'+
+    '</div>';
+  }).join('');
 }
 
 // Инициализация BCS при запуске
