@@ -671,6 +671,13 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
 .sa-rating{display:inline-block;padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;margin-left:8px}
 
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.accent-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  transition:all .2s;position:relative}
+.accent-dot:hover{transform:scale(1.12)}
+.accent-dot.on{border-color:#fff;box-shadow:0 0 14px currentColor}
+.accent-dot.on::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(255,255,255,.4)}
+
 </style>
 </head>
 <body>
@@ -704,10 +711,10 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
 
   <!-- ── NAV ── -->
   <div class="navrow">
-    <button class="ntab on" id="nav-term" onclick="showPage('term')">
+    <button class="ntab on" id="nav-term" onclick="showPage('term')" title="График и AI-сигнал">
       <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Терминал
     </button>
-    <button class="ntab" id="nav-sig" onclick="showPage('sig')">
+    <button class="ntab" id="nav-sig" onclick="showPage('sig')" title="Скан рынка, паттерны, новости">
       <svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>Сигналы
     </button>
     <button class="ntab" id="nav-markets" onclick="showPage('markets')">
@@ -716,7 +723,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
     <button class="ntab" id="nav-portfolio" onclick="showPage('portfolio')">
       <svg viewBox="0 0 24 24"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4"/><path d="M9 12h6"/></svg>Портфель
     </button>
-    <button class="ntab" id="nav-ag" onclick="showPage('ag')">
+    <button class="ntab" id="nav-ag" onclick="showPage('ag')" title="14 AI-агентов и их обучение">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Агенты
     </button>
     <button class="ntab" id="nav-cab" onclick="showPage('cab')">
@@ -730,6 +737,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
       <span class="nav-search-hint">⌘K</span>
       <div class="nav-search-results hidden" id="nav-search-results"></div>
     </div>
+    <button class="kb-btn" onclick="showOnboard(true)" title="Как пользоваться" style="margin-right:6px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></svg></button>
     <button class="audit-pill" onclick="runAudit()">
       <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>Аудит
     </button>
@@ -763,7 +771,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div class="cio-area">
           <div class="cio-row">
             <select class="cio-sel" id="cio-sym"></select>
-            <button class="cio-run-btn" id="cio-btn" onclick="runCIO()"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ</button>
+            <button class="cio-run-btn" id="cio-btn" onclick="runCIO()" title="AI анализирует акцию и выдаёт сигнал"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ</button>
           </div>
           <div style="display:none">
             <input type="password" class="cio-key" id="groq-key" placeholder="Groq API ключ (gsk_...)" oninput="sGK(this.value)" style="flex:1"/>
@@ -1068,7 +1076,26 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               <div style="display:flex;flex-direction:column;gap:4px"><label class="fl">Авто-агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
             </div>
             <button class="btn p" onclick="saveSettings()" style="width:100%;justify-content:center;padding:11px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00ffa3;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00ffa3aa)"><path d="M5 3h12l4 4v14H5zM8 3v6h8V3M8 21v-7h8v7"/></svg> Сохранить настройки</button>
-            <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.2)">
+            <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div class="ios-card" style="margin-bottom:16px;padding:16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Оформление</div>
+            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px">Акцентный цвет интерфейса</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px" id="accent-picker">
+              <div class="accent-dot" data-accent="cyan" onclick="setAccent('cyan')" style="background:#00e5ff" title="Циан"></div>
+              <div class="accent-dot" data-accent="green" onclick="setAccent('green')" style="background:#00ffa3" title="Изумруд"></div>
+              <div class="accent-dot" data-accent="magenta" onclick="setAccent('magenta')" style="background:#ff2d9b" title="Маджента"></div>
+              <div class="accent-dot" data-accent="violet" onclick="setAccent('violet')" style="background:#7b5cff" title="Фиолет"></div>
+              <div class="accent-dot" data-accent="amber" onclick="setAccent('amber')" style="background:#ffb800" title="Янтарь"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:rgba(234,240,255,.6)">Размер шрифта</span>
+              <div style="display:flex;gap:6px">
+                <button class="fsz-btn" onclick="setFontSize('s')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(123,92,255,.25);background:rgba(123,92,255,.06);color:rgba(234,240,255,.7);cursor:pointer;font-size:11px">A−</button>
+                <button class="fsz-btn" onclick="setFontSize('m')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(123,92,255,.25);background:rgba(123,92,255,.06);color:rgba(234,240,255,.7);cursor:pointer;font-size:13px">A</button>
+                <button class="fsz-btn" onclick="setFontSize('l')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(123,92,255,.25);background:rgba(123,92,255,.06);color:rgba(234,240,255,.7);cursor:pointer;font-size:15px">A+</button>
+              </div>
+            </div>
+          </div>
+          <div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.2)">
             <div style="font-size:13px;font-weight:600;color:var(--cyan,#00e5ff);margin-bottom:4px">AI-анализ сайта</div>
             <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Оценка платформы с 4 точек зрения: посетитель, программист, дизайнер, маркетолог</div>
             <button class="sb-primary" onclick="runSiteAnalysis()" style="width:100%;padding:12px;border-radius:12px;border:none;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#00e5ff,#7b5cff);color:#fff;box-shadow:0 0 24px rgba(0,229,255,.3)">
@@ -3655,14 +3682,40 @@ function scoreSym(sym, candles){
   if(chg > 0.5) bull += 5;
   if(chg < -0.5) bull -= 5;
 
+  // ── Доп. факторы точности (confluence) ──
+  // Объём: всплеск объёма усиливает сигнал
+  if(n >= 20){
+    var recentVol = candles.slice(-5).reduce(function(s,c){return s+(c.vol||c.volume||0);},0)/5;
+    var avgVol = candles.slice(-20).reduce(function(s,c){return s+(c.vol||c.volume||0);},0)/20;
+    if(avgVol > 0 && recentVol > avgVol*1.5){
+      // высокий объём подтверждает направление цены
+      if(chg > 0) bull += 6; else if(chg < 0) bull -= 6;
+    }
+  }
+  // Расстояние до MA — чем дальше цена от MA20, тем выше шанс отката
+  if(ma20 > 0){
+    var distMA = (p.p - ma20)/ma20*100;
+    if(distMA > 8) bull -= 6;       // сильно выше MA → перекуплен
+    else if(distMA < -8) bull += 6; // сильно ниже MA → перепродан
+  }
+  // 52-недельная позиция
+  if(info.h52 && info.l52 && info.h52 > info.l52){
+    var pos52 = (p.p - info.l52)/(info.h52 - info.l52);
+    if(pos52 < 0.15) bull += 7;      // у годового минимума
+    else if(pos52 > 0.90) bull -= 7; // у годового максимума
+  }
+  // Свечной паттерн + RSI согласие (confluence бонус)
+  if(bullP > 0 && rsi < 40) bull += 5; // бычий паттерн + перепроданность
+  if(bearP > 0 && rsi > 60) bull -= 5; // медвежий паттерн + перекупленность
+
   bull = Math.max(0, Math.min(100, bull));
 
   // ── Direction & confidence ─────────────────────
   var dir, conf;
-  if(bull >= 60){
+  if(bull >= 62){
     dir  = 'LONG';
     conf = bull;
-  } else if(bull <= 40){
+  } else if(bull <= 38){
     dir  = 'SHORT';
     conf = 100 - bull;
   } else {
@@ -6914,6 +6967,105 @@ function formatSAText(txt){
   return html;
 }
 
+
+
+// ════════ ОНБОРДИНГ ════════
+var _onboardStep = 0;
+var _onboardSteps = [
+  {ic:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+   t:'6 вкладок', d:'<b>Терминал</b> — график и AI-сигнал. <b>Сигналы</b> — скан рынка и паттерны. <b>Рынки</b> — акции, валюты, фьючерсы. <b>Портфель</b> — ваши позиции. <b>Агенты</b> — 14 AI-аналитиков. <b>Кабинет</b> — настройки.'},
+  {ic:'<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>',
+   t:'Сигнал CIO', d:'В Терминале нажмите <b>«Анализ»</b> — AI разберёт акцию и выдаст сигнал: направление (LONG/SHORT), точку входа, стоп-лосс, цель и соотношение риск/прибыль. Это рекомендация, а не приказ — решение всегда за вами.'},
+  {ic:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+   t:'AI-агенты учатся', d:'14 агентов (Техника, Фундамент, Риск, Макро и др.) голосуют по каждой акции. После каждой закрытой сделки они <b>обучаются</b>: точные — получают больший вес. Чем больше сделок в журнале, тем умнее система.'},
+  {ic:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+   t:'Поиск и данные', d:'Жмите <b>⌘K</b> или поле поиска вверху — ищите любой инструмент. Данные идут с Московской биржи. Для real-time без задержки подключите BCS-токен в Кабинете → Настройки.'},
+];
+
+function showOnboard(force){
+  if(!force && localStorage.getItem('onboard_done')==='1') return;
+  _onboardStep = 0;
+  var m = document.getElementById('onboard-modal');
+  if(m){ m.classList.remove('hidden'); renderOnboard(); }
+}
+function renderOnboard(){
+  var s = _onboardSteps[_onboardStep];
+  var body = document.getElementById('onboard-body');
+  if(!body) return;
+  var dots = _onboardSteps.map(function(_,i){
+    return '<span style="width:7px;height:7px;border-radius:50%;background:'+(i===_onboardStep?'#00e5ff':'rgba(123,92,255,.25)')+';box-shadow:'+(i===_onboardStep?'0 0 8px #00e5ff':'none')+'"></span>';
+  }).join('');
+  var last = _onboardStep === _onboardSteps.length-1;
+  body.innerHTML =
+    '<div style="text-align:center;margin-bottom:18px">'+
+      '<div style="display:inline-flex;width:60px;height:60px;align-items:center;justify-content:center;border-radius:16px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25);margin-bottom:14px">'+
+        '<svg viewBox="0 0 24 24" style="width:30px;height:30px;stroke:#00e5ff;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px #00e5ffaa)">'+s.ic+'</svg>'+
+      '</div>'+
+      '<div style="font-size:18px;font-weight:700;margin-bottom:8px">'+s.t+'</div>'+
+      '<div style="font-size:13px;line-height:1.7;color:rgba(234,240,255,.7)">'+s.d+'</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0">'+dots+'</div>'+
+    '<div style="display:flex;gap:10px">'+
+      (_onboardStep>0?'<button onclick="onboardNav(-1)" style="flex:1;padding:11px;border-radius:12px;border:1px solid rgba(123,92,255,.25);background:rgba(123,92,255,.06);color:rgba(234,240,255,.7);cursor:pointer;font-family:var(--sans);font-size:13px">Назад</button>':'')+
+      '<button onclick="'+(last?'closeOnboard()':'onboardNav(1)')+'" style="flex:2;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#00e5ff,#7b5cff);color:#fff;cursor:pointer;font-weight:600;font-family:var(--sans);font-size:13px;box-shadow:0 0 18px rgba(0,229,255,.3)">'+(last?'Начать':'Далее')+'</button>'+
+    '</div>'+
+    '<div style="text-align:center;margin-top:12px"><button onclick="closeOnboard()" style="background:none;border:none;color:rgba(234,240,255,.35);font-size:12px;cursor:pointer">Пропустить</button></div>';
+}
+function onboardNav(dir){
+  _onboardStep = Math.max(0, Math.min(_onboardSteps.length-1, _onboardStep+dir));
+  renderOnboard();
+}
+function closeOnboard(){
+  var m = document.getElementById('onboard-modal');
+  if(m) m.classList.add('hidden');
+  localStorage.setItem('onboard_done','1');
+}
+// Show on first visit (after app loads)
+setTimeout(function(){ showOnboard(false); }, 2000);
+
+
+
+// ════════ ОФОРМЛЕНИЕ (тема) ════════
+var _accents = {
+  cyan:   {c:'#00e5ff', m:'#7b5cff'},
+  green:  {c:'#00ffa3', m:'#00e5ff'},
+  magenta:{c:'#ff2d9b', m:'#7b5cff'},
+  violet: {c:'#7b5cff', m:'#ff2d9b'},
+  amber:  {c:'#ffb800', m:'#ff2d9b'}
+};
+function setAccent(name){
+  var a = _accents[name]; if(!a) return;
+  var root = document.documentElement;
+  root.style.setProperty('--cyan', a.c);
+  root.style.setProperty('--ios-blue', a.c);
+  root.style.setProperty('--ios-teal', a.c);
+  root.style.setProperty('--ios-indigo', a.m);
+  root.style.setProperty('--violet', a.m);
+  localStorage.setItem('accent', name);
+  document.querySelectorAll('.accent-dot').forEach(function(d){
+    d.classList.toggle('on', d.dataset.accent===name);
+    if(d.dataset.accent===name) d.style.color = a.c;
+  });
+  // redraw chart line if line mode
+  try{ if(typeof updCH==='function') updCH(); }catch(e){}
+}
+function setFontSize(sz){
+  var map = {s:'14px', m:'15px', l:'16.5px'};
+  document.documentElement.style.fontSize = map[sz]||'15px';
+  document.body.style.fontSize = map[sz]||'15px';
+  localStorage.setItem('font_size', sz);
+  document.querySelectorAll('.fsz-btn').forEach(function(b){
+    b.style.borderColor = (b.getAttribute('onclick').indexOf("'"+sz+"'")>=0)?'rgba(0,229,255,.5)':'rgba(123,92,255,.25)';
+  });
+}
+function loadTheme(){
+  var a = localStorage.getItem('accent');
+  if(a && _accents[a]) setAccent(a);
+  var fs = localStorage.getItem('font_size');
+  if(fs) setFontSize(fs);
+}
+setTimeout(loadTheme, 600);
+
 </script>
 
   <!-- JS-referenced hidden elements -->
@@ -6988,6 +7140,15 @@ setTimeout(injectExpandBtns,1500);
     </div>
     <div id="sa-content" style="font-size:13px;line-height:1.7;color:rgba(234,240,255,.85);min-height:200px;max-height:55vh;overflow-y:auto"></div>
   </div>
+</div></div>
+
+
+<div class="mbg hidden" id="onboard-modal"><div class="mbox" style="max-width:560px;width:90%">
+  <div class="mhdr">
+    <span class="mt"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00e5ffaa)"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1L12 16.5 5.7 21l2.3-7.1-6-4.5h7.6z"/></svg> Добро пожаловать в BCS Terminal</span>
+    <button class="mc" onclick="closeOnboard()">✕</button>
+  </div>
+  <div class="mbody" id="onboard-body"></div>
 </div></div>
 
 </body>
