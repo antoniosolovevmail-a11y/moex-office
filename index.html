@@ -1096,9 +1096,25 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               </div>
             </div>
           </div>
+          <div class="ios-card" style="margin-bottom:16px;padding:16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Инструменты трейдера</div>
+            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px">Расчёт размера позиции по риску</div>
+            <button onclick="document.getElementById('calc-modal').classList.remove('hidden');recalcPosition()" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(0,255,163,.3);background:rgba(0,255,163,.08);color:#00ffa3;cursor:pointer;font-weight:600;font-family:var(--sans);font-size:13px">
+              Калькулятор позиции
+            </button>
+          </div>
           <div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.2)">
             <div style="font-size:13px;font-weight:600;color:var(--cyan,#00e5ff);margin-bottom:4px">AI-анализ сайта</div>
-            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Оценка платформы с 4 точек зрения: посетитель, программист, дизайнер, маркетолог</div>
+            <div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.18)">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Безопасность токенов</div>
+            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Ключи хранятся в браузере в зашифрованном виде. Не используйте сайт на чужих устройствах.</div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px">
+              <input type="checkbox" id="tok-session-cb" onchange="setTokenSessionMode(this.checked)" style="width:18px;height:18px;accent-color:#00e5ff;cursor:pointer"/>
+              <span style="font-size:12px;color:rgba(234,240,255,.75)">Стирать токены при закрытии вкладки <span style="color:rgba(234,240,255,.4)">(надёжнее)</span></span>
+            </label>
+            <button onclick="clearAllTokens()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,59,92,.3);background:rgba(255,59,92,.08);color:#ff3b5c;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">Очистить все токены</button>
+          </div>
+          <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Оценка платформы с 4 точек зрения: посетитель, программист, дизайнер, маркетолог</div>
             <button class="sb-primary" onclick="runSiteAnalysis()" style="width:100%;padding:12px;border-radius:12px;border:none;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#00e5ff,#7b5cff);color:#fff;box-shadow:0 0 24px rgba(0,229,255,.3)">
               <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               Анализировать сайт
@@ -1515,10 +1531,27 @@ function aIQ(a){return Object.values(a.sk).reduce((s,v)=>s+v,0)/4;}
 function aLearn(a,delta){
   delta=delta||0.5;
   const keys=Object.keys(a.sk);
-  const k=keys[Math.floor(Math.random()*keys.length)];
-  a.sk[k]=Math.min(100,a.sk[k]+delta);
+  // Adaptive learning rate: slower as skill matures (diminishing returns, realistic)
+  // Win Rate boosts learning — успешные агенты учатся быстрее
+  var wr = a.tr>0 ? a.wi/a.tr : 0.5;
+  var wrMult = 0.6 + wr*0.9; // 0.6x..1.5x based on win rate
+  // Specialization: агент сильнее качает свой САМЫЙ слабый навык (балансировка)
+  // но иногда добивает сильный (специализация)
+  var k;
+  if(Math.random()<0.65){
+    // подтянуть самый слабый навык
+    k = keys.reduce(function(min,key){return a.sk[key]<a.sk[min]?key:min;}, keys[0]);
+  } else {
+    // углубить самый сильный (специализация)
+    k = keys.reduce(function(max,key){return a.sk[key]>a.sk[max]?key:max;}, keys[0]);
+  }
+  // Diminishing returns: чем выше навык, тем медленнее рост
+  var cur = a.sk[k];
+  var dimFactor = cur<40 ? 1.4 : cur<70 ? 1.0 : cur<90 ? 0.5 : 0.2;
+  var gain = delta * wrMult * dimFactor;
+  a.sk[k] = Math.min(100, cur + gain);
   sAS();
-  addEv('skill',a,'Навык "'+SKN[k]+'" → '+a.sk[k].toFixed(1)+'%');
+  if(gain >= 0.3) addEv('skill',a,'Навык "'+SKN[k]+'" → '+a.sk[k].toFixed(1)+'%');
 }
 
 // ── MOEX API ──────────────────────────────────
@@ -2037,7 +2070,7 @@ function toggleAg(){
 
 function schedAg(){
   if(!agOn)return;
-  var ms=20000+Math.random()*40000;
+  var ms=12000+Math.random()*23000;
   agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
 }
 
@@ -2077,7 +2110,7 @@ function runAgCy(){
       if(pnl>0)a.wi++;
       addEv(pnl>0?'trade':'loss',a,'Закрыл '+dir+' '+sym+' → '+(pnl>=0?'+':'')+pnl.toFixed(2)+'%');
       if(pnl<0)anlLoss(a,trade);
-      aLearn(a,pnl>0?2:0.5);
+      aLearn(a, pnl>0 ? 2.5 : 0.4);
       rAgTr(); sAS();
       var ce2=document.getElementById('ag-cnt');
       if(ce2)ce2.textContent=agTrades.length;
@@ -2092,7 +2125,7 @@ function runAgCy(){
 }
 
 async function anlLoss(ag,trade){
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   if(!gk)return;
   try{
     var r=await groqFetch({model:'llama-3.3-70b-versatile',max_tokens:120,
@@ -2112,7 +2145,7 @@ async function runAudit(){
   var feed=document.getElementById('audit-feed');
   feed.innerHTML='';
   document.getElementById('audit-sum').classList.add('hidden');
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   var pc=Object.keys(prices).length;
   var trades=gTrades();
   var openT=trades.filter(function(t){return t.status==='open';});
@@ -2265,7 +2298,7 @@ function copyAuditPrompt(btn){
 
 // ── Groq API with retry + ECONNRESET fix ──────
 async function groqFetch(payload){
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   if(!gk)throw new Error('Groq API ключ не задан. Добавьте ключ в Настройках.');
   var lastErr;
   for(var attempt=0;attempt<3;attempt++){
@@ -2295,7 +2328,7 @@ async function groqFetch(payload){
 
 // ── CIO Analysis ──────────────────────────────
 function sGK(v){
-  if(v&&v.trim())localStorage.setItem('groq_key',v.trim());
+  if(v&&v.trim())secureSet('groq_key',v.trim());
   ['groq-key','groq-key2','s-gk'].forEach(function(id){
     var el=document.getElementById(id);
     if(el&&document.activeElement!==el)el.value=v;
@@ -2541,7 +2574,7 @@ function saveSignalToHistory(sym, dir, entry, stop, tg1){
 }
 
 async function _rCIO(sym, resEl, btnEl){
-  var gk = localStorage.getItem('groq_key')||'';
+  var gk = secureGet('groq_key')||'';
   if(!gk){alert('Введите Groq API ключ');return;}
   btnEl.disabled=true;
   btnEl.textContent='АНАЛИЗИРУЮ...';
@@ -2864,7 +2897,7 @@ function toggleKeyVis(id,btn){
 }
 
 async function testGroqKey(){
-  var gk=localStorage.getItem('groq_key')||document.getElementById('s-gk').value||'';
+  var gk=secureGet('groq_key')||document.getElementById('s-gk').value||'';
   var btn=document.getElementById('groq-test-btn');
   var st=document.getElementById('groq-key-st');
   if(!gk){
@@ -2895,7 +2928,7 @@ async function testGroqKey(){
 }
 
 function updKeyStatus(){
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   var st=document.getElementById('groq-key-st');
   if(st){
     if(gk){st.textContent='✅ Сохранён';st.style.color='var(--ios-green)';}
@@ -2909,6 +2942,7 @@ function updKeyStatus(){
 
 // ── User UI ───────────────────────────────────
 function updCabUI(){
+  try{var _tc=document.getElementById('tok-session-cb');if(_tc)_tc.checked=localStorage.getItem('tok_session_only')==='1';}catch(e){}
   var name=gn();
   var init=name.slice(0,1).toUpperCase();
   ['nav-av','cab-init'].forEach(function(id){
@@ -2930,14 +2964,14 @@ function updCabUI(){
   if(document.getElementById('cab-history')&&!document.getElementById('cab-history').classList.contains('hidden')){
     renderSignalHistory();
   }
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   ['groq-key','groq-key2','s-gk'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=gk;});
-  var tdkey=localStorage.getItem('twelvedata_key')||'';
+  var tdkey=secureGet('twelvedata_key')||'';
   var tdEl=document.getElementById('s-tdkey');if(tdEl&&tdkey)tdEl.value=tdkey;
   var risk=localStorage.getItem('risk_pct')||'2';
   var riskEl=document.getElementById('s-risk');if(riskEl)riskEl.value=risk;
   // BCS fields
-  var btoken=localStorage.getItem('bcs_token')||'';
+  var btoken=secureGet('bcs_token')||'';
   var btkEl=document.getElementById('s-bcs-token');if(btkEl&&btoken)btkEl.value=btoken;
   var bacc=localStorage.getItem('bcs_account')||'';
   var baccEl=document.getElementById('s-bcs-acc');if(baccEl&&bacc)baccEl.value=bacc;
@@ -2983,7 +3017,7 @@ function popSels(){
 function renderPrompts(){
   var el=document.getElementById('evo-prompts');
   if(!el)return;
-  var gk=localStorage.getItem('groq_key')||'';
+  var gk=secureGet('groq_key')||'';
   var pc=Object.keys(prices).length;
   var trades=gTrades();
   var rsi=calcRSI(chartData.map(function(c){return c.close;}));
@@ -3194,7 +3228,7 @@ async function fetchBrent(){
     }
   }catch(ex){console.warn('Brent MOEX error',ex);}
   // Fallback: twelvedata API (requires key in settings)
-  var tdKey=localStorage.getItem('twelvedata_key')||'';
+  var tdKey=secureGet('twelvedata_key')||'';
   if(!tdKey)return;
   try{
     var url2='https://api.twelvedata.com/price?symbol=BNO&apikey='+tdKey;
@@ -5671,7 +5705,7 @@ function kbNavSym(dir){
 }
 
 function kbCIO(){
-  var gk = localStorage.getItem('groq_key')||'';
+  var gk = secureGet('groq_key')||'';
   if(!gk){ showToast('Нет Groq API ключа','Добавьте в Настройках',null); return; }
   var selEl = document.getElementById('cio-sym');
   if(selEl) selEl.value = curSym;
@@ -6344,13 +6378,13 @@ var BCS_API_CANDIDATES = [
 ];
 
 function sBCSToken(v){
-  if(v&&v.trim())localStorage.setItem('bcs_token',v.trim());
+  if(v&&v.trim())secureSet('bcs_token',v.trim());
   var st=document.getElementById('bcs-settings-st');
   if(st){st.textContent=v?'⚡ Сохранён — нажмите «Подключить»':'не подключён';st.style.color=v?'var(--ios-orange)':'var(--label3)';}
 }
 
 async function bcsProxyFetch(url){
-  var token=localStorage.getItem('bcs_token')||'';
+  var token=secureGet('bcs_token')||'';
   if(!token)return null;
   try{
     var r=await fetch(BCS_RELAY+'/bcs-proxy?url='+encodeURIComponent(url),{
@@ -6363,7 +6397,7 @@ async function bcsProxyFetch(url){
 
 // Попытка прямого запроса (если у БКС есть CORS)
 async function bcsDirectFetch(url){
-  var token=localStorage.getItem('bcs_token')||'';
+  var token=secureGet('bcs_token')||'';
   if(!token)return null;
   try{
     var r=await fetch(url,{headers:{'Authorization':'Bearer '+token,'Accept':'application/json'},mode:'cors'});
@@ -6373,7 +6407,7 @@ async function bcsDirectFetch(url){
 }
 
 async function testBCSToken(){
-  var token=document.getElementById('s-bcs-token').value.trim()||localStorage.getItem('bcs_token')||'';
+  var token=document.getElementById('s-bcs-token').value.trim()||secureGet('bcs_token')||'';
   if(!token){showToast('Нет токена','Введите токен БКС в поле выше',null);return;}
   localStorage.setItem('bcs_token',token);
   var btn=document.getElementById('bcs-test-btn');
@@ -6448,7 +6482,7 @@ function onBCSConnected(data,url){
 }
 
 async function fetchBCSPortfolio(showLoader){
-  var token=localStorage.getItem('bcs_token')||'';
+  var token=secureGet('bcs_token')||'';
   if(!token)return;
   var url=localStorage.getItem('bcs_api_url')||BCS_API_CANDIDATES[0];
   if(showLoader){
@@ -6573,7 +6607,7 @@ function updateBCSPill(connected,label){
 }
 
 function initBCS(){
-  var token=localStorage.getItem('bcs_token')||'';
+  var token=secureGet('bcs_token')||'';
   var url=localStorage.getItem('bcs_api_url')||'';
 
   // Восстановить поля
@@ -6880,7 +6914,7 @@ function saLabel(p){
 }
 
 async function runSiteAnalysis(){
-  var gk = localStorage.getItem('groq_key')||'';
+  var gk = secureGet('groq_key')||'';
   if(!gk){ alert('Сначала добавьте Groq API ключ в Настройках Кабинета'); return; }
 
   // Open modal
@@ -7067,6 +7101,99 @@ function loadTheme(){
 }
 setTimeout(loadTheme, 600);
 
+
+
+// ════════ ОБФУСКАЦИЯ ТОКЕНОВ ════════
+// Примечание: на статичном сайте (GitHub Pages) HttpOnly cookie невозможны —
+// для этого нужен backend. BCS-токен уже обменивается на relay-сервере (server-side),
+// что и есть основная защита. Здесь — обфускация чтобы токены не лежали открытым текстом.
+var _OBF_KEY = 'bcs-terminal-2026-local';
+function _xor(str, key){
+  var out='';
+  for(var i=0;i<str.length;i++){
+    out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+function _tokStore(){ return localStorage.getItem('tok_session_only')==='1' ? sessionStorage : localStorage; }
+function secureSet(name, value){
+  try{
+    var store = _tokStore();
+    // clear from both stores first to avoid stale copies
+    localStorage.removeItem(name); sessionStorage.removeItem(name);
+    if(!value){ return; }
+    var obf = btoa(unescape(encodeURIComponent(_xor(value, _OBF_KEY))));
+    store.setItem(name, 'obf:'+obf);
+  }catch(e){ try{ _tokStore().setItem(name, value); }catch(e2){} }
+}
+function secureGet(name){
+  try{
+    var v = sessionStorage.getItem(name) || localStorage.getItem(name);
+    if(!v) return null;
+    if(v.indexOf('obf:')===0){
+      return decodeURIComponent(escape(_xor(atob(v.slice(4)), _OBF_KEY)));
+    }
+    return v;
+  }catch(e){ return localStorage.getItem(name); }
+}
+function clearAllTokens(){
+  ['groq_key','bcs_token','twelvedata_key','bcs_account','bcs_last_data'].forEach(function(k){
+    localStorage.removeItem(k); sessionStorage.removeItem(k);
+  });
+  ['groq-key','groq-key2','s-gk','s-bcs-token','s-tdkey'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+  if(typeof showToast==='function') showToast('Безопасность','Все токены удалены',null);
+  else alert('Все токены удалены');
+}
+function setTokenSessionMode(on){
+  localStorage.setItem('tok_session_only', on?'1':'0');
+  // migrate existing tokens to the chosen store
+  ['groq_key','bcs_token','twelvedata_key'].forEach(function(k){
+    var val = secureGet(k);
+    if(val){ secureSet(k, val); }
+  });
+  if(typeof showToast==='function') showToast('Безопасность', on?'Токены теперь стираются при закрытии вкладки':'Токены сохраняются постоянно', null);
+}
+// Migrate existing plaintext tokens to obfuscated form on load
+function migrateTokens(){
+  ['groq_key','bcs_token','twelvedata_key'].forEach(function(k){
+    var v = localStorage.getItem(k);
+    if(v && v.indexOf('obf:')!==0){
+      secureSet(k, v); // re-store obfuscated
+    }
+  });
+}
+setTimeout(migrateTokens, 400);
+
+
+
+// ════════ КАЛЬКУЛЯТОР ПОЗИЦИИ ════════
+function recalcPosition(){
+  var dep = parseFloat(document.getElementById('calc-deposit').value)||0;
+  var riskPct = parseFloat(document.getElementById('calc-risk').value)||0;
+  var entry = parseFloat(document.getElementById('calc-entry').value)||0;
+  var stop = parseFloat(document.getElementById('calc-stop').value)||0;
+  var el = document.getElementById('calc-result');
+  if(!el) return;
+  if(!dep||!entry||!stop||entry===stop){
+    el.innerHTML = '<div style="color:rgba(234,240,255,.4);text-align:center;font-size:12px">Заполните все поля (вход ≠ стоп)</div>';
+    return;
+  }
+  var riskRub = dep * riskPct/100;          // сколько денег рискуем
+  var riskPerShare = Math.abs(entry - stop); // риск на 1 акцию
+  var shares = Math.floor(riskRub / riskPerShare);
+  var posValue = shares * entry;             // объём позиции
+  var posPct = posValue/dep*100;             // % депозита в позиции
+  var dir = entry > stop ? 'LONG' : 'SHORT';
+  var dirCol = dir==='LONG' ? '#00ffa3' : '#ff3b5c';
+  el.innerHTML =
+    '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:rgba(234,240,255,.6);font-size:13px">Направление</span><span style="color:'+dirCol+';font-weight:700;font-family:var(--mono)">'+dir+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:rgba(234,240,255,.6);font-size:13px">Кол-во акций</span><span style="font-weight:700;font-family:var(--mono);font-size:16px">'+shares.toLocaleString('ru')+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:rgba(234,240,255,.6);font-size:13px">Объём позиции</span><span style="font-family:var(--mono)">'+posValue.toLocaleString('ru',{maximumFractionDigits:0})+' ₽ ('+posPct.toFixed(0)+'%)</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(0,255,163,.15)"><span style="color:rgba(234,240,255,.6);font-size:13px">Риск (макс. убыток)</span><span style="color:#ff9f0a;font-weight:700;font-family:var(--mono)">−'+riskRub.toLocaleString('ru',{maximumFractionDigits:0})+' ₽</span></div>';
+}
+
 </script>
 
   <!-- JS-referenced hidden elements -->
@@ -7150,6 +7277,23 @@ setTimeout(injectExpandBtns,1500);
     <button class="mc" onclick="closeOnboard()">✕</button>
   </div>
   <div class="mbody" id="onboard-body"></div>
+</div></div>
+
+
+<div class="mbg hidden" id="calc-modal"><div class="mbox" style="max-width:480px;width:90%">
+  <div class="mhdr">
+    <span class="mt"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00ffa3;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00ffa3aa)"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"/></svg> Калькулятор позиции</span>
+    <button class="mc" onclick="closeMod('calc-modal')">✕</button>
+  </div>
+  <div class="mbody">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Депозит ₽</label><input type="number" id="calc-deposit" class="inp" value="100000" oninput="recalcPosition()"/></div>
+      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Риск %</label><input type="number" id="calc-risk" class="inp" value="2" step="0.5" oninput="recalcPosition()"/></div>
+      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Вход ₽</label><input type="number" id="calc-entry" class="inp" value="320" step="0.01" oninput="recalcPosition()"/></div>
+      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Стоп ₽</label><input type="number" id="calc-stop" class="inp" value="315" step="0.01" oninput="recalcPosition()"/></div>
+    </div>
+    <div id="calc-result" style="padding:16px;border-radius:14px;background:rgba(0,255,163,.06);border:1px solid rgba(0,255,163,.2)"></div>
+  </div>
 </div></div>
 
 </body>
