@@ -7085,19 +7085,23 @@ function setAccent(name){
   try{ if(typeof updCH==='function') updCH(); }catch(e){}
 }
 function setFontSize(sz){
-  var map = {s:'14px', m:'15px', l:'16.5px'};
-  document.documentElement.style.fontSize = map[sz]||'15px';
-  document.body.style.fontSize = map[sz]||'15px';
+  // Reset any previously-broken inline sizing
+  document.documentElement.style.fontSize = '';
+  // Scale ONLY body text, never the html root (avoids layout collapse)
+  var map = {s:'13px', m:'14px', l:'15.5px'};
+  document.body.style.fontSize = map[sz]||'14px';
   localStorage.setItem('font_size', sz);
   document.querySelectorAll('.fsz-btn').forEach(function(b){
     b.style.borderColor = (b.getAttribute('onclick').indexOf("'"+sz+"'")>=0)?'rgba(0,229,255,.5)':'rgba(123,92,255,.25)';
   });
 }
 function loadTheme(){
+  // Clear any stale broken root font-size from older builds
+  document.documentElement.style.fontSize = '';
   var a = localStorage.getItem('accent');
   if(a && _accents[a]) setAccent(a);
   var fs = localStorage.getItem('font_size');
-  if(fs) setFontSize(fs);
+  if(fs && ['s','m','l'].indexOf(fs)>=0) setFontSize(fs);
 }
 setTimeout(loadTheme, 600);
 
