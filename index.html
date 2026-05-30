@@ -1102,6 +1102,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <button onclick="document.getElementById('calc-modal').classList.remove('hidden');recalcPosition()" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(0,255,163,.3);background:rgba(0,255,163,.08);color:#00ffa3;cursor:pointer;font-weight:600;font-family:var(--sans);font-size:13px">
               Калькулятор позиции
             </button>
+            <button onclick="openTraderTools()" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.08);color:#00e5ff;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sans);margin-top:10px">Инструменты трейдера</button>
           </div>
           <div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.2)">
             <div style="font-size:13px;font-weight:600;color:var(--cyan,#00e5ff);margin-bottom:4px">AI-анализ сайта</div>
@@ -7209,6 +7210,144 @@ function recalcPosition(){
     '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(0,255,163,.15)"><span style="color:rgba(234,240,255,.6);font-size:13px">Риск (макс. убыток)</span><span style="color:#ff9f0a;font-weight:700;font-family:var(--mono)">−'+riskRub.toLocaleString('ru',{maximumFractionDigits:0})+' ₽</span></div>';
 }
 
+
+
+// ════════ ИНСТРУМЕНТЫ ТРЕЙДЕРА ════════
+var _ttTab = 'rr';
+function openTraderTools(){
+  var m = document.getElementById('tools-modal');
+  if(m){ m.classList.remove('hidden'); switchTT('rr'); }
+}
+function switchTT(tab){
+  _ttTab = tab;
+  document.querySelectorAll('[data-tt]').forEach(function(b){
+    b.classList.toggle('on', b.dataset.tt===tab);
+  });
+  if(tab==='rr') renderRRTool();
+  else if(tab==='div') renderDivTool();
+  else if(tab==='goal') renderGoalTool();
+}
+
+function _ttInput(id,label,val,suf){
+  return '<div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">'+label+'</label>'+
+    '<div style="display:flex;align-items:center;gap:6px"><input id="'+id+'" value="'+val+'" oninput="ttRecalc()" '+
+    'style="flex:1;background:rgba(123,92,255,.06);border:1px solid rgba(123,92,255,.2);border-radius:10px;padding:9px 11px;color:#fff;font-family:var(--mono);font-size:14px;outline:none"/>'+
+    (suf?'<span style="font-size:12px;color:rgba(234,240,255,.4)">'+suf+'</span>':'')+'</div></div>';
+}
+
+// ── 1. Risk/Reward калькулятор ──
+function renderRRTool(){
+  var el=document.getElementById('tt-content');
+  el.innerHTML =
+    '<div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:14px">Рассчитайте соотношение риск/прибыль и потенциал сделки</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
+      _ttInput('rr-entry','Вход (₽)','100','')+
+      _ttInput('rr-stop','Стоп (₽)','97','')+
+      _ttInput('rr-target','Цель (₽)','110','')+
+      _ttInput('rr-size','Объём (₽)','10000','')+
+    '</div>'+
+    '<div id="rr-result"></div>';
+  ttRecalc();
+}
+
+// ── 2. Дивидендный калькулятор ──
+function renderDivTool(){
+  var el=document.getElementById('tt-content');
+  var opts = Object.keys(ST).filter(function(s){return ST[s].div>0;})
+    .sort(function(a,b){return ST[b].div-ST[a].div;})
+    .map(function(s){return '<option value="'+s+'">'+s+' — '+ST[s].n+' ('+ST[s].div+'%)</option>';}).join('');
+  el.innerHTML =
+    '<div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:14px">Расчёт дивидендного дохода (по последним данным)</div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Акция</label>'+
+      '<select id="dv-sym" onchange="ttRecalc()" style="width:100%;background:rgba(123,92,255,.06);border:1px solid rgba(123,92,255,.2);border-radius:10px;padding:9px 11px;color:#fff;font-size:13px;outline:none">'+opts+'</select></div>'+
+    '<div style="margin-bottom:12px">'+_ttInput('dv-amount','Сумма вложений (₽)','100000','')+'</div>'+
+    '<div id="dv-result"></div>';
+  ttRecalc();
+}
+
+// ── 3. Цель депозита (compound) ──
+function renderGoalTool(){
+  var el=document.getElementById('tt-content');
+  el.innerHTML =
+    '<div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:14px">За сколько достигнете цели при заданной доходности</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
+      _ttInput('gl-start','Старт (₽)','100000','')+
+      _ttInput('gl-goal','Цель (₽)','1000000','')+
+      _ttInput('gl-monthly','% в месяц','5','%')+
+      _ttInput('gl-deposit','Довнос/мес (₽)','0','')+
+    '</div>'+
+    '<div id="gl-result"></div>';
+  ttRecalc();
+}
+
+function _num(id){ var e=document.getElementById(id); return e?parseFloat(e.value.replace(',','.'))||0:0; }
+
+function ttRecalc(){
+  if(_ttTab==='rr'){
+    var en=_num('rr-entry'), st=_num('rr-stop'), tg=_num('rr-target'), sz=_num('rr-size');
+    var out=document.getElementById('rr-result'); if(!out)return;
+    if(!en||!st||!tg){ out.innerHTML=''; return; }
+    var isLong = tg>en;
+    var risk = Math.abs(en-st), reward = Math.abs(tg-en);
+    var rr = risk>0 ? reward/risk : 0;
+    var shares = sz>0 ? Math.floor(sz/en) : 0;
+    var riskRub = shares*risk, rewardRub = shares*reward;
+    var riskPct = en>0 ? risk/en*100 : 0, rewardPct = en>0 ? reward/en*100 : 0;
+    var col = rr>=2 ? '#00ffa3' : rr>=1 ? '#ffb800' : '#ff3b5c';
+    out.innerHTML =
+      '<div style="background:rgba(123,92,255,.05);border:1px solid rgba(123,92,255,.15);border-radius:14px;padding:16px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+        '<span style="font-size:13px;color:rgba(234,240,255,.7)">Соотношение R:R</span>'+
+        '<span style="font-family:var(--mono);font-size:22px;font-weight:700;color:'+col+'">1 : '+rr.toFixed(2)+'</span></div>'+
+      '<div style="font-size:12px;color:'+(isLong?'#00ffa3':'#ff3b5c')+';margin-bottom:12px">Направление: '+(isLong?'LONG ▲':'SHORT ▼')+' · '+shares+' шт</div>'+
+      _ttRow('Риск','−'+riskRub.toFixed(0)+' ₽ ('+riskPct.toFixed(1)+'%)','#ff3b5c')+
+      _ttRow('Прибыль','+'+rewardRub.toFixed(0)+' ₽ ('+rewardPct.toFixed(1)+'%)','#00ffa3')+
+      _ttRow('Безубыток','при '+rr.toFixed(2)+' R нужно '+(rr>0?(100/(1+rr)).toFixed(0):'—')+'% точности','rgba(234,240,255,.7)')+
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(123,92,255,.15);font-size:11px;color:rgba(234,240,255,.45)">'+
+        (rr>=2?'Отличное соотношение — потенциал оправдывает риск':rr>=1?'Приемлемо, но ищите setup получше':'Риск выше прибыли — лучше пропустить')+'</div></div>';
+  }
+  else if(_ttTab==='div'){
+    var sym=document.getElementById('dv-sym'); if(!sym)return;
+    var s=ST[sym.value]||{}; var amt=_num('dv-amount');
+    var out=document.getElementById('dv-result'); if(!out)return;
+    var px = (prices[sym.value]&&prices[sym.value].p)||0;
+    var yearly = amt*(s.div||0)/100;
+    var shares = px>0 ? Math.floor(amt/px) : 0;
+    out.innerHTML =
+      '<div style="background:rgba(0,255,163,.04);border:1px solid rgba(0,255,163,.15);border-radius:14px;padding:16px">'+
+      _ttRow('Див. доходность',(s.div||0)+'% годовых','#00ffa3')+
+      (px>0?_ttRow('Цена акции',px.toFixed(2)+' ₽ · '+shares+' шт','rgba(234,240,255,.7)'):'')+
+      _ttRow('Доход в год','+'+yearly.toFixed(0)+' ₽','#00ffa3')+
+      _ttRow('Доход в месяц','≈ '+(yearly/12).toFixed(0)+' ₽','rgba(234,240,255,.7)')+
+      _ttRow('P/E · ROE',(s.pe||'—')+' · '+(s.roe||'—')+'%','rgba(234,240,255,.7)')+
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,255,163,.15);font-size:11px;color:rgba(234,240,255,.45)">Дивиденды не гарантированы и зависят от решения компании</div></div>';
+  }
+  else if(_ttTab==='goal'){
+    var start=_num('gl-start'), goal=_num('gl-goal'), rate=_num('gl-monthly')/100, dep=_num('gl-deposit');
+    var out=document.getElementById('gl-result'); if(!out)return;
+    if(!start||!goal||goal<=start){ out.innerHTML='<div style="color:rgba(234,240,255,.4);font-size:12px;padding:14px;text-align:center">Цель должна быть больше старта</div>'; return; }
+    var bal=start, months=0, maxM=600;
+    while(bal<goal && months<maxM){ bal=bal*(1+rate)+dep; months++; }
+    var reached = months<maxM;
+    var years=Math.floor(months/12), rem=months%12;
+    var col = months<=24?'#00ffa3':months<=60?'#ffb800':'#ff3b5c';
+    out.innerHTML =
+      '<div style="background:rgba(123,92,255,.05);border:1px solid rgba(123,92,255,.15);border-radius:14px;padding:16px">'+
+      '<div style="text-align:center;margin-bottom:14px">'+
+        '<div style="font-family:var(--mono);font-size:26px;font-weight:700;color:'+col+'">'+(reached?(years>0?years+' г '+(rem>0?rem+' мес':''):months+' мес'):'> 50 лет')+'</div>'+
+        '<div style="font-size:11px;color:rgba(234,240,255,.5);margin-top:4px">до цели '+goal.toLocaleString('ru')+' ₽</div></div>'+
+      (reached?_ttRow('Всего месяцев',months+'','rgba(234,240,255,.7)')+
+       _ttRow('Итоговый баланс',bal.toFixed(0)+' ₽','#00ffa3')+
+       _ttRow('Рост капитала','×'+(bal/start).toFixed(1),'#00e5ff'):'')+
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(123,92,255,.15);font-size:11px;color:rgba(234,240,255,.45)">'+(rate>0.1?'⚠️ '+(rate*100).toFixed(0)+'% в месяц — крайне агрессивно и нереалистично на дистанции':'Сложный процент — реинвестирование прибыли')+'</div></div>';
+  }
+}
+function _ttRow(label,val,col){
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px">'+
+    '<span style="color:rgba(234,240,255,.6)">'+label+'</span>'+
+    '<span style="font-family:var(--mono);color:'+(col||'#fff')+';font-weight:600">'+val+'</span></div>';
+}
+
 </script>
 
   <!-- JS-referenced hidden elements -->
@@ -7308,6 +7447,22 @@ setTimeout(injectExpandBtns,1500);
       <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Стоп ₽</label><input type="number" id="calc-stop" class="inp" value="315" step="0.01" oninput="recalcPosition()"/></div>
     </div>
     <div id="calc-result" style="padding:16px;border-radius:14px;background:rgba(0,255,163,.06);border:1px solid rgba(0,255,163,.2)"></div>
+  </div>
+</div></div>
+
+
+<div class="mbg hidden" id="tools-modal"><div class="mbox" style="max-width:560px;width:92%">
+  <div class="mhdr">
+    <span class="mt"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00e5ffaa)"><path d="M14 7l3 3M5 19l9-9M5 19l-2 2M5 19H3v-2M17.5 6.5a2.1 2.1 0 0 0-3-3L13 5l3 3z"/></svg> Инструменты трейдера</span>
+    <button class="mc" onclick="closeMod('tools-modal')">✕</button>
+  </div>
+  <div class="mbody">
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="sa-tab on" data-tt="rr" onclick="switchTT('rr')">Риск/Прибыль</button>
+      <button class="sa-tab" data-tt="div" onclick="switchTT('div')">Дивиденды</button>
+      <button class="sa-tab" data-tt="goal" onclick="switchTT('goal')">Цель депозита</button>
+    </div>
+    <div id="tt-content" style="font-size:13px"></div>
   </div>
 </div></div>
 
