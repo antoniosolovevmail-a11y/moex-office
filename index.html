@@ -557,7 +557,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
 }
 
 /* Page backgrounds transparent so body gradient shows */
-#page-cab,#page-ag{background:transparent !important;}
+#page-cab,#page-ag{background:transparent !important;overflow-y:auto !important;display:block !important;height:100% !important}
 .cab-layout{padding:20px}
 
 /* Glow on CIO run button */
@@ -659,6 +659,18 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   backdrop-filter:blur(4px);display:none}
 .expand-backdrop.on{display:block}
 
+
+.sa-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;
+  background:rgba(123,92,255,.06);border:1px solid transparent;color:rgba(234,240,255,.55);
+  font-family:var(--sans);transition:all .2s}
+.sa-tab:hover{color:rgba(234,240,255,.9);background:rgba(123,92,255,.1)}
+.sa-tab.on{color:#00e5ff;background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.3);
+  box-shadow:0 0 14px rgba(0,229,255,.12)}
+.sa-section{margin-bottom:18px}
+.sa-section h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#00e5ff;margin:0 0 6px}
+.sa-rating{display:inline-block;padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;margin-left:8px}
+
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -753,7 +765,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <select class="cio-sel" id="cio-sym"></select>
             <button class="cio-run-btn" id="cio-btn" onclick="runCIO()"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ</button>
           </div>
-          <div style="display:flex;gap:5px">
+          <div style="display:none">
             <input type="password" class="cio-key" id="groq-key" placeholder="Groq API ключ (gsk_...)" oninput="sGK(this.value)" style="flex:1"/>
             <button onclick="toggleKeyVis('groq-key',this)" style="background:var(--fill2);border:0.5px solid var(--sep);color:var(--label3);border-radius:var(--r2);padding:0 8px;font-size:13px;cursor:pointer;flex-shrink:0" title="Показать/скрыть"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
           </div>
@@ -911,7 +923,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div class="page-sec-title">CIO анализ</div>
         <select class="sel" id="cio-sym2" style="margin-bottom:8px"></select>
         <button class="btn p" id="cio-btn2" onclick="runCIO2()" style="width:100%;justify-content:center;margin-bottom:8px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ с TA</button>
-        <div style="display:flex;gap:5px;margin-bottom:8px">
+        <div style="display:none">
           <input type="password" class="inp" id="groq-key2" placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
           <button onclick="toggleKeyVis('groq-key2',this)" class="btn" style="padding:0 9px;font-size:13px;flex-shrink:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
         </div>
@@ -933,7 +945,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   </div>
 
   <!-- ══════════════ CABINET PAGE ══════════════ -->
-  <div class="page hidden" id="page-cab" style="overflow-y:auto;background:var(--bg0)">
+  <div class="page hidden" id="page-cab" style="overflow-y:auto;display:block;background:var(--bg0)">
     <div class="cab-layout">
       <div>
         <div class="ios-card">
@@ -1056,7 +1068,15 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               <div style="display:flex;flex-direction:column;gap:4px"><label class="fl">Авто-агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
             </div>
             <button class="btn p" onclick="saveSettings()" style="width:100%;justify-content:center;padding:11px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00ffa3;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00ffa3aa)"><path d="M5 3h12l4 4v14H5zM8 3v6h8V3M8 21v-7h8v7"/></svg> Сохранить настройки</button>
-            <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
+            <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,229,255,.2)">
+            <div style="font-size:13px;font-weight:600;color:var(--cyan,#00e5ff);margin-bottom:4px">AI-анализ сайта</div>
+            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Оценка платформы с 4 точек зрения: посетитель, программист, дизайнер, маркетолог</div>
+            <button class="sb-primary" onclick="runSiteAnalysis()" style="width:100%;padding:12px;border-radius:12px;border:none;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#00e5ff,#7b5cff);color:#fff;box-shadow:0 0 24px rgba(0,229,255,.3)">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              Анализировать сайт
+            </button>
+          </div>
+          <div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
           </div>
         </div>
       </div>
@@ -1064,7 +1084,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   </div>
 
   <!-- ══════════════ AGENTS PAGE ══════════════ -->
-  <div class="page hidden" id="page-ag" style="overflow-y:auto">
+  <div class="page hidden" id="page-ag" style="overflow-y:auto;overflow-x:hidden;display:block;height:100%;padding-bottom:40px">
     <div id="ag-full-wrap" style="max-width:1400px;margin:0 auto;padding:20px">
       <!-- Stats row -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="ag-stats-row"></div>
@@ -1110,7 +1130,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   </div>
 
   <!-- ══════════════ MARKETS PAGE ══════════════ -->
-  <div class="page hidden" id="page-markets" style="overflow-y:auto">
+  <div class="page hidden" id="page-markets" style="overflow-y:auto;display:block">
     <div class="mkt-grid" id="mkt-content">
       <!-- Акции МосБиржи -->
       <div class="mkt-panel" id="mkt-stocks">
@@ -1164,7 +1184,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   </div>
 
   <!-- ══════════════ PORTFOLIO PAGE ══════════════ -->
-  <div class="page hidden" id="page-portfolio" style="overflow-y:auto">
+  <div class="page hidden" id="page-portfolio" style="overflow-y:auto;display:block">
     <!-- Summary stats -->
     <div class="pf-summary" id="pf-summary-row"></div>
     <!-- Connect banner (shown if no BCS) -->
@@ -6772,6 +6792,128 @@ function renderPfAgentTrades(){
 // Инициализация BCS при запуске
 setTimeout(initBCS, 1000);
 
+
+
+// ════════ AI-АНАЛИЗ САЙТА (4 точки зрения) ════════
+var _saData = {visitor:null, dev:null, design:null, market:null};
+var _saLoading = false;
+
+function switchSATab(p){
+  document.querySelectorAll('.sa-tab').forEach(function(t){
+    t.classList.toggle('on', t.dataset.p===p);
+  });
+  renderSAContent(p);
+}
+
+function renderSAContent(p){
+  var el = document.getElementById('sa-content');
+  if(!el) return;
+  if(_saLoading && !_saData[p]){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(234,240,255,.4)">'+
+      '<div style="display:inline-block;width:28px;height:28px;border:2px solid rgba(0,229,255,.2);border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>'+
+      '<div style="margin-top:14px;font-size:12px">Анализирую с точки зрения: '+saLabel(p)+'...</div></div>';
+    return;
+  }
+  if(_saData[p]){
+    el.innerHTML = _saData[p];
+  } else {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(234,240,255,.4);font-size:12px">Нет данных</div>';
+  }
+}
+
+function saLabel(p){
+  return {visitor:'Посетитель',dev:'Программист',design:'Дизайнер',market:'Маркетолог'}[p]||p;
+}
+
+async function runSiteAnalysis(){
+  var gk = localStorage.getItem('groq_key')||'';
+  if(!gk){ alert('Сначала добавьте Groq API ключ в Настройках Кабинета'); return; }
+
+  // Open modal
+  var modal = document.getElementById('siteanalysis-modal');
+  if(modal) modal.classList.remove('hidden');
+  _saData = {visitor:null, dev:null, design:null, market:null};
+  _saLoading = true;
+  switchSATab('visitor');
+
+  // Gather site context
+  var ctx = gatherSiteContext();
+
+  var perspectives = [
+    {key:'visitor', role:'обычный посетитель / трейдер-пользователь',
+     focus:'удобство, понятность интерфейса, скорость восприятия информации, что цепляет и что раздражает, насколько легко найти нужное'},
+    {key:'dev', role:'senior frontend-разработчик',
+     focus:'архитектура, производительность, чистота кода, потенциальные баги, безопасность (токены в localStorage), масштабируемость, технический долг'},
+    {key:'design', role:'UI/UX дизайнер',
+     focus:'визуальная иерархия, типографика, цвета, отступы, консистентность, современность дизайна (неон/глассморфизм), что выглядит дёшево, что премиально'},
+    {key:'market', role:'продуктовый маркетолог финтех-стартапа',
+     focus:'ценностное предложение, кому продукт нужен, как монетизировать, конкурентные преимущества, что добавить для роста, целевая аудитория'}
+  ];
+
+  // Run all 4 in parallel
+  await Promise.all(perspectives.map(async function(persp){
+    try{
+      var payload = {
+        model:'llama-3.3-70b-versatile',
+        temperature:0.7,
+        max_tokens:900,
+        messages:[
+          {role:'system', content:'Ты — '+persp.role+'. Анализируешь торговый терминал BCS (веб-приложение для трейдинга на Московской бирже с AI-агентами, сигналами CIO, графиками). Дай честный экспертный анализ на русском. Фокус: '+persp.focus+'. Формат ответа строго: 3 блока с заголовками "СИЛЬНЫЕ СТОРОНЫ", "СЛАБЫЕ СТОРОНЫ", "РЕКОМЕНДАЦИИ" — каждый по 3-4 пункта через дефис. В конце строка "ОЦЕНКА: X/10". Без вступлений, сразу по делу, конкретно.'},
+          {role:'user', content:'Вот описание интерфейса и функций сайта:\n\n'+ctx+'\n\nДай свой профессиональный анализ.'}
+        ]
+      };
+      var r = await groqFetch(payload);
+      var d = await r.json();
+      var txt = (d.choices && d.choices[0] && d.choices[0].message.content) || 'Не удалось получить анализ.';
+      _saData[persp.key] = formatSAText(txt);
+    }catch(ex){
+      _saData[persp.key] = '<div style="color:#ff3b5c;padding:20px;text-align:center">Ошибка: '+ex.message+'</div>';
+    }
+    // Re-render if this tab is active
+    var active = document.querySelector('.sa-tab.on');
+    if(active && active.dataset.p===persp.key) renderSAContent(persp.key);
+  }));
+
+  _saLoading = false;
+  var active = document.querySelector('.sa-tab.on');
+  if(active) renderSAContent(active.dataset.p);
+}
+
+function gatherSiteContext(){
+  var lines = [];
+  lines.push('Название: BCS Terminal — торговый терминал для Московской биржи (MOEX).');
+  lines.push('Стиль: тёмная тема, футуристичный неон + глассморфизм, цвета cyan/magenta/violet, шрифты Sora + JetBrains Mono.');
+  lines.push('Вкладки: Терминал (график + сигнал CIO), Сигналы (скан, паттерны, новости), Рынки (акции/валюты/фьючерсы/ОФЗ), Портфель, Агенты (14 AI-агентов с обучением), Кабинет (настройки, журнал).');
+  lines.push('Ключевые функции: график свечной/линейный с 13 таймфреймами, индикаторы RSI/MACD/объём, AI-сигналы CIO (вход/стоп/цель/R:R), консенсус агентов, технические паттерны, реальные данные MOEX, интеграция BCS Trade API для real-time, обучение агентов на сделках.');
+  // Live numbers
+  try{
+    var iq = document.getElementById('ag-iq-lbl');
+    if(iq) lines.push('Текущий глобальный IQ агентов: '+iq.textContent);
+    var sig = document.getElementById('sig-cnt');
+    if(sig) lines.push('Активных сигналов: '+sig.textContent);
+  }catch(e){}
+  return lines.join('\n');
+}
+
+function formatSAText(txt){
+  // Convert the structured text to neon HTML
+  var html = txt
+    .replace(/СИЛЬНЫЕ СТОРОНЫ/gi, '<div class="sa-section"><h4 style="color:#00ffa3">Сильные стороны</h4>')
+    .replace(/СЛАБЫЕ СТОРОНЫ/gi, '</div><div class="sa-section"><h4 style="color:#ff9f0a">Слабые стороны</h4>')
+    .replace(/РЕКОМЕНДАЦИИ/gi, '</div><div class="sa-section"><h4 style="color:#00e5ff">Рекомендации</h4>');
+  // Rating
+  html = html.replace(/ОЦЕНКА:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i, function(_,n){
+    var num=parseFloat(n);
+    var col = num>=7?'#00ffa3':num>=5?'#ffb800':'#ff3b5c';
+    return '</div><div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(123,92,255,.18);font-size:14px;font-weight:600">Оценка<span class="sa-rating" style="background:'+col+'22;color:'+col+'">'+n+'/10</span></div>';
+  });
+  // Bullet dashes → styled
+  html = html.replace(/^[\s]*[-–—•]\s*(.+)$/gm, '<div style="padding:3px 0 3px 14px;position:relative"><span style="position:absolute;left:0;color:#00e5ff">›</span>$1</div>');
+  // Close any open section
+  if(html.indexOf('sa-section')>=0 && !html.trim().endsWith('</div>')) html += '</div>';
+  return html;
+}
+
 </script>
 
   <!-- JS-referenced hidden elements -->
@@ -6830,6 +6972,23 @@ function injectExpandBtns(){
 }
 setTimeout(injectExpandBtns,1500);
 </script>
+
+
+<div class="mbg hidden" id="siteanalysis-modal"><div class="mbox" style="max-width:680px;width:90%">
+  <div class="mhdr">
+    <span class="mt"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00e5ffaa)"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> AI-анализ сайта</span>
+    <button class="mc" onclick="closeMod('siteanalysis-modal')">✕</button>
+  </div>
+  <div class="mbody">
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="sa-tabs">
+      <button class="sa-tab on" data-p="visitor" onclick="switchSATab('visitor')">Посетитель</button>
+      <button class="sa-tab" data-p="dev" onclick="switchSATab('dev')">Программист</button>
+      <button class="sa-tab" data-p="design" onclick="switchSATab('design')">Дизайнер</button>
+      <button class="sa-tab" data-p="market" onclick="switchSATab('market')">Маркетолог</button>
+    </div>
+    <div id="sa-content" style="font-size:13px;line-height:1.7;color:rgba(234,240,255,.85);min-height:200px;max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div></div>
 
 </body>
 </html>
