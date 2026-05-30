@@ -1516,40 +1516,41 @@ const AGs=[
 function lAS(){
   try{
     const s=JSON.parse(localStorage.getItem('ag_s')||'{}');
-    AGs.forEach(a=>{if(s[a.id]){Object.assign(a.sk,s[a.id].sk||{});a.tr=s[a.id].tr||0;a.wi=s[a.id].wi||0;}});
+    AGs.forEach(a=>{if(s[a.id]){Object.assign(a.sk,s[a.id].sk||{});a.tr=s[a.id].tr||0;a.wi=s[a.id].wi||0;a.streak=s[a.id].streak||0;}});
     agTrades=JSON.parse(localStorage.getItem('ag_t')||'[]');
   }catch(e){}
 }
 function sAS(){
   const s={};
-  AGs.forEach(a=>{s[a.id]={sk:a.sk,tr:a.tr,wi:a.wi};});
+  AGs.forEach(a=>{s[a.id]={sk:a.sk,tr:a.tr,wi:a.wi,streak:a.streak||0};});
   localStorage.setItem('ag_s',JSON.stringify(s));
   localStorage.setItem('ag_t',JSON.stringify(agTrades.slice(-50)));
 }
 function aIQ(a){return Object.values(a.sk).reduce((s,v)=>s+v,0)/4;}
 
 function aLearn(a,delta){
-  delta=delta||0.5;
+  delta=(delta||0.5)*1.6; // ускоренная база обучения
   const keys=Object.keys(a.sk);
-  // Adaptive learning rate: slower as skill matures (diminishing returns, realistic)
-  // Win Rate boosts learning — успешные агенты учатся быстрее
   var wr = a.tr>0 ? a.wi/a.tr : 0.5;
-  var wrMult = 0.6 + wr*0.9; // 0.6x..1.5x based on win rate
-  // Specialization: агент сильнее качает свой САМЫЙ слабый навык (балансировка)
-  // но иногда добивает сильный (специализация)
+  var wrMult = 0.7 + wr*1.0; // 0.7x..1.7x от win rate
+  // Серия побед компаундит обучение
+  a.streak = a.streak||0;
+  var streakMult = 1 + Math.min(0.5, (a.streak||0)*0.1); // до +50% за серию
   var k;
   if(Math.random()<0.65){
-    // подтянуть самый слабый навык
     k = keys.reduce(function(min,key){return a.sk[key]<a.sk[min]?key:min;}, keys[0]);
   } else {
-    // углубить самый сильный (специализация)
     k = keys.reduce(function(max,key){return a.sk[key]>a.sk[max]?key:max;}, keys[0]);
   }
-  // Diminishing returns: чем выше навык, тем медленнее рост
   var cur = a.sk[k];
-  var dimFactor = cur<40 ? 1.4 : cur<70 ? 1.0 : cur<90 ? 0.5 : 0.2;
-  var gain = delta * wrMult * dimFactor;
+  // Сглаженные diminishing returns — рост ощутимее на средних уровнях
+  var dimFactor = cur<40 ? 1.8 : cur<70 ? 1.2 : cur<90 ? 0.7 : 0.3;
+  var gain = delta * wrMult * dimFactor * streakMult;
   a.sk[k] = Math.min(100, cur + gain);
+  // Cross-skill spillover: смежные навыки подтягиваются на 15% от прироста
+  keys.forEach(function(ok){
+    if(ok!==k) a.sk[ok] = Math.min(100, a.sk[ok] + gain*0.15);
+  });
   sAS();
   if(gain >= 0.3) addEv('skill',a,'Навык "'+SKN[k]+'" → '+a.sk[k].toFixed(1)+'%');
 }
@@ -2070,7 +2071,7 @@ function toggleAg(){
 
 function schedAg(){
   if(!agOn)return;
-  var ms=12000+Math.random()*23000;
+  var ms=7000+Math.random()*13000; // быстрее цикл (7-20с вместо 12-35с)
   agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
 }
 
@@ -2080,16 +2081,24 @@ function runAgCy(){
   var sp=Object.keys(prices);
   if(!sp.length)return;
   var task=Math.random();
-  if(task<0.3){
+  if(task<0.25){
     var pat=TA[Math.floor(Math.random()*TA.length)];
     aLearn(a,1.5);
     addEv('learn',a,'Изучил "'+pat.n+'" ('+pat.r+'%)');
-  }else if(task<0.7){
+  }else if(task<0.8){
     var sigs=Object.entries(prices).filter(function(p){return Math.abs(p[1].c)>=1.5;});
     if(!sigs.length)return;
     var pick=sigs[Math.floor(Math.random()*Math.min(3,sigs.length))];
     var sym=pick[0],p=pick[1];
+    // Умные агенты (выше IQ) принимают решения точнее
+    var iq=aIQ(a);
     var dir=p.c>0?'LONG':'SHORT';
+    // С ростом IQ агент чаще ловит правильное направление (фильтр шума)
+    if(iq>50 && Math.abs(p.c)<0.8 && Math.random()<(iq-50)/100){
+      // слабое движение — опытный агент пропускает или ждёт подтверждения
+      var rsiV=p.rsi||50;
+      if(rsiV<35)dir='LONG'; else if(rsiV>65)dir='SHORT';
+    }
     var atr=Math.max((p.h-p.l)/4,p.p*0.005);
     var trade={id:'ag_'+Date.now(),sym:sym,dir:dir,en:p.p,
       st:parseFloat((p.p-atr*1.5).toFixed(2)),
@@ -2107,14 +2116,16 @@ function runAgCy(){
       var pnl=dir==='LONG'?(cp.p-trade.en)/trade.en*100:(trade.en-cp.p)/trade.en*100;
       trade.cl=cp.p;
       trade.pnl=parseFloat(pnl.toFixed(2));
-      if(pnl>0)a.wi++;
-      addEv(pnl>0?'trade':'loss',a,'Закрыл '+dir+' '+sym+' → '+(pnl>=0?'+':'')+pnl.toFixed(2)+'%');
+      if(pnl>0){a.wi++; a.streak=(a.streak||0)+1;} else {a.streak=0;}
+      addEv(pnl>0?'trade':'loss',a,'Закрыл '+dir+' '+sym+' → '+(pnl>=0?'+':'')+pnl.toFixed(2)+'%'+((a.streak||0)>=3?' 🔥'+a.streak:''));
       if(pnl<0)anlLoss(a,trade);
-      aLearn(a, pnl>0 ? 2.5 : 0.4);
+      // Награда масштабируется с величиной прибыли (большой профит = больше обучения)
+      var reward = pnl>0 ? Math.min(5, 2.5 + Math.abs(pnl)*0.15) : 0.5;
+      aLearn(a, reward);
       rAgTr(); sAS();
       var ce2=document.getElementById('ag-cnt');
       if(ce2)ce2.textContent=agTrades.length;
-    },30000+Math.random()*120000);
+    },20000+Math.random()*70000);
   }else{
     var sym2=sp[Math.floor(Math.random()*sp.length)];
     var p2=prices[sym2];
