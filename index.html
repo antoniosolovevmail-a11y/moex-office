@@ -557,7 +557,8 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
 }
 
 /* Page backgrounds transparent so body gradient shows */
-#page-cab,#page-ag{background:transparent !important;overflow-y:auto !important;display:block !important;height:100% !important}
+#page-cab,#page-ag{background:transparent !important}
+#page-ag:not(.hidden){display:block !important;overflow-y:auto;height:100%}
 .cab-layout{padding:20px}
 
 /* Glow on CIO run button */
@@ -1111,7 +1112,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   </div>
 
   <!-- ══════════════ AGENTS PAGE ══════════════ -->
-  <div class="page hidden" id="page-ag" style="overflow-y:auto;overflow-x:hidden;display:block;height:100%;padding-bottom:40px">
+  <div class="page hidden" id="page-ag" style="overflow-y:auto;overflow-x:hidden;padding-bottom:40px">
     <div id="ag-full-wrap" style="max-width:1400px;margin:0 auto;padding:20px">
       <!-- Stats row -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="ag-stats-row"></div>
