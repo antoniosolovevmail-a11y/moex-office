@@ -1641,20 +1641,20 @@ function agIcon(role, color){
 }
 
 const AGs=[
-  {id:'1a',n:'Агент-1А',r:'Макро',e:'📰',c:'#3b82f6',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет Bloomberg. RSS задержка ~15мин.',audit:'Источники: 6/9. Задержка ≈15 мин.'},
-  {id:'1b',n:'Агент-1Б',r:'Корп.',e:'🏢',c:'#d97706',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нет СПАРК.',audit:'Дивиденды актуальны.'},
+  {id:'1a',n:'Агент-1А',r:'Макро',e:'📰',c:'#3b82f6',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'RSS: РБК, РИА, Интерфакс, Ведомости, Коммерсантъ',audit:'Источники: 6/9. Задержка ≈15 мин.'},
+  {id:'1b',n:'Агент-1Б',r:'Корп.',e:'🏢',c:'#d97706',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'P/B, дивиденды, EPS — данные MOEX ISS',audit:'Дивиденды актуальны.'},
   {id:'2', n:'Агент-2', r:'AI',e:'🧠',c:'#7c3aed',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Без Groq API бесполезен!',audit:'Groq: {gk}. Sentiment: НЕЙТРАЛЬНЫЙ.'},
   {id:'3', n:'Агент-3', r:'Фундам.',e:'📊',c:'#059669',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'P/E статичные.',audit:'P/E/ROE загружены для {cnt} акций.'},
-  {id:'4', n:'Агент-4', r:'Техника',e:'📈',c:'#dc2626',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'История 30 дней — мало.',audit:'Паттернов: {pc} на {sym}. RSI: {rsi}.'},
-  {id:'5', n:'Агент-5', r:'Риск',e:'🛡️',c:'#0891b2',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Без реального депозита — приблиз.',audit:'Открытых: {ot}. Убыт >2%: {lc}.'},
-  {id:'7', n:'Агент-7', r:'Макро-д.',e:'🌍',c:'#16a34a',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Brent косвенный.',audit:'USD/RUB с MOEX. ОФЗ нет.'},
-  {id:'8', n:'Агент-8', r:'Объёмы',e:'📦',c:'#ca8a04',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Только дневные объёмы.',audit:'Объёмы: {cnt}/50.'},
-  {id:'9', n:'Агент-9', r:'Корр.',e:'🔗',c:'#1d4ed8',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нужна история 3+ месяца.',audit:'Бета к IMOEX в работе.'},
-  {id:'10',n:'Агент-10',r:'Уровни',e:'📐',c:'#be123c',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Pivot точны на дневных.',audit:'Fibonacci для {sym} рассчитаны.'},
-  {id:'11',n:'Агент-11',r:'Дивид.',e:'📅',c:'#0d9488',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нужен API раскрытий.',audit:'Дивидендный сезон активный.'},
-  {id:'12',n:'Агент-12',r:'Порт.',e:'💼',c:'#6d28d9',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Только системные сделки.',audit:'Системных: {ot}.'},
-  {id:'13',n:'Агент-13',r:'Скринер',e:'🔍',c:'#b45309',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Обновление цен каждые 30с.',audit:'Просканировано: {cnt}/50.'},
-  {id:'6', n:'Агент-6', r:'CIO',e:'👔',c:'#7c3aed',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Нужен Groq API ключ.',audit:'Groq: {gk}. Авто: {ae}. Сделок: {at}.'}
+  {id:'4', n:'Агент-4', r:'Техника',e:'📈',c:'#dc2626',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'RSI + MA20/50 + паттерны по chartData',audit:'Паттернов: {pc} на {sym}. RSI: {rsi}.'},
+  {id:'5', n:'Агент-5', r:'Риск',e:'🛡️',c:'#0891b2',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'ATR + High/Low диапазон реального дня',audit:'Открытых: {ot}. Убыт >2%: {lc}.'},
+  {id:'7', n:'Агент-7', r:'Макро-д.',e:'🌍',c:'#16a34a',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'IMOEX, USD/RUB, OFZ — всё с MOEX ISS',audit:'USD/RUB с MOEX. ОФЗ нет.'},
+  {id:'8', n:'Агент-8', r:'Объёмы',e:'📦',c:'#ca8a04',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Volume vs медиана рынка + накопление',audit:'Объёмы: {cnt}/50.'},
+  {id:'9', n:'Агент-9', r:'Корр.',e:'🔗',c:'#1d4ed8',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Бета к IMOEX по секторным коэффициентам',audit:'Бета к IMOEX в работе.'},
+  {id:'10',n:'Агент-10',r:'Уровни',e:'📐',c:'#be123c',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Поддержка/сопротивление по 20 свечам',audit:'Fibonacci для {sym} рассчитаны.'},
+  {id:'11',n:'Агент-11',r:'Дивид.',e:'📅',c:'#0d9488',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Дивдоходность + дивсезон MOEX (апр-июль)',audit:'Дивидендный сезон активный.'},
+  {id:'12',n:'Агент-12',r:'Порт.',e:'💼',c:'#6d28d9',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'PB Bot позиции + секторная диверсификация',audit:'Системных: {ot}.'},
+  {id:'13',n:'Агент-13',r:'Скринер',e:'🔍',c:'#b45309',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Сила сигнала по 50 тикерам MOEX',audit:'Просканировано: {cnt}/50.'},
+  {id:'6', n:'Агент-6', r:'CIO',e:'👔',c:'#7c3aed',sk:{pr:0,tm:0,rm:0,sk:0},tr:0,wi:0,needs:'Groq API ключ.',audit:'Groq: {gk}. Авто: {ae}. Сделок: {at}.'}
 ];
 
 function lAS(){
@@ -3774,6 +3774,184 @@ function calcFullConsensus(sym){
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
       return {id:'10',name:'Агент-10',role:'Уровни',e:'📐',c:'#be123c',
               dir:dir,conf:score,reason:'Позиция в 20-свечном диапазоне'};
+    })(),
+
+    (function(){
+      // Агент-1А — Макро/Новости: sentiment из RSS allNews
+      var score = 50;
+      var posNews = 0, negNews = 0, relevantNews = 0;
+      var symLo = sym.toLowerCase();
+      var infoName = (info.n||'').toLowerCase().split(' ')[0];
+      allNews.forEach(function(item){
+        var lo = item.title.toLowerCase();
+        var isRelevant = lo.includes(symLo) || (infoName && lo.includes(infoName)) || item.score > 0;
+        if(isRelevant) relevantNews++;
+        if(item.pos) posNews++;
+        if(item.neg) negNews++;
+      });
+      // Общий новостной фон рынка
+      var netSentiment = posNews - negNews;
+      if(netSentiment > 3)       score += 15;
+      else if(netSentiment > 1)  score += 8;
+      else if(netSentiment < -3) score -= 15;
+      else if(netSentiment < -1) score -= 8;
+      // Прямое упоминание тикера
+      if(relevantNews > 0){
+        var relPos = allNews.filter(function(i){return i.score>0&&i.pos;}).length;
+        var relNeg = allNews.filter(function(i){return i.score>0&&i.neg;}).length;
+        score += (relPos - relNeg) * 8;
+      }
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var srcCount = allNews.length;
+      var reason = srcCount>0
+        ? 'Новостей: '+srcCount+' · +'+posNews+'/−'+negNews+(relevantNews?' · упом.: '+relevantNews:'')
+        : 'Новости не загружены';
+      return {id:'1a',name:'Агент-1А',role:'Макро',e:'📰',c:'#3b82f6',
+              dir:dir,conf:score,reason:reason};
+    })(),
+
+    (function(){
+      // Агент-1Б — Корп./Дивиденды: дивдоходность + P/B
+      var score = 50;
+      if(info.div){
+        if(info.div > 12)     score += 20;
+        else if(info.div > 8) score += 13;
+        else if(info.div > 5) score += 7;
+        else if(info.div < 2) score -= 5;
+      }
+      if(info.pb){
+        if(info.pb < 0.7)    score += 12;
+        else if(info.pb < 1) score += 6;
+        else if(info.pb > 4) score -= 8;
+      }
+      // Учитываем EPS рост (есть eps в ST)
+      if(info.eps && info.eps > 0 && p.p > 0){
+        var livePE = p.p / info.eps;
+        if(livePE < 5)       score += 10;
+        else if(livePE > 25) score -= 10;
+      }
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var parts = [];
+      if(info.div)  parts.push('Div='+info.div+'%');
+      if(info.pb)   parts.push('P/B='+info.pb+'x');
+      return {id:'1b',name:'Агент-1Б',role:'Корп.',e:'🏢',c:'#d97706',
+              dir:dir,conf:score,reason:parts.join(' · ')||'Нет корп. данных'};
+    })(),
+
+    (function(){
+      // Агент-8 — Объёмы: volume spike + накопление
+      var score = 50;
+      var vol = p.v || 0;
+      // Медиана объёма по всем загруженным акциям для сравнения
+      var allVols = Object.values(prices).map(function(x){return x.v||0;}).filter(Boolean);
+      allVols.sort(function(a,b){return a-b;});
+      var medVol = allVols.length ? allVols[Math.floor(allVols.length/2)] : 1;
+      var volRatio = medVol > 0 ? vol / medVol : 1;
+      if(volRatio > 3)      score += 20; // очень высокий объём
+      else if(volRatio > 2) score += 12;
+      else if(volRatio > 1.5) score += 6;
+      else if(volRatio < 0.5) score -= 8; // низкий объём = слабый сигнал
+      // Объём + рост = накопление (бычий)
+      if(chg > 0 && volRatio > 1.5)      score += 10;
+      // Объём + падение = распродажа (медвежий)
+      else if(chg < 0 && volRatio > 1.5) score -= 10;
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var reason = vol>0
+        ? 'Объём: '+fmtVol(vol)+' (×'+volRatio.toFixed(1)+' vs медиана)'
+        : 'Объём недоступен';
+      return {id:'8',name:'Агент-8',role:'Объёмы',e:'📦',c:'#ca8a04',
+              dir:dir,conf:score,reason:reason};
+    })(),
+
+    (function(){
+      // Агент-9 — Корреляция: бета к IMOEX + секторная корреляция
+      var score = 50;
+      var imoexChg2 = 0;
+      document.querySelectorAll('.tick-item').forEach(function(el2){
+        if(el2.textContent.includes('IMOEX')){
+          var m2 = el2.textContent.match(/([+-]?\d+\.?\d*)%/);
+          if(m2) imoexChg2 = parseFloat(m2[1]);
+        }
+      });
+      // Секторные бета-коэффициенты (эмпирические для MOEX)
+      var sectorBeta = {
+        'Нефть/Газ':   0.9,
+        'Металлы':     0.85,
+        'Финансы':     1.1,
+        'Технологии':  1.2,
+        'Энергетика':  0.7,
+        'Телеком':     0.65,
+        'Ритейл':      0.8,
+        'Недвижимость':0.75,
+        'Химия':       0.8,
+        'Транспорт':   0.85,
+        'Потреб.':     0.75,
+        'Медицина':    0.7
+      };
+      var beta = sectorBeta[info.s] || 1.0;
+      var impliedMove = imoexChg2 * beta;
+      if(impliedMove > 0.5)       score += 18;
+      else if(impliedMove > 0.2)  score += 9;
+      else if(impliedMove < -0.5) score -= 18;
+      else if(impliedMove < -0.2) score -= 9;
+      // Дивергенция: акция двигается против IMOEX
+      if(chg > 0 && imoexChg2 < -0.5) score += 8; // сила против рынка
+      if(chg < 0 && imoexChg2 > 0.5)  score -= 8; // слабость при росте рынка
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var reason = 'IMOEX '+(imoexChg2>=0?'+':'')+imoexChg2.toFixed(2)+'% · β='+beta+' · '+info.s;
+      return {id:'9',name:'Агент-9',role:'Корр.',e:'🔗',c:'#1d4ed8',
+              dir:dir,conf:score,reason:reason};
+    })(),
+
+    (function(){
+      // Агент-11 — Дивиденды: дивсезон + близость выплаты
+      var score = 50;
+      // Дивидендный сезон на MOEX: апрель-июль (пик)
+      var month = new Date().getMonth() + 1; // 1-12
+      var divSeason = (month >= 4 && month <= 7);
+      if(divSeason) score += 8;
+      if(info.div){
+        if(info.div > 10) score += 18;
+        else if(info.div > 6) score += 10;
+        else if(info.div > 3) score += 5;
+        else if(info.div === 0) score -= 10;
+      }
+      // Если нет дивидендов совсем — менее интересно для лонга
+      if(!info.div || info.div === 0) score -= 5;
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var reason = 'Div=' + (info.div||0) + '%' + (divSeason?' · дивсезон':'');
+      return {id:'11',name:'Агент-11',role:'Дивид.',e:'📅',c:'#0d9488',
+              dir:dir,conf:score,reason:reason};
+    })(),
+
+    (function(){
+      // Агент-12 — Портфель: диверсификация + PB Bot позиции
+      var score = 50;
+      // Проверяем текущие позиции бота
+      var pbPositions = (typeof PB !== 'undefined') ? PB.positions : [];
+      var alreadyOpen = pbPositions.some(function(pos){return pos.sym===sym;});
+      if(alreadyOpen){ score -= 30; } // уже в позиции — штраф
+      // Секторная концентрация
+      var sectorPositions = pbPositions.filter(function(pos){
+        return (ST[pos.sym]&&ST[pos.sym].s) === info.s;
+      }).length;
+      if(sectorPositions >= 2) score -= 15;
+      else if(sectorPositions === 0) score += 8; // новый сектор = диверсификация
+      // Общая экспозиция
+      var exposure = (typeof PB !== 'undefined') ? PB.calcExposure() : 0;
+      if(exposure > 0.6) score -= 10;
+      else if(exposure < 0.3) score += 8; // есть кэш — можно входить
+      score = Math.max(5,Math.min(95,score));
+      var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var openCount = pbPositions.length;
+      var reason = 'Позиций: '+openCount+' · экспоз.: '+Math.round(exposure*100)+'% · '+info.s;
+      return {id:'12',name:'Агент-12',role:'Порт.',e:'💼',c:'#6d28d9',
+              dir:dir,conf:score,reason:reason};
     })()
   ];
 
