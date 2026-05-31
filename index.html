@@ -2100,6 +2100,8 @@ function rAgCards(){
   if(dot){dot.style.background=agOn?'var(--green)':'var(--dim)';dot.style.animation=agOn?'pulse 2s infinite':'none';}
   var btn=document.getElementById('ag-run-btn');
   if(btn){btn.textContent=agOn?'■ СТОП':'▶ СТАРТ';btn.className='ag-run-btn'+(agOn?' off':'');}
+  var btn2x=document.getElementById('ag-run-btn2');
+  if(btn2x){btn2x.textContent=agOn?'■ Стоп':'▶ Старт';btn2x.className='ag-run-btn'+(agOn?' off':'');}
   var sbtn=document.getElementById('s-ag-btn');
   if(sbtn)sbtn.textContent=agOn?'ВЫКЛЮЧИТЬ':'ВКЛЮЧИТЬ';
   var iqAll=AGs.reduce(function(s,a){return s+aIQ(a);},0)/AGs.length;
@@ -2210,7 +2212,18 @@ function toggleAg(){
     agTimer=null;
     addEv('learn',null,'Автономный режим остановлен.');
   }
+  // Обновляем все кнопки сразу
+  var _btn=document.getElementById('ag-run-btn');
+  if(_btn){_btn.textContent=agOn?'\u25a0 СТОП':'\u25b6 СТАРТ';_btn.className='ag-run-btn'+(agOn?' off':'');}
+  var _btn2=document.getElementById('ag-run-btn2');
+  if(_btn2){_btn2.textContent=agOn?'\u25a0 Стоп':'\u25b6 Старт';_btn2.className='ag-run-btn'+(agOn?' off':'');}
+  var _sbtn=document.getElementById('s-ag-btn');
+  if(_sbtn)_sbtn.textContent=agOn?'ВЫКЛЮЧИТЬ':'ВКЛЮЧИТЬ';
+  var _dot=document.getElementById('ag-status-dot');
+  if(_dot){_dot.style.background=agOn?'var(--green)':'var(--dim)';_dot.style.animation=agOn?'pulse 2s infinite':'none';}
+  showToast(agOn?'Агенты запущены':'Агенты остановлены', agOn?'Автономный режим включён':'Авто-режим выключен', null);
   rAgCards();
+  if(typeof renderAgPage==='function')renderAgPage();
 }
 
 function schedAg(){
