@@ -627,6 +627,86 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   display:flex;align-items:center;justify-content:space-between;gap:16px;
 }
 
+/* ── PAPER BOT UI ── */
+.pb-header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  padding:16px 20px 0;
+}
+.pb-toggle-row{display:flex;align-items:center;gap:10px}
+.pb-toggle{
+  position:relative;width:44px;height:24px;cursor:pointer;
+}
+.pb-toggle input{opacity:0;width:0;height:0;position:absolute}
+.pb-toggle-track{
+  position:absolute;inset:0;background:rgba(123,92,255,.18);border:1px solid rgba(123,92,255,.3);
+  border-radius:12px;transition:all .3s;
+}
+.pb-toggle input:checked ~ .pb-toggle-track{
+  background:rgba(0,255,163,.25);border-color:rgba(0,255,163,.5);
+  box-shadow:0 0 12px rgba(0,255,163,.3);
+}
+.pb-toggle-thumb{
+  position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:rgba(123,92,255,.7);transition:all .3s;
+}
+.pb-toggle input:checked ~ .pb-toggle-track ~ .pb-toggle-thumb{
+  transform:translateX(20px);background:#00ffa3;
+}
+.pb-status-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0;
+  transition:all .3s;
+}
+.pb-status-dot.on{background:#00ffa3;box-shadow:0 0 8px #00ffa3aa;animation:pulse 2s infinite}
+.pb-metrics-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;
+  padding:14px 20px;
+}
+.pb-metric{
+  background:rgba(10,13,26,.6);border:1px solid rgba(123,92,255,.14);
+  border-radius:12px;padding:12px 14px;
+}
+.pb-metric-val{font-family:var(--mono);font-size:18px;font-weight:700;margin-bottom:2px}
+.pb-metric-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)}
+.pb-metric-sub{font-size:10px;color:var(--txt3);margin-top:2px}
+.pb-equity-wrap{
+  margin:0 20px 16px;border-radius:14px;overflow:hidden;
+  background:rgba(10,13,26,.6);border:1px solid rgba(0,255,163,.14);
+  padding:12px;
+}
+.pb-equity-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(0,255,163,.7);margin-bottom:8px}
+#pb-equity-chart{height:120px;width:100%}
+.pb-pos-row{
+  display:flex;align-items:center;gap:8px;padding:9px 0;
+  border-bottom:1px solid rgba(123,92,255,.07);font-size:12px;
+}
+.pb-pos-row:last-child{border:none}
+.pb-pos-sym{font-family:var(--mono);font-weight:700;font-size:13px;width:56px;flex-shrink:0}
+.pb-pos-meta{flex:1;min-width:0}
+.pb-pos-pnl{font-family:var(--mono);font-size:12px;font-weight:700;text-align:right;flex-shrink:0}
+.pb-close-btn{
+  background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.25);
+  color:#ff3b5c;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;
+  font-family:var(--sans);flex-shrink:0;transition:all .15s;
+}
+.pb-close-btn:hover{background:rgba(255,59,92,.2)}
+.pb-empty{
+  text-align:center;padding:24px;font-size:11px;color:var(--txt3);
+  border:1px dashed rgba(123,92,255,.15);border-radius:12px;
+}
+.pb-log-item{
+  display:flex;gap:8px;padding:6px 0;font-size:11px;line-height:1.4;
+  border-bottom:1px solid rgba(123,92,255,.05);
+}
+.pb-log-item:last-child{border:none}
+.pb-log-time{color:var(--txt3);font-family:var(--mono);font-size:10px;flex-shrink:0;width:44px}
+.pb-log-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.pb-warn-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.25);
+  color:var(--amber);border-radius:8px;padding:4px 10px;font-size:10px;font-weight:600;
+}
+@keyframes pbPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,163,.4)}50%{box-shadow:0 0 0 6px rgba(0,255,163,0)}}
+
 /* Agents page full-width fix */
 #ag-full-wrap{display:flex;flex-direction:column;gap:16px}
 #ag-grid-full{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;width:100%}
@@ -1121,6 +1201,20 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               Анализировать сайт
             </button>
           </div>
+          <div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Paper Trading Bot</div>
+          <div class="ios-card" style="margin-bottom:16px;padding:16px;border:1px solid rgba(0,255,163,.2)">
+            <div style="font-size:13px;font-weight:600;color:#00ffa3;margin-bottom:4px">Параметры бота</div>
+            <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Порог входа: ≥6/14 агентов LONG + conf≥65. Позиция ≤15%, экспозиция ≤70%. Комиссия 0.0531%.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div><label class="fl">Макс. позиция %</label><input type="number" id="pb-max-pos-inp" class="inp" value="15" min="5" max="25" step="1"/></div>
+              <div><label class="fl">Макс. экспозиция %</label><input type="number" id="pb-max-exp-inp" class="inp" value="70" min="30" max="95" step="5"/></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div><label class="fl">Стоп ATR×</label><input type="number" id="pb-stop-atr-inp" class="inp" value="1.5" min="0.5" max="3" step="0.25"/></div>
+              <div><label class="fl">Цель ATR×</label><input type="number" id="pb-tgt-atr-inp" class="inp" value="2.5" min="1" max="5" step="0.25"/></div>
+            </div>
+            <button onclick="pbSaveParams()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,255,163,.3);background:rgba(0,255,163,.08);color:#00ffa3;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">Сохранить параметры</button>
+          </div>
           <div style="font-size:12px;color:var(--ios-red);margin-bottom:8px;font-weight:500">Опасная зона</div><button class="btn d" onclick="clearTrades()">Удалить все сделки</button></div>
           </div>
         </div>
@@ -1239,6 +1333,55 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div style="font-size:12px;color:var(--txt3)">Подключите токен для отображения реального портфеля</div>
       </div>
       <button onclick="showPage('cab');showCab('settings')" class="btn p" style="flex-shrink:0">Подключить →</button>
+    </div>
+    <!-- ★ PAPER BOT PANEL ★ -->
+    <div id="pb-panel" style="margin:16px 20px 0;border-radius:18px;background:linear-gradient(145deg,rgba(0,255,163,.05),rgba(10,13,26,.7));border:1px solid rgba(0,255,163,.2);overflow:hidden;position:relative">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,163,.6),transparent)"></div>
+      <!-- Header -->
+      <div class="pb-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#00ffa3;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px #00ffa3aa)"><path d="M12 2l3 6.5L22 9.3l-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l7-.8z"/></svg>
+          <span style="font-size:13px;font-weight:700;color:#00ffa3;letter-spacing:.04em">Paper Trading Bot</span>
+          <div class="pb-status-dot" id="pb-status-dot"></div>
+          <span id="pb-status-txt" style="font-size:10px;color:var(--txt3)">выключен</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:10px;color:var(--txt3)">Авто-торговля</span>
+          <label class="pb-toggle">
+            <input type="checkbox" id="pb-enabled-cb" onchange="pbToggle(this.checked)">
+            <div class="pb-toggle-track"></div>
+            <div class="pb-toggle-thumb"></div>
+          </label>
+          <button onclick="pbReset()" style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);color:#ff3b5c;border-radius:8px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--sans)" title="Сбросить бумажный портфель">↺ Сброс</button>
+        </div>
+      </div>
+      <!-- Metrics row -->
+      <div class="pb-metrics-grid" id="pb-metrics-grid">
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-equity" style="color:#00ffa3">—</div><div class="pb-metric-lbl">Equity ₽</div><div class="pb-metric-sub" id="pb-m-equity-pct">—</div></div>
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-pf" style="color:#00e5ff">—</div><div class="pb-metric-lbl">Profit Factor</div><div class="pb-metric-sub">цель &gt;1.3</div></div>
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-wr" style="color:#7b5cff">—</div><div class="pb-metric-lbl">Win Rate</div><div class="pb-metric-sub" id="pb-m-wr-sub">—</div></div>
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-dd" style="color:#ffb800">—</div><div class="pb-metric-lbl">Max Drawdown</div><div class="pb-metric-sub" id="pb-m-dd-sub">—</div></div>
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-exp" style="color:#ff2d9b">—</div><div class="pb-metric-lbl">Экспозиция</div><div class="pb-metric-sub">макс 70%</div></div>
+        <div class="pb-metric"><div class="pb-metric-val" id="pb-m-trades" style="color:var(--label)">0</div><div class="pb-metric-lbl">Сделок</div><div class="pb-metric-sub">нужно 50+</div></div>
+      </div>
+      <!-- Equity curve -->
+      <div class="pb-equity-wrap" id="pb-equity-wrap" style="display:none">
+        <div class="pb-equity-title">Кривая капитала</div>
+        <div id="pb-equity-chart"></div>
+      </div>
+      <!-- Open positions -->
+      <div style="padding:0 20px 16px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(0,229,255,.7);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          <span>Открытые позиции <span id="pb-open-cnt" style="color:#00ffa3"></span></span>
+          <span id="pb-warn" style="display:none" class="pb-warn-badge">⚠ дневной стоп</span>
+        </div>
+        <div id="pb-open-list"></div>
+      </div>
+      <!-- Log -->
+      <details style="padding:0 20px 16px;cursor:pointer">
+        <summary style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);list-style:none;margin-bottom:8px">▸ Лог бота (<span id="pb-log-cnt">0</span>)</summary>
+        <div id="pb-log-list" style="max-height:160px;overflow-y:auto"></div>
+      </details>
     </div>
     <!-- Portfolio grid -->
     <div class="pf-grid">
@@ -7404,6 +7547,597 @@ function injectExpandBtns(){
     }
   });
 }
+setTimeout(injectExpandBtns,1500);
+
+// ═══════════════════════════════════════════════════════════
+// ★ PAPER TRADING BOT ENGINE ★
+// Версия 1.0 — только LONG, реальные котировки MOEX
+// ═══════════════════════════════════════════════════════════
+
+var PB = {
+  // ── Конфигурация (изменяется через настройки) ──────────
+  DEPOSIT:    100000,   // начальный виртуальный депозит
+  MAX_POS:    0.15,     // макс доля депозита на позицию
+  MAX_EXP:    0.70,     // макс доля в рынке (остаток = кэш)
+  STOP_ATR:   1.5,      // стоп = entry - ATR × 1.5
+  TGT_ATR:    2.5,      // цель = entry + ATR × 2.5
+  COMMISSION: 0.000531, // 0.0531% БКС на вход + выход
+  MIN_VOTES:  6,        // минимум агентов LONG из 14
+  MIN_CONF:   65,       // минимум avg confidence
+  MAX_SECTOR: 3,        // макс позиций в одном секторе
+  DAY_STOP:   0.03,     // дневной стоп портфеля (−3%)
+
+  // ── Состояние ─────────────────────────────────────────
+  enabled:    false,
+  positions:  [],  // открытые: {id,sym,qty,entry,stop,tgt,volRub,commission,openedAt,sector}
+  closed:     [],  // закрытые: {…,closePrice,pnl,pnlRub,closedAt,reason}
+  equityCurve:[],  // [{t,v}] по событиям
+  dayStartEquity: 0,
+  log:        [],  // {t, msg, type:'open'|'close'|'skip'|'warn'}
+  _timer:     null,
+  _equityChart: null,
+  _equitySeries: null,
+
+  // ── Хранилище ──────────────────────────────────────────
+  save: function(){
+    try{
+      localStorage.setItem('pb_state', JSON.stringify({
+        enabled:     PB.enabled,
+        positions:   PB.positions,
+        closed:      PB.closed.slice(-200),
+        equityCurve: PB.equityCurve.slice(-500),
+        dayStartEquity: PB.dayStartEquity,
+        log:         PB.log.slice(-100),
+        params: {MAX_POS:PB.MAX_POS, MAX_EXP:PB.MAX_EXP,
+                 STOP_ATR:PB.STOP_ATR, TGT_ATR:PB.TGT_ATR}
+      }));
+    }catch(e){console.warn('PB.save:',e);}
+  },
+  load: function(){
+    try{
+      var s = JSON.parse(localStorage.getItem('pb_state')||'{}');
+      if(s.positions)   PB.positions   = s.positions;
+      if(s.closed)      PB.closed      = s.closed;
+      if(s.equityCurve) PB.equityCurve = s.equityCurve;
+      if(s.dayStartEquity) PB.dayStartEquity = s.dayStartEquity;
+      if(s.log)         PB.log         = s.log;
+      if(s.enabled)     PB.enabled     = s.enabled;
+      if(s.params){
+        if(s.params.MAX_POS)   PB.MAX_POS   = s.params.MAX_POS;
+        if(s.params.MAX_EXP)   PB.MAX_EXP   = s.params.MAX_EXP;
+        if(s.params.STOP_ATR)  PB.STOP_ATR  = s.params.STOP_ATR;
+        if(s.params.TGT_ATR)   PB.TGT_ATR   = s.params.TGT_ATR;
+      }
+    }catch(e){console.warn('PB.load:',e);}
+  },
+
+  // ── Текущий equity (депозит + открытые позиции по рынку) ──
+  calcEquity: function(){
+    var invested = PB.positions.reduce(function(s,pos){
+      var p = prices[pos.sym];
+      if(!p || !p.p) return s + pos.volRub;
+      return s + (p.p * pos.qty);
+    },0);
+    var usedCash = PB.positions.reduce(function(s,pos){return s+pos.volRub;},0);
+    var cash = PB.DEPOSIT - usedCash +
+      PB.closed.reduce(function(s,t){return s+t.pnlRub;},0);
+    return cash + invested;
+  },
+
+  // ── Текущая экспозиция % ─────────────────────────────
+  calcExposure: function(){
+    var eq = PB.calcEquity();
+    if(eq <= 0) return 0;
+    var invested = PB.positions.reduce(function(s,pos){
+      var p = prices[pos.sym];
+      return s + (p && p.p ? p.p*pos.qty : pos.volRub);
+    },0);
+    return invested / eq;
+  },
+
+  // ── ATR (14-period, из candle cache) ─────────────────
+  getATR: function(sym){
+    var cache = scanCandles[sym];
+    if(!cache || !cache.data || cache.data.length < 14) {
+      // fallback: 2% of price
+      var p = prices[sym]; return p ? p.p * 0.02 : 1;
+    }
+    var data = cache.data.slice(-15);
+    var trs = [];
+    for(var i=1;i<data.length;i++){
+      var h=data[i].high, l=data[i].low, pc=data[i-1].close;
+      trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+    }
+    return trs.reduce(function(a,b){return a+b;},0)/trs.length;
+  },
+
+  // ── Лог ──────────────────────────────────────────────
+  addLog: function(msg, type){
+    var now = new Date();
+    var hm  = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    PB.log.unshift({t:hm, msg:msg, type:type||'info'});
+    if(PB.log.length > 150) PB.log.length = 150;
+    PB.renderLog();
+  },
+
+  // ── Попытка открыть позицию по тикеру ────────────────
+  tryOpen: function(sym){
+    if(!PB.enabled) return;
+    if(!prices[sym] || !prices[sym].p) return;
+
+    // Уже открыта позиция по этому тикеру?
+    if(PB.positions.some(function(p){return p.sym===sym;})) return;
+
+    // Агентский консенсус
+    var res = (typeof calcFullConsensus === 'function') ?
+              calcFullConsensus(sym) : null;
+    if(!res) return;
+    if(res.dir !== 'LONG') return;
+    if(res.longVotes < PB.MIN_VOTES) return;
+    if(res.avgConf   < PB.MIN_CONF)  return;
+
+    // Проверка экспозиции
+    if(PB.calcExposure() >= PB.MAX_EXP) {
+      PB.addLog(sym+': пропуск — экспозиция '+Math.round(PB.calcExposure()*100)+'%≥'+Math.round(PB.MAX_EXP*100)+'%', 'skip');
+      return;
+    }
+
+    // Проверка сектора (макс 3 позиции в одном)
+    var sector = (ST[sym]&&ST[sym].s)||'Прочее';
+    var sectorCount = PB.positions.filter(function(p){
+      return (ST[p.sym]&&ST[p.sym].s)===sector;
+    }).length;
+    if(sectorCount >= PB.MAX_SECTOR) {
+      PB.addLog(sym+': пропуск — сектор "'+sector+'" ('+sectorCount+'/'+PB.MAX_SECTOR+')', 'skip');
+      return;
+    }
+
+    // Расчёт позиции
+    var equity   = PB.calcEquity();
+    var maxVolRub= equity * PB.MAX_POS;
+    var entry    = prices[sym].p;
+    var atr      = PB.getATR(sym);
+    var stop     = parseFloat((entry - atr * PB.STOP_ATR).toFixed(2));
+    var tgt      = parseFloat((entry + atr * PB.TGT_ATR).toFixed(2));
+    // Округляем лоты: 1 лот = 1 акция (упрощение)
+    var qty      = Math.max(1, Math.floor(maxVolRub / entry));
+    var volRub   = qty * entry;
+    var commission = volRub * PB.COMMISSION;
+
+    // Хватает ли кэша?
+    var usedCash = PB.positions.reduce(function(s,p){return s+p.volRub;},0);
+    var totalPnl = PB.closed.reduce(function(s,t){return s+t.pnlRub;},0);
+    var cash = PB.DEPOSIT - usedCash + totalPnl;
+    if(volRub + commission > cash) {
+      PB.addLog(sym+': пропуск — недостаточно кэша ('+Math.round(cash)+'₽)', 'skip');
+      return;
+    }
+
+    // Дневной стоп?
+    if(PB.dayStartEquity > 0 && equity < PB.dayStartEquity*(1-PB.DAY_STOP)){
+      PB.addLog('⛔ Дневной стоп активирован! Новые позиции заблокированы.', 'warn');
+      return;
+    }
+
+    var pos = {
+      id:       'pb_'+Date.now()+'_'+sym,
+      sym:      sym,
+      qty:      qty,
+      entry:    entry,
+      stop:     stop,
+      tgt:      tgt,
+      volRub:   volRub,
+      commission: commission,
+      openedAt: new Date().toISOString(),
+      sector:   sector,
+      votes:    res.longVotes+'/'+res.total,
+      conf:     res.avgConf
+    };
+    PB.positions.push(pos);
+
+    // Добавляем точку в equity curve
+    PB.pushEquityPoint();
+
+    var rr = ((tgt-entry)/(entry-stop)).toFixed(1);
+    PB.addLog('▲ ОТКРЫТ '+sym+' × '+qty+' @ '+entry+'₽ | стоп:'+stop+' цель:'+tgt+' R:R='+rr+' ('+pos.votes+' аг, '+pos.conf+'%)', 'open');
+
+    PB.save();
+    PB.renderUI();
+
+    // Уведомление
+    if(typeof showToast === 'function'){
+      showToast('📈 Paper LONG: '+sym, qty+'шт @ '+entry+'₽ · стоп:'+stop+' · цель:'+tgt, null);
+    }
+  },
+
+  // ── Проверить выходы для всех открытых позиций ────────
+  checkExits: function(){
+    if(!PB.positions.length) return;
+
+    // Дневной стоп портфеля
+    var equity = PB.calcEquity();
+    if(PB.dayStartEquity > 0 && equity < PB.dayStartEquity*(1-PB.DAY_STOP)){
+      var dayEl = document.getElementById('pb-warn');
+      if(dayEl) dayEl.style.display='';
+      // Принудительно закрываем всё
+      var copy = PB.positions.slice();
+      copy.forEach(function(pos){
+        PB.closePosition(pos.id, 'day_stop');
+      });
+      PB.addLog('⛔ ДНЕВНОЙ СТОП: equity −'+Math.round((1-equity/PB.dayStartEquity)*100)+'% — все позиции закрыты', 'warn');
+      return;
+    }
+
+    PB.positions.slice().forEach(function(pos){
+      var p = prices[pos.sym];
+      if(!p || !p.p) return;
+      var cur = p.p;
+
+      if(cur <= pos.stop){
+        PB.closePosition(pos.id, 'stop_loss');
+      } else if(cur >= pos.tgt){
+        PB.closePosition(pos.id, 'take_profit');
+      }
+    });
+  },
+
+  // ── Закрыть позицию ───────────────────────────────────
+  closePosition: function(posId, reason){
+    var idx = PB.positions.findIndex(function(p){return p.id===posId;});
+    if(idx < 0) return;
+    var pos = PB.positions[idx];
+    var p   = prices[pos.sym];
+    var closePrice = p && p.p ? p.p : pos.entry;
+
+    var grossPnlRub = (closePrice - pos.entry) * pos.qty;
+    var exitCommission = closePrice * pos.qty * PB.COMMISSION;
+    var netPnlRub = grossPnlRub - pos.commission - exitCommission;
+    var pnlPct    = (netPnlRub / pos.volRub * 100);
+
+    var closed = Object.assign({}, pos, {
+      closePrice: closePrice,
+      pnlRub:     parseFloat(netPnlRub.toFixed(2)),
+      pnl:        parseFloat(pnlPct.toFixed(2)),
+      closedAt:   new Date().toISOString(),
+      reason:     reason || 'manual'
+    });
+    PB.positions.splice(idx, 1);
+    PB.closed.push(closed);
+
+    PB.pushEquityPoint();
+
+    var icon = reason==='take_profit'?'✅':reason==='stop_loss'?'🛑':reason==='day_stop'?'⛔':'■';
+    PB.addLog(icon+' ЗАКРЫТ '+pos.sym+' @ '+closePrice+'₽ | '+
+      (netPnlRub>=0?'+':'')+netPnlRub.toFixed(0)+'₽ ('+
+      (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%) ['+reason+']',
+      netPnlRub>=0?'close':'closeloss');
+
+    PB.save();
+    PB.renderUI();
+
+    if(typeof showToast === 'function' && reason !== 'day_stop'){
+      var icon2 = netPnlRub>=0?'📊':'📉';
+      showToast(icon2+' Paper '+pos.sym+' закрыт',
+        (netPnlRub>=0?'+':'')+netPnlRub.toFixed(0)+'₽ ('+reason+')', null);
+    }
+  },
+
+  // ── Equity curve point ────────────────────────────────
+  pushEquityPoint: function(){
+    var eq = PB.calcEquity();
+    PB.equityCurve.push({
+      time: Math.floor(Date.now()/1000),
+      value: parseFloat(eq.toFixed(2))
+    });
+    if(PB.equityCurve.length > 500) PB.equityCurve.shift();
+  },
+
+  // ── Метрики ───────────────────────────────────────────
+  calcMetrics: function(){
+    var closed = PB.closed;
+    var n      = closed.length;
+    var wins   = closed.filter(function(t){return t.pnlRub>0;});
+    var losses = closed.filter(function(t){return t.pnlRub<=0;});
+    var winRate = n>0 ? wins.length/n : 0;
+    var sumWin  = wins.reduce(function(s,t){return s+t.pnlRub;},0);
+    var sumLoss = Math.abs(losses.reduce(function(s,t){return s+t.pnlRub;},0));
+    var pf      = sumLoss>0 ? sumWin/sumLoss : (sumWin>0?999:0);
+    var eTrade  = n>0 ? (sumWin-sumLoss)/n : 0;
+
+    // Max drawdown
+    var eq   = PB.DEPOSIT;
+    var peak = PB.DEPOSIT;
+    var maxDD= 0;
+    closed.forEach(function(t){
+      eq += t.pnlRub;
+      if(eq>peak) peak=eq;
+      var dd = peak>0 ? (peak-eq)/peak : 0;
+      if(dd>maxDD) maxDD=dd;
+    });
+
+    // Current equity
+    var curEq = PB.calcEquity();
+    var curDD = peak>0 ? Math.max(0,(peak-curEq)/peak) : 0;
+    maxDD = Math.max(maxDD, curDD);
+
+    return {
+      n:n, winRate:winRate, wins:wins.length, losses:losses.length,
+      pf:pf, eTrade:eTrade, maxDD:maxDD,
+      sumWin:sumWin, sumLoss:sumLoss,
+      equity:curEq,
+      exposure: PB.calcExposure()
+    };
+  },
+
+  // ── Главный тик (вызывается каждые 30с) ──────────────
+  tick: function(){
+    if(!PB.enabled) return;
+    if(!Object.keys(prices).length) return;
+
+    // Инициализировать дневной старт
+    if(!PB.dayStartEquity) PB.dayStartEquity = PB.calcEquity();
+
+    // Проверяем выходы
+    PB.checkExits();
+
+    // Сканируем все тикеры на вход
+    var exp = PB.calcExposure();
+    if(exp < PB.MAX_EXP){
+      // перемешиваем чтобы не открывать всегда SBER первым
+      var syms = SYMS.slice().sort(function(){return Math.random()-.5;});
+      for(var i=0; i<syms.length; i++){
+        if(PB.calcExposure() >= PB.MAX_EXP) break;
+        PB.tryOpen(syms[i]);
+      }
+    }
+
+    PB.renderUI();
+    PB.updateEquityChart();
+  },
+
+  // ── Включить/выключить ────────────────────────────────
+  start: function(){
+    PB.enabled = true;
+    if(PB._timer) clearInterval(PB._timer);
+    PB._timer = setInterval(function(){PB.tick();}, 30000);
+    PB.addLog('▶ Paper Trading Bot запущен. Депозит: '+PB.DEPOSIT.toLocaleString('ru')+'₽', 'open');
+    if(!PB.dayStartEquity) PB.dayStartEquity = PB.calcEquity();
+    PB.tick(); // первый тик сразу
+    PB.save();
+    PB.renderUI();
+  },
+  stop: function(){
+    PB.enabled = false;
+    if(PB._timer){ clearInterval(PB._timer); PB._timer=null; }
+    PB.addLog('⏹ Paper Trading Bot остановлен', 'warn');
+    PB.save();
+    PB.renderUI();
+  },
+
+  // ── Инициализация LightweightCharts equity curve ─────
+  initEquityChart: function(){
+    var container = document.getElementById('pb-equity-chart');
+    if(!container) return;
+    if(PB._equityChart){
+      try{ PB._equityChart.remove(); }catch(e){}
+      PB._equityChart = null; PB._equitySeries = null;
+    }
+    if(typeof LightweightCharts === 'undefined') return;
+    try{
+      PB._equityChart = LightweightCharts.createChart(container, {
+        width:  container.clientWidth || 400,
+        height: 120,
+        layout:      {background:{type:'solid',color:'transparent'}, textColor:'#9ba8c0', fontSize:10},
+        grid:        {vertLines:{color:'rgba(123,92,255,.08)'}, horzLines:{color:'rgba(123,92,255,.08)'}},
+        rightPriceScale:{borderVisible:false, scaleMargins:{top:0.1,bottom:0.1}},
+        timeScale:   {borderVisible:false, timeVisible:false},
+        crosshair:   {mode:1},
+        handleScroll:false, handleScale:false,
+      });
+      PB._equitySeries = PB._equityChart.addLineSeries({
+        color:'#00ffa3', lineWidth:2,
+        priceLineVisible:false, lastValueVisible:true,
+        crosshairMarkerVisible:true,
+        crosshairMarkerRadius:4,
+        crosshairMarkerBackgroundColor:'#00ffa3',
+      });
+      PB.updateEquityChart();
+    }catch(e){console.warn('PB equity chart init:',e);}
+  },
+
+  updateEquityChart: function(){
+    if(!PB._equitySeries) return;
+    if(!PB.equityCurve.length) return;
+    // Дедупликация по time (LightweightCharts требует уникальный + возрастающий)
+    var seen={}, pts=[];
+    PB.equityCurve.forEach(function(pt){
+      var k = pt.time;
+      if(!seen[k]){seen[k]=true; pts.push(pt);}
+    });
+    pts.sort(function(a,b){return a.time-b.time;});
+    try{ PB._equitySeries.setData(pts); }catch(e){}
+  },
+
+  // ── Рендер UI ─────────────────────────────────────────
+  renderUI: function(){
+    // Статус-индикатор
+    var dot = document.getElementById('pb-status-dot');
+    var txt = document.getElementById('pb-status-txt');
+    if(dot){ dot.className='pb-status-dot'+(PB.enabled?' on':''); }
+    if(txt){ txt.textContent = PB.enabled ? 'активен' : 'выключен'; }
+    var cb = document.getElementById('pb-enabled-cb');
+    if(cb) cb.checked = PB.enabled;
+
+    // Метрики
+    var m = PB.calcMetrics();
+    var eq = m.equity;
+    var eqDelta = eq - PB.DEPOSIT;
+    var eqPct   = (eqDelta/PB.DEPOSIT*100);
+
+    var elEq = document.getElementById('pb-m-equity');
+    if(elEq){ elEq.textContent = eq.toLocaleString('ru',{maximumFractionDigits:0}); }
+    var elEqP = document.getElementById('pb-m-equity-pct');
+    if(elEqP){
+      elEqP.textContent = (eqDelta>=0?'+':'')+eqDelta.toFixed(0)+'₽ ('+
+                          (eqPct>=0?'+':'')+eqPct.toFixed(2)+'%)';
+      elEqP.style.color = eqDelta>=0?'#00ffa3':'#ff3b5c';
+    }
+    var elPf = document.getElementById('pb-m-pf');
+    if(elPf){
+      elPf.textContent = m.pf===999?'∞' : m.pf.toFixed(2);
+      elPf.style.color = m.pf>=1.3?'#00ffa3':m.pf>=1.0?'#ffb800':'#ff3b5c';
+    }
+    var elWr = document.getElementById('pb-m-wr');
+    if(elWr){
+      elWr.textContent = m.n>0 ? Math.round(m.winRate*100)+'%' : '—';
+      elWr.style.color = m.winRate>=0.5?'#00ffa3':m.winRate>=0.4?'#ffb800':'#ff3b5c';
+    }
+    var elWrS = document.getElementById('pb-m-wr-sub');
+    if(elWrS) elWrS.textContent = m.wins+'п / '+m.losses+'у / '+m.n+'сд';
+    var elDD = document.getElementById('pb-m-dd');
+    if(elDD){
+      elDD.textContent = '−'+Math.round(m.maxDD*100)+'%';
+      elDD.style.color = m.maxDD<0.05?'#00ffa3':m.maxDD<0.12?'#ffb800':'#ff3b5c';
+    }
+    var elDDs = document.getElementById('pb-m-dd-sub');
+    if(elDDs) elDDs.textContent = m.eTrade>=0?'+'+m.eTrade.toFixed(0)+'₽/сд':m.eTrade.toFixed(0)+'₽/сд';
+    var elExp = document.getElementById('pb-m-exp');
+    if(elExp){
+      elExp.textContent = Math.round(m.exposure*100)+'%';
+      elExp.style.color = m.exposure>0.7?'#ff3b5c':m.exposure>0.5?'#ffb800':'#00ffa3';
+    }
+    var elTr = document.getElementById('pb-m-trades');
+    if(elTr){
+      elTr.textContent = m.n;
+      // 50+ сделок = достаточно статистики
+      elTr.style.color = m.n>=50?'#00ffa3':m.n>=20?'#ffb800':'var(--label)';
+    }
+
+    // Equity curve wrap
+    var ew = document.getElementById('pb-equity-wrap');
+    if(ew){
+      if(PB.equityCurve.length >= 2){
+        ew.style.display='';
+        if(!PB._equityChart) PB.initEquityChart();
+      } else {
+        ew.style.display='none';
+      }
+    }
+
+    // Открытые позиции
+    var ol = document.getElementById('pb-open-list');
+    var oc = document.getElementById('pb-open-cnt');
+    if(oc) oc.textContent = PB.positions.length ? '('+PB.positions.length+')' : '';
+    if(ol){
+      if(!PB.positions.length){
+        ol.innerHTML='<div class="pb-empty">Открытых позиций нет</div>';
+      } else {
+        ol.innerHTML = PB.positions.map(function(pos){
+          var p = prices[pos.sym];
+          var cur = p && p.p ? p.p : pos.entry;
+          var pnlRub = (cur-pos.entry)*pos.qty - pos.commission;
+          var pnlPct = pnlRub/pos.volRub*100;
+          var pnlCol = pnlRub>=0?'#00ffa3':'#ff3b5c';
+          var slDist = ((cur-pos.stop)/cur*100).toFixed(1);
+          var tgDist = ((pos.tgt-cur)/cur*100).toFixed(1);
+          return '<div class="pb-pos-row">'+
+            '<span class="pb-pos-sym">'+pos.sym+'</span>'+
+            '<div class="pb-pos-meta">'+
+              '<div style="font-size:11px;color:var(--txt2)">'+pos.qty+'шт × '+cur.toFixed(2)+'₽</div>'+
+              '<div style="font-size:9px;color:var(--txt3)">вх:'+pos.entry+' · стоп:'+pos.stop+' (−'+slDist+'%) · цель:'+pos.tgt+' (+'+tgDist+'%)</div>'+
+            '</div>'+
+            '<span class="pb-pos-pnl" style="color:'+pnlCol+'">'+
+              (pnlRub>=0?'+':'')+pnlRub.toFixed(0)+'₽<br>'+
+              '<span style="font-size:10px">'+(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%</span>'+
+            '</span>'+
+            '<button class="pb-close-btn" onclick="PB.closePosition(\''+pos.id+'\',\'manual\')">✕</button>'+
+          '</div>';
+        }).join('');
+      }
+    }
+    PB.renderLog();
+  },
+
+  renderLog: function(){
+    var el = document.getElementById('pb-log-list');
+    var cnt = document.getElementById('pb-log-cnt');
+    if(cnt) cnt.textContent = PB.log.length;
+    if(!el) return;
+    var colors = {open:'#00ffa3', close:'#00ffa3', closeloss:'#ff3b5c',
+                  skip:'var(--txt3)', warn:'#ffb800', info:'var(--txt2)'};
+    el.innerHTML = PB.log.slice(0,40).map(function(item){
+      var c = colors[item.type]||'var(--txt2)';
+      return '<div class="pb-log-item">'+
+        '<span class="pb-log-time">'+item.t+'</span>'+
+        '<div class="pb-log-dot" style="background:'+c+'"></div>'+
+        '<span style="color:'+c+';flex:1">'+item.msg+'</span>'+
+      '</div>';
+    }).join('');
+  }
+};
+
+// ── Глобальные функции для HTML-биндингов ──────────────
+
+function pbToggle(on){
+  if(on){ PB.start(); } else { PB.stop(); }
+}
+
+function pbReset(){
+  if(!confirm('Сбросить бумажный портфель? История сделок и equity curve будут удалены.')) return;
+  PB.positions   = [];
+  PB.closed      = [];
+  PB.equityCurve = [];
+  PB.dayStartEquity = 0;
+  PB.log         = [];
+  if(PB._equityChart){ try{PB._equityChart.remove();}catch(e){} PB._equityChart=null; PB._equitySeries=null; }
+  localStorage.removeItem('pb_state');
+  PB.addLog('↺ Портфель сброшен. Виртуальный депозит: '+PB.DEPOSIT.toLocaleString('ru')+'₽', 'warn');
+  PB.renderUI();
+  showToast('Paper Bot сброшен','Виртуальный депозит 100 000₽. История очищена.',null);
+}
+
+function pbSaveParams(){
+  var mp  = parseFloat(document.getElementById('pb-max-pos-inp').value)||15;
+  var me  = parseFloat(document.getElementById('pb-max-exp-inp').value)||70;
+  var sa  = parseFloat(document.getElementById('pb-stop-atr-inp').value)||1.5;
+  var ta  = parseFloat(document.getElementById('pb-tgt-atr-inp').value)||2.5;
+  PB.MAX_POS   = mp/100;
+  PB.MAX_EXP   = me/100;
+  PB.STOP_ATR  = sa;
+  PB.TGT_ATR   = ta;
+  PB.save();
+  showToast('Параметры бота сохранены','Позиция '+mp+'% · Экспозиция '+me+'% · Стоп ATR×'+sa+' · Цель ATR×'+ta,null);
+}
+
+// ── Инициализация при старте ────────────────────────────
+(function pbInit(){
+  PB.load();
+  // Подгрузить сохранённые параметры в форму (после DOM)
+  setTimeout(function(){
+    var mp = document.getElementById('pb-max-pos-inp');
+    var me = document.getElementById('pb-max-exp-inp');
+    var sa = document.getElementById('pb-stop-atr-inp');
+    var ta = document.getElementById('pb-tgt-atr-inp');
+    if(mp) mp.value = Math.round(PB.MAX_POS*100);
+    if(me) me.value = Math.round(PB.MAX_EXP*100);
+    if(sa) sa.value = PB.STOP_ATR;
+    if(ta) ta.value = PB.TGT_ATR;
+    PB.renderUI();
+    // Если был включён — перезапускаем
+    if(PB.enabled){ PB.enabled=false; PB.start(); }
+    // Обновлять equity каждые 30с независимо
+    setInterval(function(){
+      if(document.getElementById('page-portfolio') &&
+         !document.getElementById('page-portfolio').classList.contains('hidden')){
+        PB.renderUI();
+        PB.updateEquityChart();
+      }
+    }, 30000);
+  }, 1800);
+})();
+
+// ═══════════════════════════════════════════════════════════
+
 setTimeout(injectExpandBtns,1500);
 </script>
 
