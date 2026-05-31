@@ -2125,7 +2125,7 @@ function selA(id){
     '<div style="padding:8px;border-bottom:1px solid var(--g);margin-bottom:7px">'+
       '<div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--bright)">'+agIcon(a.r,a.c).replace('width:18px;height:18px','width:16px;height:16px;vertical-align:-3px')+' '+a.n+'</div>'+
       '<div style="font-size:9px;color:var(--dim)">'+a.r+'</div>'+
-      '<div style="font-size:9px;color:var(--red);margin-top:5px;padding:5px 7px;background:rgba(255,45,85,.06);border-left:2px solid var(--red)">⚠️ '+a.needs+'</div>'+
+      agNeedsHtml(a)+
     '</div>'+
     Object.entries(a.sk).map(function(entry){
       var k=entry[0],v=entry[1];
@@ -2139,6 +2139,43 @@ function selA(id){
     }).join('')+
     '<div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:8px 0 4px;font-family:var(--display);padding-top:6px;border-top:1px solid var(--g)">Последние события</div>'+
     (evs.length?evs.map(function(e){return '<div style="font-size:8.5px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.025);color:var(--text)">'+e.t+' — '+e.txt+'</div>';}).join(''):'<div style="font-size:8.5px;color:var(--dim)">Событий нет</div>');
+}
+
+
+// ── Динамический статус агента (needs) ───────────────
+function agNeedsHtml(a){
+  var gk = secureGet('groq_key')||'';
+  var text = a.needs;
+  var isOk = false;
+  // Для агентов завязанных на Groq — показываем реальный статус
+  if(a.id==='2'||a.id==='6'){
+    if(gk){
+      text = 'Groq API подключён ✓ LLM анализ активен';
+      isOk = true;
+    } else {
+      text = 'Groq API ключ не задан — перейдите в Кабинет → Настройки';
+      isOk = false;
+    }
+  }
+  var col   = isOk ? 'var(--ios-green)' : 'var(--ios-red)';
+  var bg    = isOk ? 'rgba(0,255,163,.06)' : 'rgba(255,45,85,.06)';
+  var border= isOk ? 'rgba(0,255,163,.4)' : 'var(--ios-red)';
+  var icon  = isOk ? '✅' : '⚠️';
+  return '<div style="font-size:9px;color:'+col+';margin-top:5px;padding:5px 7px;background:'+bg+';border-left:2px solid '+border+'">'+icon+' '+text+'</div>';
+}
+function agNeedsBadge(a){
+  var gk = secureGet('groq_key')||'';
+  var text = a.needs;
+  var isOk = false;
+  if(a.id==='2'||a.id==='6'){
+    if(gk){ text='Groq API активен ✓'; isOk=true; }
+    else  { text='Groq API не задан'; isOk=false; }
+  }
+  var col   = isOk ? 'var(--ios-green)' : 'var(--ios-red)';
+  var bg    = isOk ? 'rgba(0,255,163,.06)' : 'rgba(255,69,58,.06)';
+  var border= isOk ? 'rgba(0,255,163,.4)' : 'var(--ios-red)';
+  var icon  = isOk ? '✅' : '⚠️';
+  return '<div style="font-size:9px;color:'+col+';padding:6px 8px;background:'+bg+';border-left:2px solid '+border+';border-radius:0 var(--r1) var(--r1) 0;margin-bottom:12px">'+icon+' '+text+'</div>';
 }
 
 function rSkGrid(){
@@ -2206,7 +2243,7 @@ function toggleAg(){
   localStorage.setItem('ag_on',JSON.stringify(agOn));
   if(agOn){
     addEv('learn',null,'Автономный режим запущен. Агенты начали обучение.');
-    schedAg();
+    schedAg(true); // немедленный первый тик
   }else{
     if(agTimer)clearTimeout(agTimer);
     agTimer=null;
@@ -2226,26 +2263,39 @@ function toggleAg(){
   if(typeof renderAgPage==='function')renderAgPage();
 }
 
-function schedAg(){
+function schedAg(immediate){
   if(!agOn)return;
-  var ms=7000+Math.random()*13000; // быстрее цикл (7-20с вместо 12-35с)
-  agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
+  if(immediate){
+    // Первый тик сразу после небольшой задержки на загрузку данных
+    agTimer=setTimeout(function(){runAgCy();schedAg();},1200);
+  }else{
+    var ms=6000+Math.random()*10000; // 6-16с между тиками
+    agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
+  }
 }
 
 function runAgCy(){
   if(!agOn)return;
   var a=AGs[Math.floor(Math.random()*AGs.length)];
   var sp=Object.keys(prices);
-  if(!sp.length)return;
+  if(!sp.length){
+    // prices ещё не загружены — ждём, но не падаем
+    addEv('learn',a,'Ожидание данных MOEX...');
+    rAgCards();
+    return;
+  }
   var task=Math.random();
   if(task<0.25){
     var pat=TA[Math.floor(Math.random()*TA.length)];
     aLearn(a,1.5);
     addEv('learn',a,'Изучил "'+pat.n+'" ('+pat.r+'%)');
   }else if(task<0.8){
-    var sigs=Object.entries(prices).filter(function(p){return Math.abs(p[1].c)>=1.5;});
-    if(!sigs.length)return;
-    var pick=sigs[Math.floor(Math.random()*Math.min(3,sigs.length))];
+    // Берём топ-3 по абс. движению, fallback — любые тикеры с ценой
+    var allPrices=Object.entries(prices).filter(function(p){return p[1].p>0;});
+    if(!allPrices.length)return;
+    allPrices.sort(function(a,b){return Math.abs(b[1].c)-Math.abs(a[1].c);});
+    var pool=allPrices.slice(0,Math.max(3,Math.ceil(allPrices.length*0.2)));
+    var pick=pool[Math.floor(Math.random()*pool.length)];
     var sym=pick[0],p=pick[1];
     // Умные агенты (выше IQ) принимают решения точнее
     var iq=aIQ(a);
@@ -6250,7 +6300,7 @@ function showApp(){
   rTaKb();
   updCabUI();
   lCabTr();
-  if(agOn)schedAg();
+  if(agOn)schedAg(true); // восстанавливаем после перезагрузки
   // Parallel data load (Task 5 integration)
   fetchAllData().then(function(){
     rSigs();rCabTr();updateChartLivePrice();
@@ -6416,9 +6466,7 @@ function selAgPage(id){
       '</div>'+
     '</div>'+
     // Warning
-    '<div style="font-size:9px;color:var(--ios-red);padding:6px 8px;background:rgba(255,69,58,.06);border-left:2px solid var(--ios-red);border-radius:0 var(--r1) var(--r1) 0;margin-bottom:12px">'+
-      '⚠️ '+a.needs+
-    '</div>'+
+    agNeedsBadge(a)+
     // Recent events
     '<div style="font-size:10px;font-weight:600;color:var(--label3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Последние события</div>'+
     (evs.length?evs.map(function(e){
