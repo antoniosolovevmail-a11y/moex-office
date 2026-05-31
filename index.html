@@ -2275,70 +2275,104 @@ function schedAg(immediate){
 }
 
 function runAgCy(){
-  if(!agOn)return;
-  var a=AGs[Math.floor(Math.random()*AGs.length)];
-  var sp=Object.keys(prices);
+  if(!agOn) return;
+  var sp=Object.keys(prices).filter(function(s){return prices[s]&&prices[s].p>0;});
   if(!sp.length){
-    // prices ещё не загружены — ждём, но не падаем
-    addEv('learn',a,'Ожидание данных MOEX...');
-    rAgCards();
-    return;
+    addEv('learn',AGs[0],'Ожидание данных MOEX...');
+    rAgCards(); return;
   }
-  var task=Math.random();
-  if(task<0.25){
-    var pat=TA[Math.floor(Math.random()*TA.length)];
-    aLearn(a,1.5);
-    addEv('learn',a,'Изучил "'+pat.n+'" ('+pat.r+'%)');
-  }else if(task<0.8){
-    // Берём топ-3 по абс. движению, fallback — любые тикеры с ценой
-    var allPrices=Object.entries(prices).filter(function(p){return p[1].p>0;});
-    if(!allPrices.length)return;
-    allPrices.sort(function(a,b){return Math.abs(b[1].c)-Math.abs(a[1].c);});
-    var pool=allPrices.slice(0,Math.max(3,Math.ceil(allPrices.length*0.2)));
+  var cio=AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+
+  // === ФАЗ 1: КОЛЛЕКТИВНЫЙ ВЫБОР ТИКЕРА ===
+  // Все агенты смотрят на топ движений и взвешенно голосуют
+  var allP=Object.entries(prices).filter(function(e){return e[1].p>0;});
+  allP.sort(function(a,b){return Math.abs(b[1].c)-Math.abs(a[1].c);});
+  var pool=allP.slice(0,Math.max(5,Math.ceil(allP.length*0.15)));
+  var symVotes={};
+  AGs.forEach(function(ag){
+    var w=Math.max(10,aIQ(ag));
     var pick=pool[Math.floor(Math.random()*pool.length)];
-    var sym=pick[0],p=pick[1];
-    // Умные агенты (выше IQ) принимают решения точнее
-    var iq=aIQ(a);
-    var dir=p.c>0?'LONG':'SHORT';
-    // С ростом IQ агент чаще ловит правильное направление (фильтр шума)
-    if(iq>50 && Math.abs(p.c)<0.8 && Math.random()<(iq-50)/100){
-      // слабое движение — опытный агент пропускает или ждёт подтверждения
-      var rsiV=p.rsi||50;
-      if(rsiV<35)dir='LONG'; else if(rsiV>65)dir='SHORT';
-    }
-    var atr=Math.max((p.h-p.l)/4,p.p*0.005);
-    var trade={id:'ag_'+Date.now(),sym:sym,dir:dir,en:p.p,
-      st:parseFloat((p.p-atr*1.5).toFixed(2)),
-      tg:parseFloat((p.p+atr*2).toFixed(2)),
-      ag:a.n,agId:a.id,at:Date.now()};
-    agTrades.push(trade);
-    a.tr++;
-    addEv('trade',a,'Открыл '+dir+' '+sym+' @ '+p.p+'₽ (стоп: '+trade.st+')');
-    rAgTr(); sAS();
-    var ce=document.getElementById('ag-cnt');
-    if(ce)ce.textContent=agTrades.length;
-    setTimeout(function(){
-      var cp=prices[sym];
-      if(!cp)return;
-      var pnl=dir==='LONG'?(cp.p-trade.en)/trade.en*100:(trade.en-cp.p)/trade.en*100;
-      trade.cl=cp.p;
-      trade.pnl=parseFloat(pnl.toFixed(2));
-      if(pnl>0){a.wi++; a.streak=(a.streak||0)+1;} else {a.streak=0;}
-      addEv(pnl>0?'trade':'loss',a,'Закрыл '+dir+' '+sym+' → '+(pnl>=0?'+':'')+pnl.toFixed(2)+'%'+((a.streak||0)>=3?' 🔥'+a.streak:''));
-      if(pnl<0)anlLoss(a,trade);
-      // Награда масштабируется с величиной прибыли (большой профит = больше обучения)
-      var reward = pnl>0 ? Math.min(5, 2.5 + Math.abs(pnl)*0.15) : 0.5;
-      aLearn(a, reward);
-      rAgTr(); sAS();
-      var ce2=document.getElementById('ag-cnt');
-      if(ce2)ce2.textContent=agTrades.length;
-    },20000+Math.random()*70000);
-  }else{
-    var sym2=sp[Math.floor(Math.random()*sp.length)];
-    var p2=prices[sym2];
-    addEv('learn',a,'Анализирует '+sym2+': '+p2.p+'₽, '+p2.c.toFixed(2)+'%');
-    aLearn(a,0.3);
+    if(!pick) return;
+    symVotes[pick[0]]=(symVotes[pick[0]]||0)+w;
+  });
+  var chosenSym=Object.keys(symVotes).sort(function(a,b){
+    return symVotes[b]-symVotes[a];
+  })[0]||pool[0][0];
+  var p=prices[chosenSym];
+  if(!p){ rAgCards(); return; }
+
+  // === ФАЗА 2: СИНХРОННЫЙ АНАЛИЗ — КОНСЕНСУС ===
+  var cs=(typeof calcFullConsensus==='function')?calcFullConsensus(chosenSym):null;
+  var dir=cs?cs.dir:(p.c>0?'LONG':'SHORT');
+  var strength=cs?cs.strength:'weak';
+  var longW=cs?cs.longW:50;
+
+  // === ФАЗА 3: ОБУЧЕНИЕ ИЛИ ТОРГОВЛЯ ===
+  if(Math.random()<0.2){
+    // Коллективное обучение — все агенты изучают паттерн
+    var pat=TA[Math.floor(Math.random()*TA.length)];
+    AGs.forEach(function(ag){ aLearn(ag,1.1); });
+    addEv('learn',cio,'Обучение ('+AGs.length+' аг.): "'+pat.n+'" '+pat.r+'%');
+    rAgCards(); return;
   }
+
+  if(strength==='weak'||dir==='HOLD'){
+    // Слабый сигнал — самый умный агент докладывает, все воздерживаются
+    var top=AGs.slice().sort(function(a,b){return aIQ(b)-aIQ(a);})[0];
+    addEv('learn',top,
+      'Совещание по '+chosenSym+': слабый сигнал ('+longW+'% LONG) — пропускаем');
+    aLearn(top,0.5);
+    rAgCards(); return;
+  }
+
+  // Достаточный консенсус — открываем сделку от всего коллектива
+  var atr=Math.max((p.h-p.l)/4,p.p*0.005);
+  var trade={
+    id:'ag_'+Date.now(), sym:chosenSym, dir:dir,
+    en:p.p,
+    st:parseFloat((p.p-atr*1.5).toFixed(2)),
+    tg:parseFloat((p.p+atr*2.0).toFixed(2)),
+    ag:'Коллектив', agId:'collective', at:Date.now(),
+    votes:longW+'%', strength:strength
+  };
+  agTrades.push(trade);
+  // Все агенты +1 к сделкам (решение принималось коллективно)
+  AGs.forEach(function(ag){ ag.tr++; });
+  addEv('trade',cio,
+    'Коллектив: '+dir+' '+chosenSym+' @ '+p.p+
+    '\u20BD | '+longW+'% за LONG | '+strength);
+  rAgTr(); sAS();
+  var ce=document.getElementById('ag-cnt');
+  if(ce) ce.textContent=agTrades.length;
+
+  // === ФАЗА 4: ЗАКРЫТИЕ И ОБРАТНАЯ СВЯЗЬ ВСЕМ ===
+  setTimeout(function(){
+    var cp=prices[chosenSym];
+    if(!cp) return;
+    var pnl=dir==='LONG'
+      ?(cp.p-trade.en)/trade.en*100
+      :(trade.en-cp.p)/trade.en*100;
+    trade.cl=cp.p;
+    trade.pnl=parseFloat(pnl.toFixed(2));
+    var won=pnl>0;
+    // Каждый агент обучается пропорционально своему IQ
+    AGs.forEach(function(ag){
+      var iq=Math.max(10,aIQ(ag));
+      var base=won?Math.min(5,2.0+Math.abs(pnl)*0.12):0.4;
+      aLearn(ag, base*(0.6+iq/100*0.8));
+      if(won){ag.wi++;ag.streak=(ag.streak||0)+1;}
+      else{ag.streak=0;}
+    });
+    var maxStreak=Math.max.apply(null,AGs.map(function(a){return a.streak||0;}));
+    addEv(won?'trade':'loss',cio,
+      'Итог: '+(pnl>=0?'+':'')+pnl.toFixed(2)+'% по '+chosenSym+
+      (maxStreak>=3?' \uD83D\uDD25'+maxStreak:''));
+    if(!won) anlLoss(cio,trade);
+    rAgTr(); sAS();
+    var ce2=document.getElementById('ag-cnt');
+    if(ce2) ce2.textContent=agTrades.length;
+  },15000+Math.random()*45000);
+
   rAgCards();
 }
 
@@ -3955,16 +3989,40 @@ function calcFullConsensus(sym){
     })()
   ];
 
-  // ── Aggregate ──────────────────────────────────
-  var longVotes  = agents.filter(function(a){return a.dir==='LONG';}).length;
-  var shortVotes = agents.filter(function(a){return a.dir==='SHORT';}).length;
-  var total      = agents.length;
-  var avgConf    = Math.round(agents.reduce(function(s,a){return s+a.conf;},0)/total);
-  var finalDir   = longVotes>shortVotes?'LONG':shortVotes>longVotes?'SHORT':'HOLD';
-  var majorityPct= Math.round(Math.max(longVotes,shortVotes)/total*100);
+  // ── Взвешенный консенсус по IQ ──────────────────
+  // Вес голоса каждого агента = его текущий IQ (0-100).
+  // Новичок (IQ=0) получает базу 10 — он тоже участвует, просто тихо.
+  // Опытный агент (IQ=80) весит в 8 раз больше новичка.
+  function _wIQ(id){
+    var ag=AGs.filter(function(x){return x.id===id;})[0];
+    return ag ? Math.max(10, aIQ(ag)) : 10;
+  }
+  var totalW=0, longW=0, shortW=0, holdW=0, wConf=0;
+  agents.forEach(function(a){
+    var w=_wIQ(a.id);
+    a.weight=w;
+    totalW+=w; wConf+=a.conf*w;
+    if(a.dir==='LONG') longW+=w;
+    else if(a.dir==='SHORT') shortW+=w;
+    else holdW+=w;
+  });
+  var avgConf   = totalW>0 ? Math.round(wConf/totalW) : 50;
+  var longPct   = totalW>0 ? longW/totalW  : 0;
+  var shortPct  = totalW>0 ? shortW/totalW : 0;
+  var finalDir  = longPct>shortPct?'LONG':shortPct>longPct?'SHORT':'HOLD';
+  var consensus = Math.max(longPct,shortPct);
+  // Сила сигнала: strong>=65%, moderate>=50%, weak<50%
+  var strength  = consensus>=0.65?'strong':consensus>=0.50?'moderate':'weak';
+  // Обратная совместимость с UI (счётчики голосов)
+  var longVotes = agents.filter(function(a){return a.dir==='LONG';}).length;
+  var shortVotes= agents.filter(function(a){return a.dir==='SHORT';}).length;
+  var total     = agents.length;
+  var majorityPct=Math.round(consensus*100);
 
   return {agents:agents,dir:finalDir,longVotes:longVotes,shortVotes:shortVotes,
-          total:total,avgConf:avgConf,majorityPct:majorityPct,sym:sym};
+          total:total,avgConf:avgConf,majorityPct:majorityPct,sym:sym,
+          longW:Math.round(longPct*100),shortW:Math.round(shortPct*100),
+          strength:strength,totalW:totalW};
 }
 
 function fmtVol(v){
@@ -4007,35 +4065,39 @@ function renderConsensusPanel(sym){
     res.agents.map(function(a){
       var ac  = a.dir==='LONG'?'var(--ios-green)':a.dir==='SHORT'?'var(--ios-red)':'var(--ios-orange)';
       var ico = a.dir==='LONG'?'▲':a.dir==='SHORT'?'▼':'—';
-      return '<div style="margin-bottom:5px" title="'+a.reason+'">'+
+      var wPct= a.weight && res.totalW ? Math.round(a.weight/res.totalW*100) : 0;
+      return '<div style="margin-bottom:5px" title="'+a.reason+' | Вес: '+wPct+'%">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'+
           '<div style="display:flex;align-items:center;gap:5px">'+
             agIcon(a.r,a.c).replace('width:18px;height:18px','width:14px;height:14px')+
             '<span style="font-size:9px;color:var(--text)">'+a.role+'</span>'+
+            '<span style="font-size:7.5px;color:var(--dim);opacity:.7">w:'+wPct+'%</span>'+
           '</div>'+
           '<div style="display:flex;align-items:center;gap:5px">'+
-            '<span style="font-size:8.5px;color:var(--dim)">'+a.reason.slice(0,28)+(a.reason.length>28?'…':'')+'</span>'+
+            '<span style="font-size:8.5px;color:var(--dim)">'+a.reason.slice(0,26)+(a.reason.length>26?'…':'')+'</span>'+
             '<span style="font-size:9px;font-weight:700;color:'+ac+';width:38px;text-align:right">'+
               ico+' '+a.conf+'%</span>'+
           '</div>'+
         '</div>'+
         '<div style="height:2px;background:rgba(255,255,255,.06)">'+
-          '<div style="height:2px;background:'+ac+';width:'+a.conf+'%;transition:width .8s"></div>'+
+          '<div style="height:2px;background:'+ac+';width:'+a.conf+'%;transition:width .8s;opacity:'+(0.4+wPct/100*0.6)+'"></div>'+
         '</div>'+
       '</div>';
     }).join('')+
 
-    // ── Summary bar ──
+    // ── Summary bar (взвешенный) ──
     '<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.05)">'+
-      '<div style="display:flex;gap:2px;height:6px;border-radius:0;overflow:hidden;margin-bottom:4px">'+
-        '<div style="background:var(--green);flex:'+(res.longVotes||0)+'"></div>'+
-        '<div style="background:var(--amber);flex:'+(res.total-res.longVotes-res.shortVotes||0)+'"></div>'+
-        '<div style="background:var(--red);flex:'+(res.shortVotes||0)+'"></div>'+
+      '<div style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:4px">'+
+        '<div style="background:var(--green);flex:'+(res.longW||0)+'"></div>'+
+        '<div style="background:var(--amber);flex:'+(100-res.longW-res.shortW||0)+'"></div>'+
+        '<div style="background:var(--red);flex:'+(res.shortW||0)+'"></div>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--dim)">'+
-        '<span style="color:var(--green)">▲ LONG: '+res.longVotes+'</span>'+
-        '<span style="color:var(--dim)">Ср. уверен.: '+res.avgConf+'%</span>'+
-        '<span style="color:var(--red)">SHORT: '+res.shortVotes+' ▼</span>'+
+        '<span style="color:var(--green)">▲ '+res.longW+'% веса</span>'+
+        '<span style="color:'+(res.strength==='strong'?'var(--ios-green)':res.strength==='moderate'?'var(--amber)':'var(--dim)')+'">'+
+          (res.strength==='strong'?'СИЛЬНЫЙ':res.strength==='moderate'?'УМЕРЕННЫЙ':'СЛАБЫЙ')+
+        '</span>'+
+        '<span style="color:var(--red)">'+res.shortW+'% веса ▼</span>'+
       '</div>'+
     '</div>';
 
