@@ -10329,15 +10329,38 @@ var PB = {
 
   // ── Текущий equity (депозит + открытые позиции по рынку) ──
   calcEquity: function(){
-    var invested = PB.positions.reduce(function(s,pos){
+    // Кэш = депозит - вложенный капитал (по ценам входа) + реализованный PnL
+    var usedCash  = PB.positions.reduce(function(s,pos){return s+pos.volRub;},0);
+    var closedPnl = PB.closed.reduce(function(s,t){return s+t.pnlRub;},0);
+    var cash      = PB.DEPOSIT - usedCash + closedPnl;
+
+    // Нереализованный PnL открытых позиций (с оценочной выходной комиссией)
+    var unrealizedPnl = PB.positions.reduce(function(s,pos){
+      var p   = prices[pos.sym];
+      var cur = p && p.p ? p.p : pos.entry;
+      var gross    = (cur - pos.entry) * pos.qty;
+      var exitComm = cur * pos.qty * PB.COMMISSION;
+      return s + (gross - pos.commission - exitComm);
+    }, 0);
+
+    // Equity = кэш + стоимость открытых позиций по рынку
+    var marketValue = PB.positions.reduce(function(s,pos){
       var p = prices[pos.sym];
-      if(!p || !p.p) return s + pos.volRub;
-      return s + (p.p * pos.qty);
-    },0);
-    var usedCash = PB.positions.reduce(function(s,pos){return s+pos.volRub;},0);
-    var cash = PB.DEPOSIT - usedCash +
-      PB.closed.reduce(function(s,t){return s+t.pnlRub;},0);
-    return cash + invested;
+      return s + (p && p.p ? p.p * pos.qty : pos.volRub);
+    }, 0);
+
+    return cash + marketValue;
+  },
+
+  // ── Нереализованный PnL всех открытых позиций ─────────
+  calcUnrealizedPnl: function(){
+    return PB.positions.reduce(function(s,pos){
+      var p   = prices[pos.sym];
+      var cur = p && p.p ? p.p : pos.entry;
+      var gross    = (cur - pos.entry) * pos.qty;
+      var exitComm = cur * pos.qty * PB.COMMISSION;
+      return s + (gross - pos.commission - exitComm);
+    }, 0);
   },
 
   // ── Текущая экспозиция % ─────────────────────────────
@@ -10571,28 +10594,35 @@ var PB = {
     var pf      = sumLoss>0 ? sumWin/sumLoss : (sumWin>0?999:0);
     var eTrade  = n>0 ? (sumWin-sumLoss)/n : 0;
 
-    // Max drawdown
-    var eq   = PB.DEPOSIT;
+    // Max drawdown по equity curve
+    var eq2  = PB.DEPOSIT;
     var peak = PB.DEPOSIT;
     var maxDD= 0;
     closed.forEach(function(t){
-      eq += t.pnlRub;
-      if(eq>peak) peak=eq;
-      var dd = peak>0 ? (peak-eq)/peak : 0;
+      eq2 += t.pnlRub;
+      if(eq2>peak) peak=eq2;
+      var dd = peak>0 ? (peak-eq2)/peak : 0;
       if(dd>maxDD) maxDD=dd;
     });
 
-    // Current equity
+    // Текущий DD с учётом unrealized
     var curEq = PB.calcEquity();
     var curDD = peak>0 ? Math.max(0,(peak-curEq)/peak) : 0;
     maxDD = Math.max(maxDD, curDD);
+
+    // Экспозиция
+    var invested = PB.positions.reduce(function(s,pos){
+      var p = prices[pos.sym];
+      return s + (p && p.p ? p.p*pos.qty : pos.volRub);
+    },0);
+    var exposure = curEq>0 ? invested/curEq : 0;
 
     return {
       n:n, winRate:winRate, wins:wins.length, losses:losses.length,
       pf:pf, eTrade:eTrade, maxDD:maxDD,
       sumWin:sumWin, sumLoss:sumLoss,
       equity:curEq,
-      exposure: PB.calcExposure()
+      exposure:exposure
     };
   },
 
@@ -10710,9 +10740,17 @@ var PB = {
     if(elEq){ elEq.textContent = eq.toLocaleString('ru',{maximumFractionDigits:0}); }
     var elEqP = document.getElementById('pb-m-equity-pct');
     if(elEqP){
-      elEqP.textContent = (eqDelta>=0?'+':'')+eqDelta.toFixed(0)+'₽ ('+
-                          (eqPct>=0?'+':'')+eqPct.toFixed(2)+'%)';
-      elEqP.style.color = eqDelta>=0?'#00ffa3':'#ff3b5c';
+      var closedPnl     = PB.closed.reduce(function(s,t){return s+t.pnlRub;},0);
+      var unrealizedPnl = PB.calcUnrealizedPnl();
+      var totalDelta    = closedPnl + unrealizedPnl;
+      var totalPct      = (totalDelta/PB.DEPOSIT*100);
+      var parts = [];
+      if(Math.abs(closedPnl)>0.01)     parts.push('зак:'+(closedPnl>=0?'+':'')+closedPnl.toFixed(0)+'₽');
+      if(Math.abs(unrealizedPnl)>0.01) parts.push('откр:'+(unrealizedPnl>=0?'+':'')+unrealizedPnl.toFixed(0)+'₽');
+      elEqP.textContent = (totalDelta>=0?'+':'')+totalDelta.toFixed(0)+'₽ ('+
+                          (totalPct>=0?'+':'')+totalPct.toFixed(2)+'%)'+
+                          (parts.length ? ' ['+parts.join(' ')+']' : '');
+      elEqP.style.color = totalDelta>=0?'#00ffa3':'#ff3b5c';
     }
     var elPf = document.getElementById('pb-m-pf');
     if(elPf){
@@ -10722,10 +10760,10 @@ var PB = {
     var elWr = document.getElementById('pb-m-wr');
     if(elWr){
       elWr.textContent = m.n>0 ? Math.round(m.winRate*100)+'%' : '—';
-      elWr.style.color = m.winRate>=0.5?'#00ffa3':m.winRate>=0.4?'#ffb800':'#ff3b5c';
+      elWr.style.color = m.n===0?'var(--txt3)':m.winRate>=0.5?'#00ffa3':m.winRate>=0.4?'#ffb800':'#ff3b5c';
     }
     var elWrS = document.getElementById('pb-m-wr-sub');
-    if(elWrS) elWrS.textContent = m.wins+'п / '+m.losses+'у / '+m.n+'сд';
+    if(elWrS) elWrS.textContent = m.n>0 ? m.wins+'п / '+m.losses+'у / '+m.n+'сд' : 'нет закрытых';
     var elDD = document.getElementById('pb-m-dd');
     if(elDD){
       elDD.textContent = '−'+Math.round(m.maxDD*100)+'%';
@@ -10765,18 +10803,27 @@ var PB = {
         ol.innerHTML='<div class="pb-empty">Открытых позиций нет</div>';
       } else {
         ol.innerHTML = PB.positions.map(function(pos){
-          var p = prices[pos.sym];
+          var p   = prices[pos.sym];
           var cur = p && p.p ? p.p : pos.entry;
-          var pnlRub = (cur-pos.entry)*pos.qty - pos.commission;
-          var pnlPct = pnlRub/pos.volRub*100;
-          var pnlCol = pnlRub>=0?'#00ffa3':'#ff3b5c';
-          var slDist = ((cur-pos.stop)/cur*100).toFixed(1);
-          var tgDist = ((pos.tgt-cur)/cur*100).toFixed(1);
+          // Нереализованный PnL: (текущая - вход) × кол-во минус входная комиссия
+          // Выходную комиссию учитываем как оценочную (ещё не уплачена)
+          var grossPnl    = (cur - pos.entry) * pos.qty;
+          var exitCommEst = cur * pos.qty * PB.COMMISSION;
+          var pnlRub  = grossPnl - pos.commission - exitCommEst;
+          var pnlPct  = pos.volRub > 0 ? pnlRub / pos.volRub * 100 : 0;
+          var pnlCol  = pnlRub >= 0 ? '#00ffa3' : '#ff3b5c';
+          var slDist  = cur > 0 ? ((cur - pos.stop) / cur * 100).toFixed(1) : '0';
+          var tgDist  = cur > 0 ? ((pos.tgt - cur)  / cur * 100).toFixed(1) : '0';
+          var daysOpen= pos.openedAt ? Math.round((Date.now()-new Date(pos.openedAt).getTime())/86400000) : 0;
           return '<div class="pb-pos-row">'+
             '<span class="pb-pos-sym">'+pos.sym+'</span>'+
             '<div class="pb-pos-meta">'+
-              '<div style="font-size:11px;color:var(--txt2)">'+pos.qty+'шт × '+cur.toFixed(2)+'₽</div>'+
-              '<div style="font-size:9px;color:var(--txt3)">вх:'+pos.entry+' · стоп:'+pos.stop+' (−'+slDist+'%) · цель:'+pos.tgt+' (+'+tgDist+'%)</div>'+
+              '<div style="font-size:11px;color:var(--txt2)">'+pos.qty+'шт × '+cur.toFixed(2)+'₽'+
+                (daysOpen>0?' · '+daysOpen+'д':'')+
+              '</div>'+
+              '<div style="font-size:9px;color:var(--txt3)">'+
+                'вх:'+pos.entry+' · стоп:'+pos.stop+' (−'+slDist+'%) · цель:'+pos.tgt+' (+'+tgDist+'%)'+
+              '</div>'+
             '</div>'+
             '<span class="pb-pos-pnl" style="color:'+pnlCol+'">'+
               (pnlRub>=0?'+':'')+pnlRub.toFixed(0)+'₽<br>'+
