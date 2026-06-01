@@ -308,6 +308,7 @@ body::before{
 .evo-tabs{display:flex;border-bottom:1px solid rgba(123,92,255,.1);background:rgba(10,13,26,.7);flex-shrink:0}
 .etab{flex:1;padding:5px 0;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);border:none;background:transparent;cursor:pointer;font-family:var(--sans);border-bottom:1.5px solid transparent;transition:all .15s}
 .etab.on{color:var(--cyan);border-bottom-color:var(--cyan)}
+#ag-tab-chat.on,button[onclick*="swEvo('chat')"].on{color:#00ffa3;border-bottom-color:#00ffa3}
 .evo-body{flex:1;overflow-y:auto;padding:6px 8px}
 .ev-item{display:flex;align-items:flex-start;gap:5px;padding:4px 0;border-bottom:1px solid rgba(123,92,255,.06);animation:fadeUp .3s}
 .ev-t{font-size:9px;color:var(--txt3);flex-shrink:0;width:36px;font-family:var(--mono)}
@@ -800,7 +801,12 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
       <div class="sbm"><span class="sbm-l">ОФЗ</span><span id="ofz-nav" style="color:var(--cyan);font-size:12px;font-weight:600;font-family:var(--mono)">—</span></div>
       <div class="sb-sep"></div>
       <div class="sbm"><span class="sbm-l">Сигналов</span><span class="sbm-v a" id="sig-cnt">0</span></div>
-    </div>
+      <div class="sb-sep"></div>
+      <div class="sbm" style="cursor:pointer" onclick="toggleAg()" title="Запустить/остановить агентов">
+        <div id="ag-hdr-dot" style="width:6px;height:6px;border-radius:50%;background:var(--txt3);display:inline-block;margin-right:4px;transition:all .3s;vertical-align:middle"></div>
+        <span class="sbm-l">Агенты</span>
+        <span id="ag-hdr-status" class="sbm-v" style="margin-left:4px;color:var(--txt3)">выкл</span>
+      </div>
     <div class="statusbar-right">
       <div class="live-pill"><div class="live-dot" id="mkt-dot"></div><span class="live-txt" id="mkt-st">—</span></div>
       <div id="bcs-pill" class="bcs-pill off" onclick="showPage('cab');showCab('settings')" title="БКС Брокер — нажмите для настройки"><div class="bp-dot"></div><span id="bcs-pill-txt">БКС</span></div>
@@ -1278,8 +1284,8 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
           <div style="font-size:12px;font-weight:600;color:var(--label)">Журнал событий</div>
           <div style="display:flex;gap:4px">
             <button class="etab on" id="ag-tab-log" onclick="agTab('log')">События</button>
-            <button class="etab" id="ag-tab-chat" onclick="agTab('chat')" style="color:#00ffa3">Чат</button>
-            <button class="etab" id="ag-tab-study" onclick="agTab('study')" style="color:var(--ios-green)">Обучение</button>
+            <button class="etab" id="ag-tab-chat" onclick="agTab('chat')">Чат</button>
+            <button class="etab" id="ag-tab-study" onclick="agTab('study')">Обучение</button>
             <button class="etab" id="ag-tab-tr" onclick="agTab('tr')">Сделки</button>
             <button class="etab" id="ag-tab-sk" onclick="agTab('sk')">Навыки</button>
             <button class="etab" id="ag-tab-prompts" onclick="agTab('prompts')">Промты</button>
@@ -2539,6 +2545,11 @@ function rAgCards(){
   if(btn2x){btn2x.textContent=agOn?'■ Стоп':'▶ Старт';btn2x.className='ag-run-btn'+(agOn?' off':'');}
   var sbtn=document.getElementById('s-ag-btn');
   if(sbtn)sbtn.textContent=agOn?'ВЫКЛЮЧИТЬ':'ВКЛЮЧИТЬ';
+  // Шапка
+  var _hd=document.getElementById('ag-hdr-dot');
+  var _ht=document.getElementById('ag-hdr-status');
+  if(_hd){_hd.style.background=agOn?'#00ffa3':'var(--txt3)';_hd.style.boxShadow=agOn?'0 0 6px #00ffa3':'none';}
+  if(_ht){_ht.textContent=agOn?'вкл':'выкл';_ht.style.color=agOn?'#00ffa3':'var(--txt3)';}
   var iqAll=AGs.reduce(function(s,a){return s+aIQ(a);},0)/AGs.length;
   var iqEl=document.getElementById('ag-iq-lbl');if(iqEl)iqEl.textContent='IQ '+iqAll.toFixed(1)+'%';
   var iqEl2=document.getElementById('ag-iq');if(iqEl2)iqEl2.textContent=iqAll.toFixed(0)+'%';
@@ -2787,10 +2798,10 @@ function addChat(fromAg, msg, opts){
     color:  fromAg ? fromAg.c    : '#00ffa3',
     role:   fromAg ? fromAg.r    : '',
     emoji:  fromAg ? fromAg.e    : '⚙️',
-    to:     opts.to   || null,   // адресат (или null = всем)
+    to:     opts.to   || null,
     toId:   opts.toId || null,
     msg:    msg,
-    tag:    opts.tag  || null,   // 'trade'|'study'|'warn'|'flip'
+    tag:    opts.tag  || null,
     t:      hm,
     day:    day,
     ts:     Date.now()
@@ -2799,6 +2810,18 @@ function addChat(fromAg, msg, opts){
   if(agChatLog.length > 300) agChatLog.length = 300;
 
   _renderChatItem(item, day);
+
+  // Пульс на вкладке если чат не открыт
+  ['ag-tab-chat'].forEach(function(btnId){
+    var btn = document.getElementById(btnId);
+    if(btn && !btn.classList.contains('on')){
+      btn.style.color = '#00ffa3';
+      clearTimeout(btn._pulse);
+      btn._pulse = setTimeout(function(){
+        if(!btn.classList.contains('on')) btn.style.color = '';
+      }, 3000);
+    }
+  });
 }
 
 // Рендер одного сообщения в DOM
@@ -3118,6 +3141,11 @@ function toggleAg(){
   if(_sbtn)_sbtn.textContent=agOn?'ВЫКЛЮЧИТЬ':'ВКЛЮЧИТЬ';
   var _dot=document.getElementById('ag-status-dot');
   if(_dot){_dot.style.background=agOn?'var(--green)':'var(--dim)';_dot.style.animation=agOn?'pulse 2s infinite':'none';}
+  // Индикатор в шапке
+  var _hdrDot=document.getElementById('ag-hdr-dot');
+  var _hdrTxt=document.getElementById('ag-hdr-status');
+  if(_hdrDot){_hdrDot.style.background=agOn?'#00ffa3':'var(--txt3)';_hdrDot.style.boxShadow=agOn?'0 0 6px #00ffa3':'none';}
+  if(_hdrTxt){_hdrTxt.textContent=agOn?'вкл':'выкл';_hdrTxt.style.color=agOn?'#00ffa3':'var(--txt3)';}
   showToast(agOn?'Агенты запущены':'Агенты остановлены', agOn?'Автономный режим включён':'Авто-режим выключен', null);
   rAgCards();
   if(typeof renderAgPage==='function')renderAgPage();
@@ -4064,8 +4092,11 @@ function swEvo(t){
     var el=document.getElementById('evo-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
   });
-  document.querySelectorAll('.etab').forEach(function(b,i){
-    b.classList.toggle('on',['log','chat','sk','tr','kn','prompts'][i]===t);
+  // Обновляем только кнопки внутри .evo-tabs (не глобально)
+  document.querySelectorAll('.evo-tabs .etab').forEach(function(b){
+    var tab=b.getAttribute('onclick')||'';
+    var m=tab.match(/swEvo\('(\w+)'\)/);
+    if(m) b.classList.toggle('on', m[1]===t);
   });
   if(t==='sk')rSkGrid();
   if(t==='tr')rAgTr();
