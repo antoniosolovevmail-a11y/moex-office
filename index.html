@@ -1816,6 +1816,23 @@ function aLearn(a,delta){
   if(gain >= 0.3) addEv('skill',a,'Навык "'+SKN[k]+'" → '+a.sk[k].toFixed(1)+'%');
 }
 
+// Прокачка конкретного навыка (используется в agStudyCycle и agDeepStudyFor)
+function aLearnSkill(a, skillKey, delta){
+  if(!a || !a.sk || !(skillKey in a.sk)) return 0;
+  var wr       = a.tr>0 ? a.wi/a.tr : 0.5;
+  var wrMult   = 0.7 + wr;
+  var cur      = a.sk[skillKey];
+  var dimFactor= cur<40?1.8:cur<70?1.2:cur<90?0.7:0.3;
+  var gain     = (delta||1) * wrMult * dimFactor;
+  a.sk[skillKey] = Math.min(100, cur + gain);
+  // Spillover 12% на остальные навыки
+  Object.keys(a.sk).forEach(function(k){
+    if(k!==skillKey) a.sk[k] = Math.min(100, a.sk[k] + gain*0.12);
+  });
+  sAS();
+  return gain;
+}
+
 // ── Профильные библиотеки знаний ──────────────────────────
 // Каждый агент изучает материалы своей специализации.
 // Структура: {тема, что изучает, навык который растёт, источник}
@@ -2870,6 +2887,16 @@ function agNeedsBadge(a){
 var agChatLog = []; // {from, fromId, color, role, to, toId, msg, t, tag, ts}
 var _chatLastDay = '';
 
+function _saveChatLog(){
+  try{ localStorage.setItem('ag_chat', JSON.stringify(agChatLog.slice(0,100))); }catch(e){}
+}
+function _loadChatLog(){
+  try{
+    var s=JSON.parse(localStorage.getItem('ag_chat')||'[]');
+    if(Array.isArray(s)) agChatLog=s;
+  }catch(e){}
+}
+
 // Добавить сообщение в чат
 function addChat(fromAg, msg, opts){
   opts = opts||{};
@@ -2893,6 +2920,7 @@ function addChat(fromAg, msg, opts){
   };
   agChatLog.unshift(item);
   if(agChatLog.length > 300) agChatLog.length = 300;
+  _saveChatLog();
 
   _renderChatItem(item, day);
 
@@ -3294,9 +3322,23 @@ var _ftSeries  = null;
 async function runForwardTest(){
   if(_ftRunning){ showToast('Forward Test','Уже запущен, подождите...',null); return; }
   _ftRunning = true;
+  try{
+    await _runForwardTestBody();
+  }catch(e){
+    console.error('ForwardTest error:', e);
+    var prog=document.getElementById('ft-progress');
+    if(prog){prog.style.display='';prog.textContent='Ошибка: '+e.message+'. Попробуйте ещё раз.';}
+    var btn=document.getElementById('ft-run-btn');
+    if(btn) btn.textContent='↻ Повторить';
+    showToast('Forward Test: ошибка', e.message, null);
+  }finally{
+    _ftRunning = false;
+  }
+}
 
-  var days  = parseInt(document.getElementById('ft-days-sel').value)||30;
+async function _runForwardTestBody(){
   var btn   = document.getElementById('ft-run-btn');
+  var days  = parseInt(document.getElementById('ft-days-sel').value)||30;
   var prog  = document.getElementById('ft-progress');
   var mwrap = document.getElementById('ft-metrics');
   var cwrap = document.getElementById('ft-chart-wrap');
@@ -3532,11 +3574,10 @@ async function runForwardTest(){
   }
 
   if(btn) btn.textContent='↻ Повторить';
-  _ftRunning = false;
   showToast('Forward Test завершён',
     trades.length+' сделок · PnL: '+(totalPnl>=0?'+':'')+totalPnl.toFixed(0)+
     '₽ · PF:'+pf.toFixed(2)+' · WR:'+Math.round(wr*100)+'%', null);
-}
+} // end _runForwardTestBody
 
 function rSkGrid(){
   var el=document.getElementById('sk-grid');
@@ -4586,6 +4627,18 @@ function showPage(p){
   if(p==='portfolio'){renderPortfolioPage();}
 }
 
+// Перейти к тикеру в терминале
+function showSym(sym){
+  if(!sym||!ST[sym]) return;
+  showPage('term');
+  if(curSym!==sym){
+    curSym=sym;
+    var sl=document.getElementById('sym-sel');
+    if(sl)sl.value=sym;
+    loadH(sym,curTF);
+  }
+}
+
 function swEvo(t){
   ['log','chat','sk','tr','kn','prompts'].forEach(function(x){
     var el=document.getElementById('evo-'+x);
@@ -5070,6 +5123,7 @@ async function fetchBrent(){
 
 // ── TASK 3: OFZ yields from MOEX bonds ────────────────────
 var ofzData=[];
+var ofzYield=0; // средняя доходность ОФЗ (обновляется в fetchOFZ)
 async function fetchOFZ(){
   try{
     // Get both securities (maturity, coupon) and marketdata (yield, price)
@@ -5107,6 +5161,9 @@ async function fetchOFZ(){
     });
     results.sort(function(a,b){return a.duration-b.duration;});
     ofzData=results.slice(0,30);
+    // Считаем среднюю доходность ОФЗ для Агент-7
+    var ys=ofzData.filter(function(o){return o.yield>0;}).map(function(o){return o.yield;});
+    ofzYield = ys.length ? ys.reduce(function(s,v){return s+v;},0)/ys.length : 0;
     renderOFZ();
     console.log('[MOEX ISS] OFZ loaded:',ofzData.length,'bonds');
   }catch(ex){console.warn('fetchOFZ error',ex);}
@@ -8363,6 +8420,7 @@ function showApp(){
   agOn=JSON.parse(localStorage.getItem('ag_on')||'false');
   _loadRead();
   _loadSymMemory();
+  _loadChatLog();
   popSels();
   lAS();
   rSectors();
