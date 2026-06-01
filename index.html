@@ -3125,13 +3125,24 @@ function toggleAg(){
   localStorage.setItem('ag_on',JSON.stringify(agOn));
   if(agOn){
     addEv('learn',null,'Автономный режим запущен. Агенты начали обучение.');
-    schedAg(true); // немедленный первый тик
-    schedStudy();  // запускаем независимый цикл самообучения
+    schedAg(true);
+    schedStudy();
+    // Чат: агенты представляются при старте
+    var _cioAg=AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+    addChat(_cioAg,'Коллектив запущен. Анализируем рынок MOEX. Жду мнений от специалистов.',{});
+    setTimeout(function(){
+      var _others=AGs.filter(function(a){return a.id!=='6';});
+      var _spk=_others[Math.floor(Math.random()*_others.length)];
+      addChat(_spk,'Данные загружены. Приступаю к анализу по своей специализации.',
+        {to:_cioAg.n,toId:_cioAg.id});
+    },1500);
   }else{
     if(agTimer)clearTimeout(agTimer);
     if(_studyTimer){clearTimeout(_studyTimer);_studyTimer=null;}
     agTimer=null;
     addEv('learn',null,'Автономный режим остановлен.');
+    var _cioAg2=AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+    addChat(_cioAg2,'Сессия завершена. До следующего запуска.',{});
   }
   // Обновляем все кнопки сразу
   var _btn=document.getElementById('ag-run-btn');
@@ -3238,6 +3249,8 @@ async function agCouncil(sym, cs, p){
 
   if(!gk){
     addEv('learn',cio,'Совещание по '+sym+': нет Groq, решаем по консенсусу');
+    // Чат работает даже без Groq — спикеры высказываются по консенсусу
+    _chatCouncil(sym, speakers, cs||{agents:[]}, null);
     return fallback;
   }
 
@@ -3268,6 +3281,7 @@ async function agCouncil(sym, cs, p){
     return v;
   }catch(e){
     addEv('learn',cio,'Совещание '+sym+': Groq недоступен -- консенсус');
+    _chatCouncil(sym, speakers, cs||{agents:[]}, null);
     return fallback;
   }
 }
@@ -3321,23 +3335,29 @@ function runAgCy(){
     var pat=TA[Math.floor(Math.random()*TA.length)];
     AGs.forEach(function(ag){ aLearn(ag,1.1); });
     addEv('learn',cio,'Обучение ('+AGs.length+' аг.): "'+pat.n+'" '+pat.r+'%');
+    // Чат: кто-то из агентов делится паттерном
+    var rndAg=AGs[Math.floor(Math.random()*AGs.length)];
+    addChat(rndAg,'Изучаем паттерн "'+pat.n+'" ('+pat.r+'%). Применимо к MOEX.',{tag:'study'});
     rAgCards(); return;
   }
 
-  // При слабом сигнале — CIO решает поднимать ли сделку
-  // При сильном — CIO верифицирует и может скорректировать уровни
+  // Всегда запускаем agCouncil — даже при слабом сигнале
   agCouncil(chosenSym, cs||{dir:dir,longW:longW,strength:strength,avgConf:60,agents:[]}, p)
   .then(function(verdict){
     var finalDir  = verdict.decision||dir;
     var finalConf = verdict.confidence||cs&&cs.avgConf||60;
     var atr2      = Math.max((p.h-p.l)/4, p.p*0.005);
 
-    // CIO сказал HOLD или уверенность ниже 55% — пропускаем
+    // CIO сказал HOLD или уверенность ниже 55% — пропускаем сделку но пишем в чат
     if(finalDir==='HOLD' || finalConf < 55){
       var topAg=AGs.slice().sort(function(a,b){return aIQ(b)-aIQ(a);})[0];
       addEv('learn', topAg,
         chosenSym+': CIO заблокировал ('+(verdict.reasoning||'низкая уверенность').slice(0,55)+')');
       aLearn(topAg, 0.6);
+      // Чат: CIO объясняет почему воздерживаемся
+      addChat(cio,
+        'По '+chosenSym+' воздерживаемся. '+(verdict.reasoning||'Сигнал недостаточно чёткий')+'. Ждём лучшего входа.',
+        {tag:'warn'});
       rAgCards(); return;
     }
 
