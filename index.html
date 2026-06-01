@@ -628,6 +628,29 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   display:flex;align-items:center;justify-content:space-between;gap:16px;
 }
 
+/* ── SECTOR HEATMAP ── */
+.hm-cell{border-radius:12px;padding:10px 12px;cursor:pointer;border:1px solid rgba(123,92,255,.12);transition:all .3s;position:relative;overflow:hidden;min-height:80px;display:flex;flex-direction:column;justify-content:space-between}
+.hm-cell:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.hm-cell.bull{background:linear-gradient(145deg,rgba(0,255,163,.12),rgba(0,255,163,.04));border-color:rgba(0,255,163,.3)}
+.hm-cell.bear{background:linear-gradient(145deg,rgba(255,59,92,.12),rgba(255,59,92,.04));border-color:rgba(255,59,92,.3)}
+.hm-cell.neut{background:linear-gradient(145deg,rgba(123,92,255,.08),rgba(10,13,26,.6));border-color:rgba(123,92,255,.15)}
+.hm-name{font-size:12px;font-weight:700;color:var(--bright);margin-bottom:2px}
+.hm-score{font-size:22px;font-weight:800;font-family:var(--mono);line-height:1}
+.hm-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin:5px 0;overflow:hidden}
+.hm-bar-fill{height:3px;border-radius:2px;transition:width .8s}
+.hm-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:3px}
+.hm-tickers{font-size:8px;color:var(--txt3);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-pb-badge{font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(255,184,0,.15);color:#ffb800;border:1px solid rgba(255,184,0,.3);flex-shrink:0}
+/* ── FORWARD TEST ── */
+.ft-wrap{background:rgba(10,13,26,.7);border:1px solid rgba(0,229,255,.2);border-radius:16px;overflow:hidden;margin:16px 20px}
+.ft-header{padding:14px 18px;border-bottom:1px solid rgba(0,229,255,.1);display:flex;align-items:center;justify-content:space-between}
+.ft-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:14px 18px}
+.ft-metric{background:rgba(10,13,26,.6);border:1px solid rgba(123,92,255,.12);border-radius:10px;padding:10px 12px}
+.ft-metric-val{font-family:var(--mono);font-size:16px;font-weight:700;margin-bottom:2px}
+.ft-metric-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
+#ft-chart{height:130px;width:100%}
+.ft-trade-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(123,92,255,.06);font-size:11px}
+.ft-trade-row:last-child{border:none}
 /* ── AGENT CHAT ── */
 .chat-wrap{display:flex;flex-direction:column;height:100%;background:rgba(5,7,20,.4)}
 .chat-msg{display:flex;gap:7px;padding:6px 10px;transition:background .15s}
@@ -1276,6 +1299,23 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
       </div>
       <!-- Agent grid — full width, auto-fill -->
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3);margin-bottom:12px">Все агенты — нажмите для деталей</div>
+
+      <!-- ★ SECTOR HEATMAP ★ -->
+      <div id="sector-heatmap-wrap" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3);display:flex;align-items:center;gap:8px">
+            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--txt3);stroke-width:1.8;fill:none;stroke-linecap:round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Карта секторов
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:9px;color:var(--txt3)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#00ffa3;display:inline-block"></span>Бычий</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(123,92,255,.4);display:inline-block"></span>Нейтральный</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#ff3b5c;display:inline-block"></span>Медвежий</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(255,184,0,.6);display:inline-block"></span>PB позиция</span>
+          </div>
+        </div>
+        <div id="sector-heatmap-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px"></div>
+      </div>
       <div id="ag-grid-full"></div>
       <!-- Detail panel below grid -->
       <div id="ag-detail-panel" style="margin-top:16px"></div>
@@ -1418,6 +1458,48 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div id="pb-log-list" style="max-height:160px;overflow-y:auto"></div>
       </details>
     </div>
+    <!-- ★ FORWARD TEST PANEL ★ -->
+    <div class="ft-wrap" id="ft-panel">
+      <div class="ft-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#00e5ff;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px #00e5ffaa)"><path d="M3 3v18h18"/><path d="M7 16l4-4 3 3 5-6"/></svg>
+          <span style="font-size:13px;font-weight:700;color:#00e5ff;letter-spacing:.04em">Forward Test</span>
+          <span style="font-size:10px;color:var(--txt3)">— симуляция на исторических данных MOEX</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="ft-days-sel" style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);color:#00e5ff;border-radius:8px;padding:4px 8px;font-size:10px;font-family:var(--sans);cursor:pointer">
+            <option value="7">7 дней</option>
+            <option value="14">14 дней</option>
+            <option value="30" selected>30 дней</option>
+          </select>
+          <button onclick="runForwardTest()" id="ft-run-btn" style="background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.3);color:#00e5ff;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)">▶ Запустить</button>
+        </div>
+      </div>
+      <!-- Metrics -->
+      <div class="ft-metrics" id="ft-metrics" style="display:none">
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-equity" style="color:#00ffa3">—</div><div class="ft-metric-lbl">Итоговый PnL</div></div>
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-pf" style="color:#00e5ff">—</div><div class="ft-metric-lbl">Profit Factor</div></div>
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-wr" style="color:#7b5cff">—</div><div class="ft-metric-lbl">Win Rate</div></div>
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-dd" style="color:#ffb800">—</div><div class="ft-metric-lbl">Max Drawdown</div></div>
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-n" style="color:var(--label)">—</div><div class="ft-metric-lbl">Сделок</div></div>
+        <div class="ft-metric"><div class="ft-metric-val" id="ft-m-avg" style="color:#ff2d9b">—</div><div class="ft-metric-lbl">Avg PnL/сделка</div></div>
+      </div>
+      <!-- Equity curve -->
+      <div id="ft-chart-wrap" style="display:none;margin:0 18px 14px;border-radius:10px;overflow:hidden;background:rgba(10,13,26,.6);border:1px solid rgba(0,229,255,.1);padding:10px">
+        <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,229,255,.6);margin-bottom:6px">Equity Curve (симуляция)</div>
+        <div id="ft-chart"></div>
+      </div>
+      <!-- Trade list -->
+      <div id="ft-trades-wrap" style="display:none;max-height:200px;overflow-y:auto;padding:0 18px 14px">
+        <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Сделки симуляции</div>
+        <div id="ft-trades-list"></div>
+      </div>
+      <!-- Progress / Empty -->
+      <div id="ft-progress" style="padding:24px;text-align:center;font-size:11px;color:var(--txt3)">
+        Нажмите ▶ Запустить — система проиграет стратегию на исторических свечах MOEX
+      </div>
+    </div>
+
     <!-- Portfolio grid -->
     <div class="pf-grid">
       <!-- BCS Live positions -->
@@ -2556,6 +2638,8 @@ function rAgCards(){
   var iqEl2=document.getElementById('ag-iq');if(iqEl2)iqEl2.textContent=iqAll.toFixed(0)+'%';
   var cntEl=document.getElementById('ag-cnt');if(cntEl)cntEl.textContent=agTrades.length;
   rSkGrid();
+  // Обновляем heatmap (только PB позиции — без пересчёта консенсуса)
+  if(document.getElementById('sector-heatmap-grid')) renderSectorHeatmap();
 }
 
 function selA(id){
@@ -3058,6 +3142,400 @@ function _chatCouncil(sym, speakers, cs, verdict){
         {tag:'trade'});
     }, speakers.length * 700 + 500);
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ★ SECTOR HEATMAP ★
+// Карта секторов MOEX с сигналами агентов и позициями PB
+// ═══════════════════════════════════════════════════════════
+
+var _hmCache = {};       // sym → {dir, conf} последний консенсус
+var _hmTimer = null;
+
+// Реальные сектора MOEX
+var SECTORS_ORDER = ['Нефть/Газ','Металлы','Финансы','Технологии','Энергетика','Ритейл','Транспорт','Недвижимость','Телеком','Потреб.','Химия','Медицина'];
+
+function renderSectorHeatmap(){
+  var el = document.getElementById('sector-heatmap-grid');
+  if(!el) return;
+
+  // Группируем тикеры по секторам
+  var sectorData = {};
+  SECTORS_ORDER.forEach(function(s){ sectorData[s] = {syms:[],longW:0,shortW:0,total:0,pbPos:0,avgChg:0}; });
+
+  SYMS.forEach(function(sym){
+    var info = ST[sym]||{};
+    var sec  = info.s;
+    if(!sec || !sectorData[sec]) return;
+    var sd = sectorData[sec];
+    sd.syms.push(sym);
+
+    // Консенсус из кеша
+    var cs = _hmCache[sym];
+    if(cs){
+      sd.total++;
+      if(cs.dir==='LONG')       sd.longW  += cs.conf;
+      else if(cs.dir==='SHORT') sd.shortW += cs.conf;
+    }
+    // Изменение цены
+    var p = prices[sym];
+    if(p && p.c) sd.avgChg += p.c;
+  });
+
+  // PB позиции по секторам
+  var pbPos = {};
+  if(typeof PB !== 'undefined'){
+    PB.positions.forEach(function(pos){
+      var sec = (ST[pos.sym]&&ST[pos.sym].s)||'';
+      if(sec) pbPos[sec] = (pbPos[sec]||0)+1;
+    });
+  }
+
+  el.innerHTML = SECTORS_ORDER.map(function(sec){
+    var sd = sectorData[sec];
+    if(!sd || !sd.syms.length) return '';
+
+    var n = sd.syms.length;
+    sd.avgChg = sd.avgChg / n;
+
+    // Бычий score: взвешенный LONG vs SHORT
+    var total = sd.longW + sd.shortW || 1;
+    var bullPct = Math.round(sd.longW / total * 100);
+    var score   = bullPct; // 0..100, 50 = нейтрально
+
+    var cls  = score >= 58 ? 'bull' : score <= 42 ? 'bear' : 'neut';
+    var col  = score >= 58 ? '#00ffa3' : score <= 42 ? '#ff3b5c' : 'rgba(123,92,255,.7)';
+    var glowCol = score >= 58 ? 'rgba(0,255,163,.1)' : score <= 42 ? 'rgba(255,59,92,.08)' : 'transparent';
+
+    var pbCount = pbPos[sec]||0;
+    var chgCol  = sd.avgChg >= 0 ? '#00ffa3' : '#ff3b5c';
+
+    // Топ тикеры по объёму
+    var topSyms = sd.syms.slice().sort(function(a,b){
+      return ((prices[b]&&prices[b].v)||0) - ((prices[a]&&prices[a].v)||0);
+    }).slice(0,4).join(' · ');
+
+    return '<div class="hm-cell '+cls+'" onclick="hmDrillDown(\''+sec+'\')" title="'+sec+' — нажмите для деталей">'+
+      '<div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 0,'+glowCol+',transparent 70%);pointer-events:none"></div>'+
+      '<div>'+
+        '<div class="hm-name">'+sec+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:6px">'+
+          '<div class="hm-score" style="color:'+col+'">'+score+'</div>'+
+          '<div style="font-size:9px;color:'+col+';opacity:.8">'+(score>=58?'LONG':score<=42?'SHORT':'HOLD')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        '<div class="hm-bar"><div class="hm-bar-fill" style="width:'+score+'%;background:'+col+'"></div></div>'+
+        '<div class="hm-meta">'+
+          '<span class="hm-tickers">'+topSyms+'</span>'+
+          (pbCount>0?'<span class="hm-pb-badge">PB×'+pbCount+'</span>':'')+
+          '<span style="font-size:9px;font-weight:600;color:'+chgCol+';font-family:var(--mono)">'+(sd.avgChg>=0?'+':'')+sd.avgChg.toFixed(2)+'%</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// Клик по сектору — показываем тикеры с их консенсусом
+function hmDrillDown(sec){
+  var syms = SYMS.filter(function(s){ return (ST[s]&&ST[s].s)===sec; });
+  var lines = syms.map(function(sym){
+    var p  = prices[sym]||{};
+    var cs = _hmCache[sym];
+    var dir   = cs ? cs.dir : '—';
+    var conf  = cs ? cs.conf : 0;
+    var chg   = p.c||0;
+    var col   = dir==='LONG'?'#00ffa3':dir==='SHORT'?'#ff3b5c':'var(--txt3)';
+    var chgCol= chg>=0?'#00ffa3':'#ff3b5c';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(123,92,255,.06)">'+
+      '<span style="font-family:var(--mono);font-size:11px;font-weight:700;width:52px;cursor:pointer;color:var(--bright)" onclick="showSym(\''+sym+'\')" >'+sym+'</span>'+
+      '<span style="font-size:10px;color:var(--txt3);flex:1">'+(ST[sym]&&ST[sym].n||'')+'</span>'+
+      '<span style="font-family:var(--mono);font-size:10px;color:'+chgCol+'">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>'+
+      '<span style="font-size:9px;font-weight:700;color:'+col+';width:60px;text-align:right">'+dir+' '+conf+'%</span>'+
+    '</div>';
+  }).join('');
+
+  showToast(sec+' ('+syms.length+' тикеров)',
+    '<div style="max-height:200px;overflow-y:auto">'+lines+'</div>', null);
+}
+
+// Обновляем кеш консенсуса асинхронно (по очереди чтобы не флудить)
+async function refreshHmCache(){
+  var syms = SYMS.slice();
+  for(var i=0; i<syms.length; i++){
+    if(!prices[syms[i]]||!prices[syms[i]].p) continue;
+    try{
+      var cs = calcFullConsensus(syms[i],
+        scanCandles[syms[i]]&&scanCandles[syms[i]].data || null);
+      if(cs) _hmCache[syms[i]] = {dir:cs.dir, conf:cs.avgConf};
+    }catch(e){}
+    if(i%5===4) await new Promise(function(r){setTimeout(r,50);}); // пауза каждые 5
+  }
+  renderSectorHeatmap();
+}
+
+// Запускаем при открытии страницы агентов и каждые 2 минуты
+function startHeatmapUpdates(){
+  refreshHmCache();
+  if(_hmTimer) clearInterval(_hmTimer);
+  _hmTimer = setInterval(refreshHmCache, 120000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ★ FORWARD TEST ENGINE ★
+// Симуляция стратегии на исторических свечах MOEX
+// Загружаем дневные свечи → прогоняем консенсус → считаем PnL
+// ═══════════════════════════════════════════════════════════
+
+var _ftRunning = false;
+var _ftChart   = null;
+var _ftSeries  = null;
+
+async function runForwardTest(){
+  if(_ftRunning){ showToast('Forward Test','Уже запущен, подождите...',null); return; }
+  _ftRunning = true;
+
+  var days  = parseInt(document.getElementById('ft-days-sel').value)||30;
+  var btn   = document.getElementById('ft-run-btn');
+  var prog  = document.getElementById('ft-progress');
+  var mwrap = document.getElementById('ft-metrics');
+  var cwrap = document.getElementById('ft-chart-wrap');
+  var twrap = document.getElementById('ft-trades-wrap');
+
+  if(btn)  btn.textContent = '⏳ Загружаем данные...';
+  if(prog){ prog.style.display=''; prog.textContent='Загрузка исторических свечей MOEX...'; }
+  if(mwrap) mwrap.style.display='none';
+  if(cwrap) cwrap.style.display='none';
+  if(twrap) twrap.style.display='none';
+
+  // Параметры симуляции — берём из PB
+  var deposit   = PB.DEPOSIT;
+  var maxPosPct = PB.MAX_POS;
+  var maxExpPct = PB.MAX_EXP;
+  var commission= PB.COMMISSION;
+  var stopATR   = PB.STOP_ATR;
+  var tgtATR    = PB.TGT_ATR;
+
+  // Выбираем топ-20 ликвидных тикеров
+  var testSyms = ['SBER','GAZP','LKOH','GMKN','NVTK','YNDX','SBERP','ROSN','TATN','ALRS',
+                  'MGNT','FIVE','MTSS','VTBR','MOEX','PIKK','SMLT','PHOR','NLMK','CHMF'];
+
+  var equity    = deposit;
+  var peak      = deposit;
+  var maxDD     = 0;
+  var trades    = [];
+  var equityCurve= [{time: Math.floor((Date.now() - days*86400000)/1000), value: deposit}];
+
+  // Загружаем свечи для каждого тикера (дневной таймфрейм)
+  var allCandles = {};
+  var loaded = 0;
+  for(var i=0; i<testSyms.length; i++){
+    var sym = testSyms[i];
+    try{
+      if(prog) prog.textContent = 'Загрузка: '+sym+' ('+loaded+'/'+testSyms.length+')...';
+      var today = new Date();
+      var from  = new Date(today.getTime() - (days+10)*86400000);
+      var url   = 'https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+                  '/candles.json?interval=24&from='+from.toISOString().split('T')[0]+
+                  '&till='+today.toISOString().split('T')[0]+'&iss.meta=off';
+      var r = await fetch(url);
+      var d = await r.json();
+      var cols = d.candles.columns;
+      var data = d.candles.data.map(function(row){
+        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+        return {
+          date:  o.begin.slice(0,10),
+          ts:    new Date(o.begin.replace(' ','T')).getTime()/1000,
+          open:  parseFloat(o.open),
+          high:  parseFloat(o.high),
+          low:   parseFloat(o.low),
+          close: parseFloat(o.close),
+          vol:   parseFloat(o.volume)||0
+        };
+      }).filter(function(c){return c.open&&c.close;});
+      allCandles[sym] = data;
+      loaded++;
+    }catch(e){ console.warn('FT candles '+sym+':', e.message); }
+    await new Promise(function(r){setTimeout(r,120);}); // rate limit
+  }
+
+  if(prog) prog.textContent = 'Запуск симуляции...';
+
+  // Собираем все торговые дни
+  var allDates = new Set();
+  Object.values(allCandles).forEach(function(cs){
+    cs.forEach(function(c){ allDates.add(c.date); });
+  });
+  var sortedDates = Array.from(allDates).sort().slice(-days);
+
+  // Симуляция день за днём
+  var openPositions = {}; // sym → {entry, stop, tgt, qty, volRub}
+
+  for(var di=0; di<sortedDates.length; di++){
+    var date = sortedDates[di];
+    var ts   = new Date(date+'T12:00:00').getTime()/1000;
+    if(prog) prog.textContent = 'Симуляция: '+date+' ('+di+'/'+sortedDates.length+')...';
+
+    // Проверяем закрытие открытых позиций
+    Object.keys(openPositions).forEach(function(sym){
+      var pos = openPositions[sym];
+      var cd  = allCandles[sym];
+      if(!cd) return;
+      var bar = cd.filter(function(c){return c.date===date;})[0];
+      if(!bar) return;
+
+      var closed = false, closePrice = 0, reason = '';
+      if(bar.low <= pos.stop){ closePrice=pos.stop; reason='стоп'; closed=true; }
+      else if(bar.high >= pos.tgt){ closePrice=pos.tgt; reason='цель'; closed=true; }
+
+      if(closed){
+        var gross = (closePrice - pos.entry) * pos.qty;
+        var comm  = closePrice * pos.qty * commission;
+        var net   = gross - pos.commission - comm;
+        equity   += net;
+        if(equity > peak) peak = equity;
+        var dd = (peak-equity)/peak;
+        if(dd > maxDD) maxDD = dd;
+        trades.push({sym:sym, entry:pos.entry, close:closePrice, pnl:net,
+                     pnlPct:(net/pos.volRub*100), date:date, reason:reason});
+        equityCurve.push({time:ts, value:parseFloat(equity.toFixed(2))});
+        delete openPositions[sym];
+      }
+    });
+
+    // Ищем новые входы (простой сигнал: цена выше MA5 + RSI < 60)
+    var exposure = Object.values(openPositions).reduce(function(s,p){return s+p.volRub;},0)/equity;
+    if(exposure >= maxExpPct) continue;
+
+    for(var si=0; si<testSyms.length; si++){
+      var sym2 = testSyms[si];
+      if(openPositions[sym2]) continue;
+      var cd2 = allCandles[sym2];
+      if(!cd2||cd2.length<6) continue;
+
+      var barIdx = cd2.findIndex(function(c){return c.date===date;});
+      if(barIdx < 5) continue;
+      var bar2  = cd2[barIdx];
+      var prev  = cd2.slice(barIdx-5, barIdx);
+      var ma5   = prev.reduce(function(s,c){return s+c.close;},0)/5;
+      var closes= prev.map(function(c){return c.close;});
+      var rsi2  = calcRSI(closes)||50;
+
+      // Простой сигнал: цена выше MA5, RSI не перекуплен, рост
+      var bull = bar2.close > ma5 && rsi2 < 65 && bar2.close > bar2.open;
+      if(!bull) continue;
+
+      var atr2  = Math.max((bar2.high-bar2.low)*1.5, bar2.close*0.015);
+      var entry2= bar2.close;
+      var stop2 = parseFloat((entry2 - atr2*stopATR).toFixed(2));
+      var tgt2  = parseFloat((entry2 + atr2*tgtATR).toFixed(2));
+      var vol2  = equity * maxPosPct;
+      var qty2  = Math.max(1, Math.floor(vol2/entry2));
+      var comm2 = entry2*qty2*commission;
+
+      // Обновляем экспозицию
+      exposure += entry2*qty2/equity;
+      if(exposure >= maxExpPct) break;
+
+      openPositions[sym2] = {entry:entry2, stop:stop2, tgt:tgt2,
+                              qty:qty2, volRub:entry2*qty2, commission:comm2};
+    }
+  }
+
+  // Принудительно закрываем остатки по последней цене
+  Object.keys(openPositions).forEach(function(sym){
+    var pos = openPositions[sym];
+    var cd  = allCandles[sym];
+    if(!cd||!cd.length) return;
+    var lastBar = cd[cd.length-1];
+    var gross = (lastBar.close-pos.entry)*pos.qty;
+    var net   = gross - pos.commission - lastBar.close*pos.qty*commission;
+    equity += net;
+    trades.push({sym:sym, entry:pos.entry, close:lastBar.close, pnl:net,
+                 pnlPct:(net/pos.volRub*100), date:lastBar.date, reason:'конец теста'});
+    equityCurve.push({time:lastBar.ts, value:parseFloat(equity.toFixed(2))});
+  });
+
+  // Считаем метрики
+  var wins   = trades.filter(function(t){return t.pnl>0;});
+  var losses = trades.filter(function(t){return t.pnl<=0;});
+  var sumWin = wins.reduce(function(s,t){return s+t.pnl;},0);
+  var sumLoss= Math.abs(losses.reduce(function(s,t){return s+t.pnl;},0));
+  var pf     = sumLoss>0 ? sumWin/sumLoss : sumWin>0?999:0;
+  var wr     = trades.length ? wins.length/trades.length : 0;
+  var totalPnl = equity - deposit;
+  var avgPnl   = trades.length ? totalPnl/trades.length : 0;
+
+  // Рендер метрик
+  var pnlCol = totalPnl>=0?'#00ffa3':'#ff3b5c';
+  var pfCol  = pf>=1.3?'#00ffa3':pf>=1.0?'#ffb800':'#ff3b5c';
+  var wrCol  = wr>=0.5?'#00ffa3':wr>=0.4?'#ffb800':'#ff3b5c';
+  var ddCol  = maxDD<0.05?'#00ffa3':maxDD<0.12?'#ffb800':'#ff3b5c';
+
+  document.getElementById('ft-m-equity').textContent=(totalPnl>=0?'+':'')+totalPnl.toFixed(0)+'₽';
+  document.getElementById('ft-m-equity').style.color=pnlCol;
+  document.getElementById('ft-m-pf').textContent=pf===999?'∞':pf.toFixed(2);
+  document.getElementById('ft-m-pf').style.color=pfCol;
+  document.getElementById('ft-m-wr').textContent=Math.round(wr*100)+'%';
+  document.getElementById('ft-m-wr').style.color=wrCol;
+  document.getElementById('ft-m-dd').textContent='−'+Math.round(maxDD*100)+'%';
+  document.getElementById('ft-m-dd').style.color=ddCol;
+  document.getElementById('ft-m-n').textContent=trades.length;
+  document.getElementById('ft-m-avg').textContent=(avgPnl>=0?'+':'')+avgPnl.toFixed(0)+'₽';
+  document.getElementById('ft-m-avg').style.color=avgPnl>=0?'#00ffa3':'#ff3b5c';
+
+  if(mwrap) mwrap.style.display='';
+  if(prog)  prog.style.display='none';
+
+  // Equity curve
+  if(cwrap && equityCurve.length>=2){
+    cwrap.style.display='';
+    var container = document.getElementById('ft-chart');
+    if(_ftChart){ try{_ftChart.remove();}catch(e){} }
+    if(container && typeof LightweightCharts!=='undefined'){
+      _ftChart = LightweightCharts.createChart(container,{
+        width:container.clientWidth||600, height:130,
+        layout:{background:{type:'solid',color:'transparent'},textColor:'#9ba8c0',fontSize:10},
+        grid:{vertLines:{color:'rgba(0,229,255,.06)'},horzLines:{color:'rgba(0,229,255,.06)'}},
+        rightPriceScale:{borderVisible:false,scaleMargins:{top:.1,bottom:.1}},
+        timeScale:{borderVisible:false,timeVisible:false},
+        handleScroll:false,handleScale:false,
+      });
+      _ftSeries = _ftChart.addLineSeries({
+        color:'#00e5ff',lineWidth:2,priceLineVisible:false,
+        lastValueVisible:true,crosshairMarkerVisible:true,
+        crosshairMarkerBackgroundColor:'#00e5ff',
+      });
+      // Дедупликация по time
+      var seen={}, pts=[];
+      equityCurve.forEach(function(pt){
+        if(!seen[pt.time]){seen[pt.time]=true;pts.push(pt);}
+      });
+      pts.sort(function(a,b){return a.time-b.time;});
+      try{_ftSeries.setData(pts);}catch(e){}
+    }
+  }
+
+  // Список сделок
+  if(twrap && trades.length){
+    twrap.style.display='';
+    document.getElementById('ft-trades-list').innerHTML = trades.slice(-30).reverse().map(function(t){
+      var pc = t.pnlPct||0;
+      var col= t.pnl>=0?'#00ffa3':'#ff3b5c';
+      return '<div class="ft-trade-row">'+
+        '<span style="font-family:var(--mono);font-weight:700;font-size:11px;width:52px">'+t.sym+'</span>'+
+        '<span style="font-size:10px;color:var(--txt3);flex:1">'+t.date+' · '+t.reason+'</span>'+
+        '<span style="font-family:var(--mono);font-size:10px;color:'+col+'">'+
+          (t.pnl>=0?'+':'')+t.pnl.toFixed(0)+'₽ '+(pc>=0?'+':'')+pc.toFixed(1)+'%</span>'+
+      '</div>';
+    }).join('');
+  }
+
+  if(btn) btn.textContent='↻ Повторить';
+  _ftRunning = false;
+  showToast('Forward Test завершён',
+    trades.length+' сделок · PnL: '+(totalPnl>=0?'+':'')+totalPnl.toFixed(0)+
+    '₽ · PF:'+pf.toFixed(2)+' · WR:'+Math.round(wr*100)+'%', null);
 }
 
 function rSkGrid(){
@@ -4103,7 +4581,7 @@ function showPage(p){
   });
   if(p==='sig'){rTaKb();rPats();renderScanResults();}
   if(p==='cab'){lCabTr();updCabUI();}
-  if(p==='ag'){renderAgPage();}
+  if(p==='ag'){renderAgPage(); startHeatmapUpdates();}
   if(p==='markets'){renderMarketsPage();}
   if(p==='portfolio'){renderPortfolioPage();}
 }
