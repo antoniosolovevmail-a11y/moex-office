@@ -825,6 +825,11 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
       <div class="sb-sep"></div>
       <div class="sbm"><span class="sbm-l">Сигналов</span><span class="sbm-v a" id="sig-cnt">0</span></div>
       <div class="sb-sep"></div>
+      <div class="sbm" style="cursor:pointer" title="Суммарный оборот MOEX" onclick="showPage('markets')">
+        <span class="sbm-l">ОБ.</span>
+        <span id="mkt-volume-hdr" class="sbm-v" style="color:var(--txt3)">—</span>
+      </div>
+      <div class="sb-sep"></div>
       <div class="sbm" style="cursor:pointer" onclick="toggleAg()" title="Запустить/остановить агентов">
         <div id="ag-hdr-dot" style="width:6px;height:6px;border-radius:50%;background:var(--txt3);display:inline-block;margin-right:4px;transition:all .3s;vertical-align:middle"></div>
         <span class="sbm-l">Агенты</span>
@@ -1419,6 +1424,24 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
           <button onclick="fetchInsiderData()" style="margin-left:auto;background:rgba(191,90,242,.08);border:1px solid rgba(191,90,242,.2);color:#bf5af2;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
         </div>
         <div id="mkt-insider-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Обороты рынков (ISS /turnovers) -->
+      <div class="mkt-panel" id="mkt-turnovers-panel">
+        <div class="mkt-panel-title" style="color:#00e5ff">
+          <svg viewBox="0 0 24 24" style="stroke:#00e5ff;filter:drop-shadow(0 0 4px rgba(0,229,255,.5));width:18px;height:18px;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Обороты рынков
+          <button onclick="fetchTurnovers()" style="margin-left:auto;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);color:#00e5ff;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
+        </div>
+        <div id="mkt-turnovers"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Официальные новости MOEX (ISS /sitenews) -->
+      <div class="mkt-panel" id="mkt-moex-news-panel">
+        <div class="mkt-panel-title" style="color:#ffb800">
+          <svg viewBox="0 0 24 24" style="stroke:#ffb800;filter:drop-shadow(0 0 4px rgba(255,184,0,.5));width:18px;height:18px;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
+          Новости MOEX
+          <button onclick="fetchMoexNews()" style="margin-left:auto;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2);color:#ffb800;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
+        </div>
+        <div id="mkt-moex-news"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
       </div>
     </div>
   </div>
@@ -5336,8 +5359,193 @@ async function fetchAllData(){
     fetchBrent(),
     fetchOFZ(),
     fetchFundamentals(),
-    fetchNewsMulti(curSym)
+    fetchNewsMulti(curSym),
+    fetchTurnovers(),   // NEW: обороты рынков
+    fetchMoexNews()     // NEW: официальные новости MOEX
   ]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ★ НОВЫЕ ISS API ЭНДПОИНТЫ (из iss.moex.com/iss/reference/) ★
+// ═══════════════════════════════════════════════════════════
+
+// ── 1. Сводные обороты по рынкам (/iss/turnovers) ──────────
+// Показывает объём торгов по всем рынкам MOEX в реальном времени
+// Используется как «рыночная температура» и Market Breadth
+var _turnoversCache = null;
+var _turnoversTs    = 0;
+
+async function fetchTurnovers(){
+  if(_turnoversTs > Date.now()-3*60000 && _turnoversCache) return;
+  try{
+    var r = await fetch(MOEX+'/turnovers.json?iss.meta=off&lang=ru');
+    var d = await r.json();
+    var cols = d.turnovers.columns;
+    var rows = d.turnovers.data||[];
+    var result = {};
+    rows.forEach(function(row){
+      var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+      if(o.NAME){
+        result[o.NAME]={
+          rub: parseFloat(o.VALTODAY_RUR||0),
+          usd: parseFloat(o.VALTODAY_USD||0),
+          trades: parseInt(o.NUMTRADES||0)
+        };
+      }
+    });
+    _turnoversCache = result;
+    _turnoversTs    = Date.now();
+    renderTurnovers(result);
+    // Итоговый оборот в шапку
+    var totalV = Object.values(result).reduce(function(s,m){return s+(m.rub||0);},0);
+    var volEl  = document.getElementById('mkt-volume-hdr');
+    if(volEl && totalV>0){
+      volEl.textContent = (totalV>=1e12?(totalV/1e12).toFixed(1)+'T':totalV>=1e9?(totalV/1e9).toFixed(1)+'B':'—')+'₽';
+      volEl.style.color = totalV>=5e11?'#00ffa3':totalV>=1e11?'#ffb800':'var(--txt3)';
+    }
+  }catch(e){console.warn('fetchTurnovers:',e.message);}
+}
+
+function renderTurnovers(data){
+  var el = document.getElementById('mkt-turnovers');
+  if(!el||!data) return;
+  var total = Object.values(data).reduce(function(s,m){return s+m.rub;},0);
+  var rows  = Object.entries(data)
+    .filter(function(e){return e[1].rub>0;})
+    .sort(function(a,b){return b[1].rub-a[1].rub;})
+    .slice(0,6);
+  el.innerHTML = rows.map(function(e){
+    var pct = total>0 ? (e[1].rub/total*100).toFixed(1) : '0';
+    var rub = e[1].rub>=1e12 ? (e[1].rub/1e12).toFixed(1)+'T'
+            : e[1].rub>=1e9  ? (e[1].rub/1e9).toFixed(1)+'B'
+            : e[1].rub>=1e6  ? (e[1].rub/1e6).toFixed(0)+'M' : '—';
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(123,92,255,.05)">'+
+      '<span style="font-size:10px;color:var(--txt2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+
+      '<div style="width:50px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;flex-shrink:0">'+
+        '<div style="height:3px;background:var(--cyan);width:'+pct+'%;border-radius:2px;max-width:100%"></div>'+
+      '</div>'+
+      '<span style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--cyan);width:45px;text-align:right;flex-shrink:0">'+rub+'</span>'+
+    '</div>';
+  }).join('')+
+  '<div style="font-size:9px;color:var(--txt3);margin-top:4px;text-align:right">'+
+    'Итого: '+(total>=1e12?(total/1e12).toFixed(1)+'T':total>=1e9?(total/1e9).toFixed(1)+'B':'—')+'₽</div>';
+}
+
+// ── 2. Принадлежность бумаги к индексам (/iss/securities/{sym}/indices) ──
+var _indexCache = {}; // sym → ['IMOEX','MOEXBMI',...]
+
+async function fetchSecurityIndices(sym){
+  if(_indexCache[sym]) return _indexCache[sym];
+  try{
+    var r = await fetch(MOEX+'/securities/'+sym+'/indices.json?iss.meta=off&indices.columns=SHORTNAME');
+    var d = await r.json();
+    var cols = d.indices.columns;
+    var idxList = (d.indices.data||[]).map(function(row){
+      var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+      return o.SHORTNAME||'';
+    }).filter(Boolean);
+    _indexCache[sym] = idxList;
+    return idxList;
+  }catch(e){ return []; }
+}
+
+// ── 3. Агрегированные итоги торгов (/iss/securities/{sym}/aggregates) ──
+// Показывает объём торгов на всех площадках (TQBR, OTC и др.)
+var _aggregatesCache = {};
+
+async function fetchSecurityAggregates(sym){
+  if(_aggregatesCache[sym] && _aggregatesCache[sym]._ts > Date.now()-5*60000){
+    return _aggregatesCache[sym];
+  }
+  try{
+    var today = new Date().toISOString().split('T')[0];
+    var r = await fetch(MOEX+'/securities/'+sym+'/aggregates.json?date='+today+'&iss.meta=off');
+    var d = await r.json();
+    var cols = d.aggregates.columns;
+    var rows = d.aggregates.data||[];
+    var result = {total_vol:0, total_val:0, markets:[], _ts:Date.now()};
+    rows.forEach(function(row){
+      var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+      var val = parseFloat(o.VALUE||0);
+      var vol = parseFloat(o.VOLUME||0);
+      if(val>0){
+        result.total_val += val;
+        result.total_vol += vol;
+        result.markets.push({market:o.MARKET||o.BOARDID||'', val:val, vol:vol});
+      }
+    });
+    _aggregatesCache[sym] = result;
+    return result;
+  }catch(e){ return null; }
+}
+
+// ── 4. Официальные новости MOEX (/iss/sitenews) ───────────────────────
+// Официальные пресс-релизы и новости самой биржи
+var _moexNewsCache = [];
+var _moexNewsTs    = 0;
+
+async function fetchMoexNews(){
+  if(_moexNewsTs > Date.now()-10*60000 && _moexNewsCache.length) return;
+  try{
+    var r = await fetch(MOEX+'/sitenews.json?iss.meta=off&limit=10&lang=ru');
+    var d = await r.json();
+    var cols = d.sitenews.columns;
+    var rows = d.sitenews.data||[];
+    _moexNewsCache = rows.map(function(row){
+      var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+      return {id:o.id||0, title:o.title||'', published:o.published_at||o.modified_at||'',
+              url:'https://www.moex.com/n'+(o.id||'')};
+    }).filter(function(n){return n.title;});
+    _moexNewsTs = Date.now();
+    renderMoexNews();
+  }catch(e){console.warn('fetchMoexNews:',e.message);}
+}
+
+function renderMoexNews(){
+  var el = document.getElementById('mkt-moex-news');
+  if(!el||!_moexNewsCache.length) return;
+  el.innerHTML = _moexNewsCache.slice(0,8).map(function(n){
+    var d = n.published ? n.published.slice(0,10) : '';
+    return '<div style="padding:5px 0;border-bottom:1px solid rgba(123,92,255,.06)">'+
+      '<a href="'+n.url+'" target="_blank" style="text-decoration:none">'+
+        '<div style="font-size:10px;color:var(--txt2);line-height:1.4;margin-bottom:2px">'+
+          n.title.slice(0,90)+(n.title.length>90?'…':'')+
+        '</div>'+
+        '<div style="font-size:9px;color:var(--txt3)">MOEX · '+d+'</div>'+
+      '</a>'+
+    '</div>';
+  }).join('');
+}
+
+// ── 5. Открытый интерес по фьючерсам (/iss/analyticalproducts/futoi) ──
+// Показывает позиции институционалов — важный сигнал Smart Money
+var _futoiCache = {};
+
+async function fetchFutOI(sym){
+  // sym — базовый актив: SBER → ищем SBR* фьючерсы
+  var futsym = sym+'_NEAR'; // упрощение — ближний контракт
+  if(_futoiCache[sym] && _futoiCache[sym]._ts > Date.now()-15*60000){
+    return _futoiCache[sym];
+  }
+  try{
+    // Получаем список инструментов с futoi
+    var r = await fetch(MOEX+'/analyticalproducts/futoi/securities.json?iss.meta=off&limit=5&asset='+sym);
+    var d = await r.json();
+    var cols = (d.futoi&&d.futoi.columns)||[];
+    var rows = (d.futoi&&d.futoi.data)||[];
+    if(!rows.length) return null;
+    // Берём последнюю запись
+    var o={}; cols.forEach(function(c,k){o[c]=rows[rows.length-1][k];});
+    var result = {
+      sym:      o.SECID||sym,
+      long_qty: parseFloat(o.LONG_QTY||o.PL||0),
+      short_qty:parseFloat(o.SHORT_QTY||o.PS||0),
+      date:     o.TRADEDATE||o.SETTLEDATE||'',
+      _ts: Date.now()
+    };
+    _futoiCache[sym] = result;
+    return result;
+  }catch(e){ return null; }
 }
 
 
@@ -5988,11 +6196,47 @@ function renderConsensusPanel(sym){
     '</div>';
 
   el.innerHTML = html;
+
+  // Async: загружаем индексы и агрегаты для текущего тикера
+  _enrichConsensusPanel(sym);
 }
 
+async function _enrichConsensusPanel(sym){
+  // Загружаем индексы и агрегированные итоги параллельно
+  var [indices, aggregates] = await Promise.all([
+    fetchSecurityIndices(sym),
+    fetchSecurityAggregates(sym)
+  ]);
 
-// ═══════════════════════════════════════════════════
-// TASK 3: AUTO-SCANNER — ALL 50 STOCKS
+  var el = document.getElementById('consensus-panel');
+  if(!el) return;
+
+  var extra = '';
+
+  // Индексы
+  if(indices && indices.length){
+    var topIdx = indices.slice(0,4);
+    extra += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;padding-top:5px;border-top:1px solid rgba(123,92,255,.1)">';
+    topIdx.forEach(function(idx){
+      extra += '<span style="font-size:8px;padding:1px 5px;border-radius:4px;'+
+        'background:rgba(0,229,255,.08);color:#00e5ff;border:1px solid rgba(0,229,255,.2)">'+idx+'</span>';
+    });
+    extra += '</div>';
+  }
+
+  // Агрегированные итоги
+  if(aggregates && aggregates.total_val > 0){
+    var val = aggregates.total_val>=1e9
+      ? (aggregates.total_val/1e9).toFixed(1)+'B₽'
+      : (aggregates.total_val/1e6).toFixed(0)+'M₽';
+    extra += '<div style="margin-top:4px;font-size:9px;color:var(--txt3);display:flex;justify-content:space-between">'+
+      '<span>Оборот сегодня: <span style="color:var(--txt2)">'+val+'</span></span>'+
+      (aggregates.markets.length>1?'<span>'+aggregates.markets.length+' площадки</span>':'')+
+    '</div>';
+  }
+
+  if(extra) el.insertAdjacentHTML('beforeend', extra);
+}
 // ═══════════════════════════════════════════════════
 
 var scanResults   = [];
@@ -9592,6 +9836,12 @@ function renderMarketsPage(){
   renderMktFX();
   renderMktFut();
   renderMktOFZ();
+  // Новые ISS API источники
+  fetchTurnovers();
+  fetchMoexNews();
+  if(!_divCache)    fetchDivCalendar();  else renderDivCalendar(_divCache);
+  if(!_eventsCache) fetchCorpEvents();   else renderCorpEvents(_eventsCache);
+  if(!_insiderCache)fetchInsiderData();  else renderInsiderData(_insiderCache);
 }
 
 function _mktRow(sym, name, px, chg, onclick){
