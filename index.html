@@ -3009,7 +3009,11 @@ function runAgCy(){
       cioConf:  finalConf,
       reasoning: verdict.reasoning||'',
       dissent:   verdict.dissent||null,
-      horizon:   verdict.horizon||'4-8ч'
+      horizon:   verdict.horizon||'4-8ч',
+      // Сохраняем голоса агентов для attribution feedback
+      agentVotes: cs && cs.agents ? cs.agents.map(function(a){
+        return {id:a.id, dir:a.dir, conf:a.conf};
+      }) : []
     };
     agTrades.push(trade);
     AGs.forEach(function(ag){ ag.tr++; });
@@ -3032,8 +3036,9 @@ function runAgCy(){
         :(trade.en-cp.p)/trade.en*100;
       trade.cl=cp.p; trade.pnl=parseFloat(pnl.toFixed(2));
       var won=pnl>0;
+      // Записываем в память тикера
+      _recordSymResult(chosenSym, pnl);
       // Обратная связь: агенты с высоким IQ извлекают больше
-      // Если CIO был уверен и прав — бонус x1.3
       var cioBon=(finalConf>=70&&won)?1.3:1.0;
       AGs.forEach(function(ag){
         var iq=Math.max(10,aIQ(ag));
@@ -3042,6 +3047,26 @@ function runAgCy(){
         if(won){ag.wi++;ag.streak=(ag.streak||0)+1;}
         else   {ag.streak=0;}
       });
+      // Attribution: штрафуем тех кто ошибся с высокой уверенностью
+      if(trade.agentVotes){
+        trade.agentVotes.forEach(function(vote){
+          var ag=AGs.filter(function(x){return x.id===vote.id;})[0];
+          if(!ag) return;
+          if(!won && vote.dir==='LONG' && vote.conf>=70){
+            // Ошибочный высокоуверенный LONG → штраф слабейшему навыку
+            var penalty=(vote.conf-65)/100*2.0;
+            var sk=Object.keys(ag.sk).reduce(function(min,k){
+              return ag.sk[k]<ag.sk[min]?k:min;},Object.keys(ag.sk)[0]);
+            ag.sk[sk]=Math.max(0,ag.sk[sk]-penalty);
+            if(penalty>0.8) addEv('loss',ag,
+              'Attribution: неверный LONG '+chosenSym+
+              ' ('+vote.conf+'%) −'+penalty.toFixed(1)+'IQ');
+          } else if(won && vote.dir===finalDir && vote.conf>=70){
+            // Точный высокоуверенный прогноз → бонус
+            aLearn(ag,1.5);
+          }
+        });
+      }
       var maxStreak=Math.max.apply(null,AGs.map(function(a){return a.streak||0;}));
       // Если было особое мнение — отмечаем кто оказался прав
       var dissentNote='';
@@ -4381,19 +4406,46 @@ function calcFullConsensus(sym, candlesOverride){
 
     (function(){
       // Агент-4 — Техника: RSI + MA cross + patterns
+      // IQ адаптирует пороги: новичок использует базовые, эксперт — тонкие
+      var ag4 = AGs.filter(function(x){return x.id==='4';})[0];
+      var iq4 = ag4 ? aIQ(ag4) : 10;
+
       var score = 50;
-      if(rsi < 35) score += 25;       // oversold = bullish
-      else if(rsi > 65) score -= 20;  // overbought = bearish
+      // RSI пороги: новичок 35/65, эксперт 30/72 + дивергенция
+      var rsiOB = iq4 > 70 ? 72 : iq4 > 40 ? 68 : 65;
+      var rsiOS = iq4 > 70 ? 30 : iq4 > 40 ? 33 : 35;
+      if(rsi < rsiOS)      score += 25;
+      else if(rsi < 45)    score += 10;
+      else if(rsi > rsiOB) score -= 20;
+      else if(rsi > 55)    score -= 8;
+
+      // MA: новичок — только MA20, эксперт — MA20+MA50 + расстояние
       if(p.p > ma20) score += 10;
       if(ma20 > ma50) score += 10;
+      if(iq4 > 60 && n >= 50){
+        // Эксперт считает расстояние от MA — перегрев
+        var distMA20 = ma20 > 0 ? (p.p-ma20)/ma20*100 : 0;
+        if(distMA20 > 8)  score -= 8;  // слишком далеко — откат вероятен
+        if(distMA20 < -5) score += 8;  // ниже MA на 5% — недооценён
+      }
+
+      // Паттерны: эксперт весит confluence
       var bullPats = pats.filter(function(p){return p.t==='bull';}).length;
       var bearPats = pats.filter(function(p){return p.t==='bear';}).length;
-      score += bullPats*12 - bearPats*12;
+      var patW = iq4 > 70 ? 15 : iq4 > 40 ? 12 : 10;
+      score += bullPats*patW - bearPats*patW;
+
+      // Эксперт: confluence-бонус — RSI+паттерн в одном направлении
+      if(iq4 > 60){
+        if(rsi < 40 && bullPats > 0) score += 8;  // перепродан + бычий паттерн
+        if(rsi > 60 && bearPats > 0) score -= 8;
+      }
+
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
       var reason = pats.length
-        ? pats[0].n+' · RSI '+rsi
-        : 'RSI '+rsi+' · MA '+(ma20>ma50?'бычий':'медвежий');
+        ? pats[0].n+' · RSI'+rsi+(iq4>60?' · IQ'+iq4.toFixed(0):'')
+        : 'RSI'+rsi+' · MA'+(ma20>ma50?'↑':'↓');
       return {id:'4',name:'Агент-4',role:'Техника',e:'📈',c:'#dc2626',
               dir:dir,conf:score,reason:reason};
     })(),
@@ -4443,18 +4495,26 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-5 — Риск: волатильность + позиция в диапазоне
+      // Агент-5 — Риск: волатильность + позиция в диапазоне + история тикера
       var score = 50;
       var rangePos = (p.h&&p.l&&p.h>p.l) ? (p.p-p.l)/(p.h-p.l) : 0.5;
-      if(rangePos < 0.3) score += 20;  // near low = good entry
-      else if(rangePos > 0.8) score -= 15; // near high = risky
+      if(rangePos < 0.3)      score += 20;  // у нижней границы = хороший вход
+      else if(rangePos > 0.8) score -= 15;  // у верхней = рискованно
       var atrPct = p.p>0 ? (atr/p.p*100) : 2;
-      if(atrPct > 4) score -= 10; // high vol = risky
+      if(atrPct > 4)  score -= 10; // высокая волатильность = риск
+      if(atrPct < 1)  score += 5;  // низкая волатильность = стабильно
+      // Память: штраф/бонус по истории сделок по этому тикеру
+      var memBonus = _symScore(sym);
+      score += memBonus;
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var m = symMemory[sym];
+      var memTxt = m && (m.wins+m.losses)>=2
+        ? ' · W/L:'+(m.wins+'/'+m.losses)+(m.streak<=-2?' ⚠':'')
+        : '';
       return {id:'5',name:'Агент-5',role:'Риск',e:'🛡️',c:'#0891b2',
               dir:dir,conf:score,
-              reason:'Позиция в диапазоне: '+(rangePos*100).toFixed(0)+'% · ATR: '+(atrPct).toFixed(1)+'%'};
+              reason:'Диапазон:'+(rangePos*100).toFixed(0)+'% · ATR:'+atrPct.toFixed(1)+'%'+memTxt};
     })(),
 
     (function(){
@@ -4671,26 +4731,34 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-12 — Портфель: диверсификация + PB Bot позиции
+      // Агент-12 — Портфель: диверсификация + PB Bot позиции + история тикера
       var score = 50;
-      // Проверяем текущие позиции бота
       var pbPositions = (typeof PB !== 'undefined') ? PB.positions : [];
       var alreadyOpen = pbPositions.some(function(pos){return pos.sym===sym;});
-      if(alreadyOpen){ score -= 30; } // уже в позиции — штраф
+      if(alreadyOpen){ score -= 30; }
       // Секторная концентрация
       var sectorPositions = pbPositions.filter(function(pos){
         return (ST[pos.sym]&&ST[pos.sym].s) === info.s;
       }).length;
       if(sectorPositions >= 2) score -= 15;
-      else if(sectorPositions === 0) score += 8; // новый сектор = диверсификация
+      else if(sectorPositions === 0) score += 8;
       // Общая экспозиция
       var exposure = (typeof PB !== 'undefined') ? PB.calcExposure() : 0;
       if(exposure > 0.6) score -= 10;
-      else if(exposure < 0.3) score += 8; // есть кэш — можно входить
+      else if(exposure < 0.3) score += 8;
+      // История тикера из symMemory
+      var memBonus = _symScore(sym);
+      score += memBonus;
+      // Закрытые сделки PB по этому тикеру
+      var pbClosed = (typeof PB !== 'undefined') ? PB.closed : [];
+      var symClosed = pbClosed.filter(function(t){return t.sym===sym;});
+      var symWins   = symClosed.filter(function(t){return t.pnlRub>0;}).length;
+      var symLosses = symClosed.length - symWins;
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
-      var openCount = pbPositions.length;
-      var reason = 'Позиций: '+openCount+' · экспоз.: '+Math.round(exposure*100)+'% · '+info.s;
+      var reason = 'Поз:'+pbPositions.length+' · эксп:'+Math.round(exposure*100)+'%'+
+        (symClosed.length ? ' · '+sym+':'+symWins+'п/'+symLosses+'у' : '')+
+        (memBonus!==0 ? ' · mem:'+(memBonus>0?'+':'')+memBonus : '');
       return {id:'12',name:'Агент-12',role:'Порт.',e:'💼',c:'#6d28d9',
               dir:dir,conf:score,reason:reason};
     })()
@@ -4822,6 +4890,57 @@ var scanResults   = [];
 var scanRunning   = false;
 var scanLastAt    = null;
 var scanCandles   = {}; // cache: sym → candles[]
+
+// ── Память результатов по тикеру ─────────────────────────
+// Агент-5 (Риск) и Агент-12 (Порт.) штрафуют тикеры с плохой историей.
+// Ключ: sym → {wins, losses, totalPnl, lastPnl, streak, lastAt}
+var symMemory = {};
+
+function _loadSymMemory(){
+  try{
+    var s = JSON.parse(localStorage.getItem('sym_memory')||'{}');
+    symMemory = s;
+  }catch(e){}
+}
+function _saveSymMemory(){
+  try{ localStorage.setItem('sym_memory', JSON.stringify(symMemory)); }catch(e){}
+}
+function _recordSymResult(sym, pnlPct){
+  if(!symMemory[sym]) symMemory[sym]={wins:0,losses:0,totalPnl:0,lastPnl:0,streak:0,lastAt:0};
+  var m = symMemory[sym];
+  m.lastPnl = pnlPct;
+  m.totalPnl += pnlPct;
+  m.lastAt = Date.now();
+  if(pnlPct > 0){
+    m.wins++;
+    m.streak = Math.max(0, m.streak) + 1;
+  } else {
+    m.losses++;
+    m.streak = Math.min(0, m.streak) - 1;
+  }
+  _saveSymMemory();
+}
+function _symScore(sym){
+  // Возвращает penalty/bonus (-30..+20) для консенсуса на основе истории
+  var m = symMemory[sym];
+  if(!m || (m.wins+m.losses) < 2) return 0; // нет статистики
+  var total = m.wins + m.losses;
+  var wr = m.wins / total;
+  var score = 0;
+  // Win rate
+  if(wr >= 0.65)      score += 15;
+  else if(wr >= 0.5)  score += 5;
+  else if(wr < 0.35)  score -= 20;
+  else if(wr < 0.45)  score -= 10;
+  // Серия убытков подряд
+  if(m.streak <= -3)  score -= 15;
+  else if(m.streak <= -2) score -= 8;
+  // Серия побед
+  if(m.streak >= 3)   score += 10;
+  // Последняя сделка — большой убыток
+  if(m.lastPnl < -3)  score -= 10;
+  return Math.max(-30, Math.min(20, score));
+}
 
 async function fetchCandlesForScan(sym){
   // Use cached or fetch 5-day hourly
@@ -7247,6 +7366,7 @@ function showApp(){
   }
   agOn=JSON.parse(localStorage.getItem('ag_on')||'false');
   _loadRead();
+  _loadSymMemory();
   popSels();
   lAS();
   rSectors();
@@ -8905,6 +9025,9 @@ var PB = {
     });
     PB.positions.splice(idx, 1);
     PB.closed.push(closed);
+
+    // Записываем результат в память тикера
+    _recordSymResult(pos.sym, pnlPct);
 
     PB.pushEquityPoint();
 
