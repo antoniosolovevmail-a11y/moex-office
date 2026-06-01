@@ -1377,7 +1377,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         </div>
         <div id="mkt-ofz-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
       </div>
-      <!-- США — скоро -->
+      <!-- Акции США — скоро -->
       <div class="mkt-panel" style="opacity:.6">
         <div class="mkt-panel-title" style="color:var(--txt3)">
           <svg viewBox="0 0 24 24" style="stroke:var(--txt3)"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
@@ -1385,13 +1385,40 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         </div>
         <div class="mkt-soon">Этап 2 — скоро</div>
       </div>
-      <!-- Крипто — скоро -->
+      <!-- Криптовалюты — скоро -->
       <div class="mkt-panel" style="opacity:.6">
         <div class="mkt-panel-title" style="color:var(--txt3)">
           <svg viewBox="0 0 24 24" style="stroke:var(--txt3)"><path d="M9 8h6c1.1 0 2 .9 2 2s-.9 2-2 2H9v4h7c1.1 0 2 .9 2 2s-.9 2-2 2H9V8zM6 8v12"/></svg>
           Криптовалюты
         </div>
         <div class="mkt-soon">Этап 2 — скоро</div>
+      </div>
+      <!-- Дивидендный календарь -->
+      <div class="mkt-panel" id="mkt-divs">
+        <div class="mkt-panel-title" style="color:#00ffa3">
+          <svg viewBox="0 0 24 24" style="stroke:#00ffa3;filter:drop-shadow(0 0 4px rgba(0,255,163,.5));width:18px;height:18px;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          Дивиденды MOEX
+          <button onclick="fetchDivCalendar()" style="margin-left:auto;background:rgba(0,255,163,.08);border:1px solid rgba(0,255,163,.2);color:#00ffa3;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
+        </div>
+        <div id="mkt-divs-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Корпоративные события -->
+      <div class="mkt-panel" id="mkt-events">
+        <div class="mkt-panel-title" style="color:#ffb800">
+          <svg viewBox="0 0 24 24" style="stroke:#ffb800;filter:drop-shadow(0 0 4px rgba(255,184,0,.5));width:18px;height:18px;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>
+          Корп. события
+          <button onclick="fetchCorpEvents()" style="margin-left:auto;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2);color:#ffb800;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
+        </div>
+        <div id="mkt-events-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
+      </div>
+      <!-- Активность инсайдеров -->
+      <div class="mkt-panel" id="mkt-insider">
+        <div class="mkt-panel-title" style="color:#bf5af2">
+          <svg viewBox="0 0 24 24" style="stroke:#bf5af2;filter:drop-shadow(0 0 4px rgba(191,90,242,.5));width:18px;height:18px;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Инсайдеры MOEX
+          <button onclick="fetchInsiderData()" style="margin-left:auto;background:rgba(191,90,242,.08);border:1px solid rgba(191,90,242,.2);color:#bf5af2;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer">↻</button>
+        </div>
+        <div id="mkt-insider-list"><div style="font-size:11px;color:var(--txt3)">Загрузка...</div></div>
       </div>
     </div>
   </div>
@@ -2243,20 +2270,48 @@ function schedStudy(){
 
 // ── MOEX API ──────────────────────────────────
 async function fetchP(){
+  // Из официального MOEX ISS Demo (VB.NET / Python):
+  // - Используем &start= для пагинации (сервер возвращает макс. 100 записей)
+  // - Поля: SECID, LAST, CHANGE, HIGH, LOW, VOLUME, WAPRICE (средневзвешенная цена)
+  // - LEGALCLOSEPRICE — официальная цена закрытия (ключевое поле из MOEX demo)
   for(var i=0;i<SYMS.length;i+=20){
+    var chunk=SYMS.slice(i,i+20); // ← ИСПРАВЛЕНО: chunk был undefined
     try{
-      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json?securities='+chunk.join(',')+'&iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME';
+      var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json'+
+              '?securities='+chunk.join(',')+
+              '&iss.meta=off&iss.only=marketdata,securities'+
+              '&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME,WAPRICE,NUMTRADES'+
+              '&securities.columns=SECID,LOTSIZE';
       var r=await fetch(url);
       var d=await r.json();
-      var cols=d.marketdata.columns;
+      var mcols=d.marketdata.columns;
+      var scols=(d.securities&&d.securities.columns)||[];
+      // Индексы лотов по SECID
+      var lotMap={};
+      if(d.securities&&d.securities.data){
+        d.securities.data.forEach(function(row){
+          var o={}; scols.forEach(function(c,k){o[c]=row[k];});
+          if(o.SECID) lotMap[o.SECID]=o.LOTSIZE||1;
+        });
+      }
       d.marketdata.data.forEach(function(row){
-        var o={};
-        cols.forEach(function(c,i){o[c]=row[i];});
+        var o={}; mcols.forEach(function(c,k){o[c]=row[k];});
         if(o.SECID&&o.LAST){
-          prices[o.SECID]={p:o.LAST,c:parseFloat(o.CHANGE||0),h:o.HIGH,l:o.LOW,v:o.VOLUME};
+          prices[o.SECID]={
+            p:  parseFloat(o.LAST)||0,
+            c:  parseFloat(o.CHANGE||0),
+            h:  parseFloat(o.HIGH||o.LAST||0),
+            l:  parseFloat(o.LOW||o.LAST||0),
+            v:  parseFloat(o.VOLUME||0),
+            wp: parseFloat(o.WAPRICE||o.LAST||0),  // средневзвешенная цена
+            nt: parseInt(o.NUMTRADES||0),           // кол-во сделок
+            lot:lotMap[o.SECID]||1                  // размер лота
+          };
         }
       });
     }catch(e){console.warn('fetchP chunk error',e);}
+    // Rate limit между батчами (из MOEX demo best practices)
+    if(i+20<SYMS.length) await new Promise(function(r){setTimeout(r,80);});
   }
   rWL();rTick();rSigs();updCH();
   var el=document.getElementById('open-cnt');
@@ -3375,30 +3430,14 @@ async function _runForwardTestBody(){
     var sym = testSyms[i];
     try{
       if(prog) prog.textContent = 'Загрузка: '+sym+' ('+loaded+'/'+testSyms.length+')...';
-      var today = new Date();
-      var from  = new Date(today.getTime() - (days+10)*86400000);
-      var url   = 'https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
-                  '/candles.json?interval=24&from='+from.toISOString().split('T')[0]+
-                  '&till='+today.toISOString().split('T')[0]+'&iss.meta=off';
-      var r = await fetch(url);
-      var d = await r.json();
-      var cols = d.candles.columns;
-      var data = d.candles.data.map(function(row){
-        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
-        return {
-          date:  o.begin.slice(0,10),
-          ts:    new Date(o.begin.replace(' ','T')).getTime()/1000,
-          open:  parseFloat(o.open),
-          high:  parseFloat(o.high),
-          low:   parseFloat(o.low),
-          close: parseFloat(o.close),
-          vol:   parseFloat(o.volume)||0
-        };
-      }).filter(function(c){return c.open&&c.close;});
-      allCandles[sym] = data;
+      // Используем fetchHistoryEOD с LEGALCLOSEPRICE (официальная цена закрытия)
+      // Из MOEX ISS Demo (VB.NET): GetHistorySecurities → LEGALCLOSEPRICE, NUMTRADES
+      var histData = await fetchHistoryEOD(sym, days+5);
+      var data = histEODToCandles(histData);
+      if(data.length) allCandles[sym] = data;
       loaded++;
-    }catch(e){ console.warn('FT candles '+sym+':', e.message); }
-    await new Promise(function(r){setTimeout(r,120);}); // rate limit
+    }catch(e){ console.warn('FT EOD '+sym+':', e.message); }
+    await new Promise(function(r){setTimeout(r,80);}); // rate limit
   }
 
   if(prog) prog.textContent = 'Запуск симуляции...';
@@ -4620,10 +4659,27 @@ function showPage(p){
     if(pel)pel.classList.toggle('hidden',pg!==p);
     if(nel)nel.classList.toggle('on',pg===p);
   });
-  if(p==='sig'){rTaKb();rPats();renderScanResults();}
+  if(p==='sig'){
+    rTaKb();rPats();renderScanResults();
+    // Автозапуск скана если данные загружены и результатов нет
+    if(!scanResults.length && Object.keys(prices).length>0){
+      setTimeout(runAutoScan, 300);
+    }
+  }
   if(p==='cab'){lCabTr();updCabUI();}
   if(p==='ag'){renderAgPage(); startHeatmapUpdates();}
-  if(p==='markets'){renderMarketsPage();}
+  if(p==='markets'){
+    renderMarketsPage();
+    // Загружаем новые данные из ISS API
+    if(!_divCache)     fetchDivCalendar();
+    if(!_eventsCache)  fetchCorpEvents();
+    if(!_insiderCache) fetchInsiderData();
+    else {
+      renderDivCalendar(_divCache);
+      renderCorpEvents(_eventsCache);
+      renderInsiderData(_insiderCache);
+    }
+  }
   if(p==='portfolio'){renderPortfolioPage();}
 }
 
@@ -5940,6 +5996,86 @@ function renderConsensusPanel(sym){
 // ═══════════════════════════════════════════════════
 
 var scanResults   = [];
+
+// ── Исторические итоги дня (из MOEX ISS Demo VB.NET/Python) ──────────────
+// Эндпоинт: /iss/history/engines/{engine}/markets/{market}/boards/{board}/securities.json
+// Ключевые поля из MOEX demo: SECID, LEGALCLOSEPRICE, NUMTRADES, VOLUME, WAPRICE
+// Пагинация через &start= (как в MOEX VB.NET клиенте: while reply_len > 0)
+var _histEODCache = {}; // sym → {date → {close, vol, trades, wap}}
+
+async function fetchHistoryEOD(sym, days){
+  days = days || 30;
+  var cacheKey = sym+'_'+days;
+  if(_histEODCache[cacheKey] && _histEODCache[cacheKey]._ts > Date.now()-10*60000){
+    return _histEODCache[cacheKey];
+  }
+
+  var today = new Date();
+  var from  = new Date(today.getTime() - (days+5)*86400000);
+  var result = {};
+  var start  = 0;
+
+  try{
+    while(true){
+      // URL паттерн из MicexISSClient.vb:
+      // history/engines/{engine}/markets/{market}/boards/{board}/securities.json?date={date}&start={start}
+      var url = MOEX+'/history/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+                '.json?from='+from.toISOString().split('T')[0]+
+                '&till='+today.toISOString().split('T')[0]+
+                '&start='+start+
+                '&iss.meta=off'+
+                '&history.columns=TRADEDATE,SECID,LEGALCLOSEPRICE,WAPRICE,VOLUME,NUMTRADES,HIGH,LOW,OPEN';
+      var r = await fetch(url);
+      var d = await r.json();
+      var cols = d.history.columns;
+      var rows = d.history.data||[];
+      if(!rows.length) break;
+
+      rows.forEach(function(row){
+        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+        if(o.TRADEDATE && o.LEGALCLOSEPRICE){
+          result[o.TRADEDATE]={
+            close:  parseFloat(o.LEGALCLOSEPRICE)||0, // официальная цена закрытия
+            wap:    parseFloat(o.WAPRICE||o.LEGALCLOSEPRICE)||0,
+            vol:    parseFloat(o.VOLUME||0),
+            trades: parseInt(o.NUMTRADES||0),
+            high:   parseFloat(o.HIGH||o.LEGALCLOSEPRICE||0),
+            low:    parseFloat(o.LOW||o.LEGALCLOSEPRICE||0),
+            open:   parseFloat(o.OPEN||o.LEGALCLOSEPRICE||0),
+          };
+        }
+      });
+
+      // Пагинация: пока есть данные продолжаем (паттерн из MOEX VB demo: While reply_len > 0)
+      if(rows.length < 100) break;
+      start += rows.length;
+      await new Promise(function(r){setTimeout(r,100);}); // rate limit
+    }
+    result._ts = Date.now();
+    _histEODCache[cacheKey] = result;
+    return result;
+  }catch(e){
+    console.warn('fetchHistoryEOD '+sym+':', e.message);
+    return {};
+  }
+}
+
+// Конвертируем EOD историю в массив свечей для технического анализа
+function histEODToCandles(histData){
+  var dates = Object.keys(histData).filter(function(k){return k!=='_ts';}).sort();
+  return dates.map(function(date){
+    var d = histData[date];
+    return {
+      time:   new Date(date+'T12:00:00').getTime()/1000,
+      open:   d.open  || d.close,
+      high:   d.high  || d.close,
+      low:    d.low   || d.close,
+      close:  d.close,
+      volume: d.vol,
+      date:   date
+    };
+  });
+}
 var scanRunning   = false;
 var scanLastAt    = null;
 var scanCandles   = {}; // cache: sym → candles[]
@@ -5996,28 +6132,50 @@ function _symScore(sym){
 }
 
 async function fetchCandlesForScan(sym){
-  // Use cached or fetch 5-day hourly
+  // Кеш 5 минут
   if(scanCandles[sym] && scanCandles[sym].ts > Date.now()-5*60000){
     return scanCandles[sym].data;
   }
   try{
-    var today  = new Date();
-    var from   = new Date(today.getTime() - 5*86400000);
-    var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
-              '/candles.json?interval=60&from='+from.toISOString().split('T')[0]+
-              '&till='+new Date(today.getTime()+86400000).toISOString().split('T')[0]+
-              '&iss.meta=off';
-    var r = await fetch(url);
-    var d = await r.json();
-    var cols = d.candles.columns;
-    var data = d.candles.data.map(function(row){
-      var o={}; cols.forEach(function(c,i){o[c]=row[i];});
-      return {time:new Date(o.begin.replace(' ','T')).getTime()/1000,
-              open:parseFloat(o.open),high:parseFloat(o.high),
-              low:parseFloat(o.low),close:parseFloat(o.close)};
-    }).filter(function(c){return c.open&&c.close;});
-    scanCandles[sym] = {data:data, ts:Date.now()};
-    return data;
+    var today = new Date();
+    var from  = new Date(today.getTime() - 7*86400000); // 7 дней (≥5 торговых)
+    var till  = new Date(today.getTime() + 86400000);
+    // Пагинация из MOEX ISS Demo (VB.NET): сервер возвращает max 500 свечей за запрос
+    // при интервале 60мин за 7 дней = ~56 свечей — пагинация не нужна
+    // но при длинных периодах используем start=
+    var allData = [];
+    var start = 0;
+    var pageSize = 500;
+    while(true){
+      var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
+                '/candles.json?interval=60'+
+                '&from='+from.toISOString().split('T')[0]+
+                '&till='+till.toISOString().split('T')[0]+
+                '&start='+start+  // ← пагинация из MOEX demo
+                '&iss.meta=off';
+      var r = await fetch(url);
+      var d = await r.json();
+      var cols = d.candles.columns;
+      var rows = d.candles.data||[];
+      if(!rows.length) break;
+      rows.forEach(function(row){
+        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+        if(o.open&&o.close){
+          allData.push({
+            time:   new Date(o.begin.replace(' ','T')).getTime()/1000,
+            open:   parseFloat(o.open),
+            high:   parseFloat(o.high),
+            low:    parseFloat(o.low),
+            close:  parseFloat(o.close),
+            volume: parseFloat(o.volume||o.value||0) // из MOEX demo: volume field
+          });
+        }
+      });
+      if(rows.length < pageSize) break; // последняя страница
+      start += rows.length;
+    }
+    scanCandles[sym] = {data:allData, ts:Date.now()};
+    return allData;
   }catch(e){ return []; }
 }
 
@@ -6030,7 +6188,8 @@ async function calcFullConsensusAsync(sym){
 }
 
 function scoreSym(sym, candles){
-  var info = ST[sym]||{};
+  var p     = prices[sym]||{p:0,c:0,h:0,l:0,v:0}; // ← ИСПРАВЛЕНО: p не была объявлена
+  var info  = ST[sym]||{};
   if(!p.p) return null;
 
   var rsi   = calcRSI(candles.map(function(c){return c.close;}))||50;
@@ -6115,9 +6274,15 @@ function scoreSym(sym, candles){
   strength = Math.max(0, Math.min(100, strength));
 
   // ── ATR-based levels ───────────────────────────
-  var atr  = Math.max((p.h-p.l)/4, p.p*0.005);
-  var stop = parseFloat((p.p - (dir==='SHORT'?-1:1)*atr*1.5).toFixed(2));
-  var tg1  = parseFloat((p.p + (dir==='SHORT'?-1:1)*atr*2.0).toFixed(2));
+  var atr  = Math.max((p.h-p.l ? (p.h-p.l)/2 : 0), p.p*0.01);
+  // LONG:  стоп ниже входа, цель выше
+  // SHORT: стоп выше входа, цель ниже
+  var stop = dir==='SHORT'
+    ? parseFloat((p.p + atr*1.5).toFixed(2))
+    : parseFloat((p.p - atr*1.5).toFixed(2));
+  var tg1  = dir==='SHORT'
+    ? parseFloat((p.p - atr*2.0).toFixed(2))
+    : parseFloat((p.p + atr*2.0).toFixed(2));
   var rr   = atr>0 ? (atr*2.0)/(atr*1.5) : 1.33;
 
   // ── Top pattern name ───────────────────────────
@@ -6126,8 +6291,8 @@ function scoreSym(sym, candles){
   return {
     sym:sym, dir:dir, conf:conf, strength:strength,
     rsi:rsi, pats:pats, topPat:topPat,
-    entry:p.p, stop:stop, tg1:tg1, rr:rr,
-    chg:chg, info:info
+    entry:p.p, stop:stop, tg1:tg1, rr:parseFloat(rr.toFixed(2)),
+    chg:chg, info:info, vol:p.v||0
   };
 }
 
@@ -6156,7 +6321,7 @@ async function runAutoScan(){
       })
     );
     batchResults.forEach(function(r){
-      if(r.status==='fulfilled' && r.value && r.value.dir!=='HOLD' && r.value.strength>=25){
+      if(r.status==='fulfilled' && r.value && r.value.dir!=='HOLD' && r.value.strength>=15){
         results.push(r.value);
       }
     });
@@ -6182,53 +6347,68 @@ async function runAutoScan(){
 }
 
 function renderScanResults(){
-  var el = document.getElementById('scan-results');
-  if(!el) return;
-  // Also update signals page
-  var el2 = document.getElementById('scan-results-sig2') || document.getElementById('scan-results-sig');
-  if(el2) el2.innerHTML = el ? el.innerHTML : '';
-  if(!scanResults.length){
-    el.innerHTML='<div style="font-size:11px;color:var(--label3);padding:8px 0">Нет сильных сигналов — нажмите «Скан»</div>';
-    return;
-  }
-  var top = scanResults.slice(0,5);
-  el.innerHTML = top.map(function(r,idx){
-    var isLong = r.dir==='LONG';
-    var dc = isLong?'var(--ios-green)':'var(--ios-red)';
-    var db = isLong?'rgba(48,209,88,.08)':'rgba(255,69,58,.08)';
-    var chgStr = (r.chg>=0?'+':'')+r.chg.toFixed(2)+'%';
-    return '<div onclick="sSym(\''+r.sym+'\')" style="'+
-      'cursor:pointer;padding:6px 8px;margin-bottom:4px;'+
-      'background:'+db+';border-left:2px solid '+dc+';'+
-      'transition:background .15s" '+
-      'onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" '+
-      'onmouseout="this.style.background=\''+db+'\'">'+
+  var el  = document.getElementById('scan-results');
+  var el2 = document.getElementById('scan-results-sig2');
 
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
-        '<div style="display:flex;align-items:center;gap:5px">'+
-          '<span style="font-size:10px;font-weight:700;color:var(--bright);font-family:var(--mono)">'+
-            (idx+1)+'. '+r.sym+'</span>'+
-          '<span style="font-size:7.5px;font-weight:700;padding:1px 5px;'+
-            'background:'+db+';color:'+dc+'">'+r.dir+'</span>'+
-        '</div>'+
-        '<div style="display:flex;align-items:center;gap:6px">'+
-          '<span style="font-size:8.5px;color:'+dc+';font-family:var(--mono)">'+chgStr+'</span>'+
-          '<span style="font-size:10px;font-weight:700;color:'+dc+';font-family:var(--mono)">'+
-            Math.round(r.conf)+'%</span>'+
-        '</div>'+
-      '</div>'+
-
-      '<div style="display:flex;align-items:center;justify-content:space-between">'+
-        '<span style="font-size:8px;color:var(--dim)">'+r.topPat+' · RSI '+r.rsi+'</span>'+
-        '<div style="display:flex;align-items:center;gap:4px">'+
-          '<span style="font-size:7.5px;color:var(--dim)">Сила:</span>'+
-          '<div style="width:40px;height:3px;background:rgba(255,255,255,.08)">'+
-            '<div style="height:3px;background:'+dc+';width:'+r.strength+'%"></div>'+
+  var _buildHtml = function(results, limit){
+    if(!results.length){
+      return '<div style="font-size:11px;color:var(--label3);padding:8px 0">'+
+        'Нет сигналов — нажмите «Скан»</div>';
+    }
+    return results.slice(0, limit).map(function(r, idx){
+      var isLong = r.dir==='LONG';
+      var dc = isLong?'var(--ios-green)':'var(--ios-red)';
+      var db = isLong?'rgba(48,209,88,.06)':'rgba(255,69,58,.06)';
+      var chgStr = (r.chg>=0?'+':'')+r.chg.toFixed(2)+'%';
+      var rr = r.rr||1.33;
+      return '<div onclick="sSym(\''+r.sym+'\')" style="'+
+        'cursor:pointer;padding:8px 10px;margin-bottom:5px;border-radius:8px;'+
+        'background:'+db+';border-left:2px solid '+dc+';'+
+        'transition:background .15s" '+
+        'onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" '+
+        'onmouseout="this.style.background=\''+db+'\'">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+          '<div style="display:flex;align-items:center;gap:5px">'+
+            '<span style="font-size:11px;font-weight:700;color:var(--bright);font-family:var(--mono)">'+
+              (idx+1)+'. '+r.sym+'</span>'+
+            '<span style="font-size:8px;font-weight:700;padding:1px 6px;border-radius:4px;'+
+              'background:'+db+';color:'+dc+';border:1px solid '+dc+'55">'+r.dir+'</span>'+
+            '<span style="font-size:9px;color:var(--txt3)">'+((ST[r.sym]&&ST[r.sym].n)||'')+'</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-size:9px;color:'+dc+';font-family:var(--mono)">'+chgStr+'</span>'+
+            '<span style="font-size:11px;font-weight:700;color:'+dc+';font-family:var(--mono)">'+
+              Math.round(r.conf)+'%</span>'+
           '</div>'+
         '</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+          '<span style="font-size:9px;color:var(--txt3)">'+r.topPat+' · RSI '+r.rsi+'</span>'+
+          '<span style="font-size:9px;color:var(--txt3)">R:R '+rr+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<span style="font-size:8px;color:var(--txt3)">Сила:</span>'+
+          '<div style="flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px">'+
+            '<div style="height:3px;background:'+dc+';width:'+r.strength+'%;border-radius:2px;transition:width .6s"></div>'+
+          '</div>'+
+          '<span style="font-size:8px;color:'+dc+';font-family:var(--mono)">'+Math.round(r.strength)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;margin-top:3px;font-size:8.5px;color:var(--txt3)">'+
+          '<span>Вход: '+r.entry+'₽</span>'+
+          '<span>Стоп: '+r.stop+'₽</span>'+
+          '<span>Цель: '+r.tg1+'₽</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  };
+
+  if(el)  el.innerHTML  = _buildHtml(scanResults, 5);
+  if(el2) el2.innerHTML = _buildHtml(scanResults, 10); // больше на странице Сигналы
+
+  // Обновить счётчик
+  ['sig-cnt','sig-cnt2','sig-cnt3'].forEach(function(id){
+    var e=document.getElementById(id);
+    if(e) e.textContent=scanResults.length;
+  });
 }
 
 function scheduleAutoScan(){
@@ -6954,27 +7134,15 @@ async function runBacktest(){
 
     if(status) status.textContent = 'Загружаю '+sym+' c '+fromStr+'...';
 
-    var allCandles = [];
-    var start = 0;
-    while(true){
-      var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities/'+sym+
-        '/candles.json?interval=24&from='+fromStr+'&till='+tillStr+
-        '&start='+start+'&iss.meta=off';
-      var r = await fetch(url);
-      var d = await r.json();
-      var cols = d.candles.columns, rows = d.candles.data;
-      if(!rows.length) break;
-      rows.forEach(function(row){
-        var o={}; cols.forEach(function(c,i){o[c]=row[i];});
-        allCandles.push({
-          time: new Date(o.begin.replace(' ','T')).getTime(),
-          open: parseFloat(o.open), high: parseFloat(o.high),
-          low:  parseFloat(o.low),  close: parseFloat(o.close)
-        });
-      });
-      start += rows.length;
-      if(rows.length < 500) break;
-    }
+    // Используем fetchHistoryEOD с LEGALCLOSEPRICE (официальная цена закрытия MOEX)
+    // Паттерн из MOEX ISS Demo (Python/VB): get_history_securities → LEGALCLOSEPRICE, NUMTRADES
+    var histData = await fetchHistoryEOD(sym, days+10);
+    var allCandles = histEODToCandles(histData);
+
+    // Фильтруем по диапазону дат
+    allCandles = allCandles.filter(function(c){
+      return c.time >= from.getTime()/1000;
+    });
 
     if(allCandles.length < 30){
       if(status) status.textContent = 'Недостаточно данных ('+allCandles.length+' свечей)';
@@ -9146,6 +9314,278 @@ function onSearchKey(e){
 // ═══════════════════════════════════════════════════
 // MARKETS PAGE
 // ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// ★ MOEX ISS API — ДИВИДЕНДЫ, КОРП. СОБЫТИЯ, ИНСАЙДЕРЫ ★
+// Документация: https://www.moex.com/a2193
+// ═══════════════════════════════════════════════════════════
+
+var _divCache    = null;
+var _eventsCache = null;
+var _insiderCache= null;
+
+// ── Дивидендный календарь ────────────────────────────────
+// ISS: /iss/securities/{sym}/dividends.json
+async function fetchDivCalendar(){
+  var el = document.getElementById('mkt-divs-list');
+  if(el) el.innerHTML = '<div style="font-size:11px;color:var(--txt3)">Загрузка...</div>';
+
+  // Берём топ-20 ликвидных тикеров
+  var syms = ['SBER','GAZP','LKOH','NVTK','GMKN','TATN','ROSN','MGNT','NLMK',
+              'CHMF','ALRS','MTSS','MOEX','SBERP','TATNP','VTBR','PHOR','YNDX','FIVE','SMLT'];
+  var allDivs = [];
+
+  // Загружаем батчами по 5
+  for(var i=0; i<syms.length; i+=5){
+    var batch = syms.slice(i,i+5);
+    await Promise.allSettled(batch.map(async function(sym){
+      try{
+        var url = MOEX+'/securities/'+sym+'/dividends.json?iss.meta=off';
+        var r = await fetch(url);
+        var d = await r.json();
+        var cols = d.dividends.columns;
+        var data = d.dividends.data;
+        if(!data||!data.length) return;
+        // Берём последние 3 записи
+        data.slice(-3).forEach(function(row){
+          var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+          if(o.registryclosedate){
+            allDivs.push({
+              sym:  sym,
+              date: o.registryclosedate,
+              value:parseFloat(o.value)||0,
+              currency: o.currencyid||'RUB'
+            });
+          }
+        });
+      }catch(e){}
+    }));
+    if(i+5<syms.length) await new Promise(function(r){setTimeout(r,200);});
+  }
+
+  // Сортируем по дате (ближайшие вперёд)
+  var today = new Date().toISOString().slice(0,10);
+  allDivs.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  // Ближайшие будущие или последние прошедшие
+  var future = allDivs.filter(function(d){ return d.date >= today; });
+  var past   = allDivs.filter(function(d){ return d.date < today; }).slice(-5);
+  var show   = future.slice(0,10).concat(past).slice(0,15);
+
+  _divCache = show;
+  renderDivCalendar(show);
+}
+
+function renderDivCalendar(divs){
+  var el = document.getElementById('mkt-divs-list');
+  if(!el) return;
+  var today = new Date().toISOString().slice(0,10);
+  if(!divs||!divs.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3)">Нет данных о дивидендах</div>';
+    return;
+  }
+  el.innerHTML = divs.map(function(d){
+    var isFuture = d.date >= today;
+    var daysLeft = Math.round((new Date(d.date)-new Date())/(1000*86400));
+    var col = isFuture ? '#00ffa3' : 'var(--txt3)';
+    var p = prices[d.sym];
+    var yld = p && p.p && d.value ? (d.value/p.p*100).toFixed(1)+'%' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'+
+      'border-bottom:1px solid rgba(123,92,255,.06);cursor:pointer" onclick="showSym(\''+d.sym+'\')" >'+
+      '<span style="font-family:var(--mono);font-weight:700;font-size:11px;width:48px;color:'+col+'">'+d.sym+'</span>'+
+      '<span style="flex:1;font-size:10px;color:var(--txt3)">'+d.date+(isFuture?' (через '+daysLeft+'д)':'')+'</span>'+
+      '<span style="font-family:var(--mono);font-size:11px;font-weight:600;color:'+col+'">'+d.value.toFixed(2)+'₽</span>'+
+      (yld?'<span style="font-size:9px;color:'+col+';margin-left:4px">'+yld+'</span>':'')+
+    '</div>';
+  }).join('');
+}
+
+// ── Корпоративные события ─────────────────────────────────
+// ISS: /iss/statistics/engines/stock/corpactions/history.json
+async function fetchCorpEvents(){
+  var el = document.getElementById('mkt-events-list');
+  if(el) el.innerHTML = '<div style="font-size:11px;color:var(--txt3)">Загрузка...</div>';
+  try{
+    // Берём события за ближайшие 60 дней
+    var today = new Date();
+    var from  = today.toISOString().split('T')[0];
+    var till  = new Date(today.getTime()+60*86400000).toISOString().split('T')[0];
+    var url   = MOEX+'/statistics/engines/stock/corpactions/history.json'+
+                '?from='+from+'&till='+till+
+                '&iss.meta=off&limit=50'+
+                '&sort_order=asc&sort_column=label';
+    var r = await fetch(url);
+    var d = await r.json();
+    var key = Object.keys(d).filter(function(k){return k!=='cursor';})[0];
+    if(!key||!d[key]){
+      renderCorpEvents([]); return;
+    }
+    var cols = d[key].columns;
+    var rows = d[key].data||[];
+    var events = rows.slice(0,20).map(function(row){
+      var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+      return {
+        sym:   o.secid||o.SECID||'',
+        date:  o.label||o.startdate||'',
+        type:  o.typeofoperation||o.typename||'',
+        name:  o.shortname||o.name||''
+      };
+    }).filter(function(e){return e.sym;});
+
+    _eventsCache = events;
+    renderCorpEvents(events);
+  }catch(e){
+    // Fallback: используем dividends endpoint для ближайших дат
+    var el2=document.getElementById('mkt-events-list');
+    if(el2) el2.innerHTML='<div style="font-size:11px;color:var(--txt3)">События: '+(e.message||'недоступно')+'</div>';
+    fetchCorpEventsFallback();
+  }
+}
+
+async function fetchCorpEventsFallback(){
+  // Fallback: загрузим ближайшие дивиденды как события
+  var syms=['SBER','GAZP','LKOH','NVTK','GMKN','TATN','ROSN','MGNT'];
+  var events=[];
+  var today=new Date().toISOString().slice(0,10);
+  for(var i=0;i<syms.length;i++){
+    try{
+      var r=await fetch(MOEX+'/securities/'+syms[i]+'/dividends.json?iss.meta=off');
+      var d=await r.json();
+      var cols=d.dividends.columns, rows=d.dividends.data||[];
+      rows.slice(-1).forEach(function(row){
+        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+        if(o.registryclosedate&&o.registryclosedate>=today)
+          events.push({sym:syms[i],date:o.registryclosedate,type:'Дивиденды',name:o.value+'₽'});
+      });
+    }catch(e2){}
+    await new Promise(function(r){setTimeout(r,100);});
+  }
+  events.sort(function(a,b){return a.date<b.date?-1:1;});
+  renderCorpEvents(events);
+}
+
+function renderCorpEvents(events){
+  var el=document.getElementById('mkt-events-list');
+  if(!el) return;
+  if(!events||!events.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3)">Нет предстоящих событий</div>'; return;
+  }
+  var typeColors={
+    'Дивиденды':'#00ffa3','ГОСА':'#00e5ff','Выплата':'#00ffa3',
+    'Реорганизация':'#ffb800','SPO':'#ff2d9b','default':'var(--amber)'
+  };
+  el.innerHTML=events.map(function(e){
+    var col=typeColors[e.type]||typeColors['default'];
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(123,92,255,.06);cursor:pointer" onclick="showSym(\''+e.sym+'\')" >'+
+      '<span style="font-family:var(--mono);font-weight:700;font-size:11px;width:48px;color:'+col+'">'+e.sym+'</span>'+
+      '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:'+col+'18;color:'+col+';border:1px solid '+col+'44">'+e.type+'</span>'+
+      '<span style="flex:1;font-size:10px;color:var(--txt2)">'+e.name+'</span>'+
+      '<span style="font-size:9px;color:var(--txt3);font-family:var(--mono)">'+e.date+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+// ── Активность инсайдеров ──────────────────────────────────
+// MOEX публикует данные по эмитентам из IMOEX
+// API: /iss/securities/{sym}/trades/insider.json (через ISS)
+async function fetchInsiderData(){
+  var el=document.getElementById('mkt-insider-list');
+  if(el) el.innerHTML='<div style="font-size:11px;color:var(--txt3)">Загрузка...</div>';
+
+  var insiders=[];
+  // Эмитенты у которых MOEX публикует данные об инсайдерах
+  var insiderSyms=['MOEX','SBER','GAZP','LKOH','NVTK','GMKN','TATN','ROSN','ALRS','MGNT'];
+
+  for(var i=0;i<insiderSyms.length;i++){
+    var sym=insiderSyms[i];
+    try{
+      // ISS endpoint для торговой активности инсайдеров
+      var url=MOEX+'/statistics/engines/stock/insider/'+sym+'.json?iss.meta=off';
+      var r=await fetch(url);
+      var d=await r.json();
+      // Парсим ответ — формат зависит от версии ISS
+      var key=Object.keys(d).find(function(k){return k!=='cursor';});
+      if(key&&d[key]&&d[key].data&&d[key].data.length){
+        var cols=d[key].columns;
+        var latest=d[key].data[d[key].data.length-1];
+        var o={}; cols.forEach(function(c,k){o[c]=latest[k];});
+        insiders.push({sym:sym, buy:o.buyqty||o.buy_qty||0, sell:o.sellqty||o.sell_qty||0,
+                       buyers:o.buyers||0, sellers:o.sellers||0, date:o.updatedate||o.date||''});
+      }
+    }catch(e2){
+      // Не все эмитенты публикуют данные — это нормально
+    }
+    await new Promise(function(r){setTimeout(r,150);});
+  }
+
+  _insiderCache=insiders;
+  renderInsiderData(insiders);
+}
+
+function renderInsiderData(insiders){
+  var el=document.getElementById('mkt-insider-list');
+  if(!el) return;
+
+  if(!insiders||!insiders.length){
+    // Показываем объяснение + ссылку
+    el.innerHTML=
+      '<div style="font-size:10px;color:var(--txt3);line-height:1.5;margin-bottom:8px">'+
+        'MOEX публикует данные об активности инсайдеров по эмитентам из IMOEX.'+
+        '<br>Сделки — обезличенные, агрегированные, обновляются раз в 2 недели.'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        '<div style="padding:8px;background:rgba(0,255,163,.06);border:1px solid rgba(0,255,163,.2);border-radius:8px">'+
+          '<div style="font-size:9px;color:#00ffa3;font-weight:600;margin-bottom:2px">ПОКУПКИ</div>'+
+          '<div style="font-size:18px;font-weight:700;font-family:var(--mono);color:#00ffa3" id="ins-buy">—</div>'+
+          '<div style="font-size:8px;color:var(--txt3)">инсайдеров за 30д</div>'+
+        '</div>'+
+        '<div style="padding:8px;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.2);border-radius:8px">'+
+          '<div style="font-size:9px;color:#ff3b5c;font-weight:600;margin-bottom:2px">ПРОДАЖИ</div>'+
+          '<div style="font-size:18px;font-weight:700;font-family:var(--mono);color:#ff3b5c" id="ins-sell">—</div>'+
+          '<div style="font-size:8px;color:var(--txt3)">инсайдеров за 30д</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="margin-top:8px;font-size:9px;color:var(--txt3)">'+
+        '<a href="https://www.moex.com/pokazatel-torgovoj-aktivnosti-insajderov" target="_blank" '+
+        'style="color:var(--cyan);text-decoration:none">Открыть на MOEX ↗</a>'+
+      '</div>';
+    return;
+  }
+
+  var totalBuyers  = insiders.reduce(function(s,d){return s+(d.buyers||0);},0);
+  var totalSellers = insiders.reduce(function(s,d){return s+(d.sellers||0);},0);
+  var sentiment    = totalBuyers+totalSellers>0 ? Math.round(totalBuyers/(totalBuyers+totalSellers)*100) : 50;
+  var sentCol      = sentiment>=55?'#00ffa3':sentiment<=45?'#ff3b5c':'#ffb800';
+
+  el.innerHTML=
+    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+      '<div style="flex:1;padding:8px;background:rgba(0,255,163,.06);border:1px solid rgba(0,255,163,.2);border-radius:8px;text-align:center">'+
+        '<div style="font-size:9px;color:#00ffa3;font-weight:600">ПОКУПАЮТ</div>'+
+        '<div style="font-size:20px;font-weight:700;font-family:var(--mono);color:#00ffa3">'+totalBuyers+'</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 4px">'+
+        '<div style="font-size:14px;font-weight:700;color:'+sentCol+'">'+sentiment+'%</div>'+
+        '<div style="font-size:8px;color:var(--txt3)">LONG</div>'+
+      '</div>'+
+      '<div style="flex:1;padding:8px;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.2);border-radius:8px;text-align:center">'+
+        '<div style="font-size:9px;color:#ff3b5c;font-weight:600">ПРОДАЮТ</div>'+
+        '<div style="font-size:20px;font-weight:700;font-family:var(--mono);color:#ff3b5c">'+totalSellers+'</div>'+
+      '</div>'+
+    '</div>'+
+    insiders.filter(function(d){return d.buyers||d.sellers;}).map(function(d){
+      var buyCol = d.buyers>d.sellers?'#00ffa3':'var(--txt3)';
+      var selCol = d.sellers>d.buyers?'#ff3b5c':'var(--txt3)';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(123,92,255,.05);cursor:pointer" onclick="showSym(\''+d.sym+'\')" >'+
+        '<span style="font-family:var(--mono);font-weight:700;font-size:11px;width:48px;color:var(--bright)">'+d.sym+'</span>'+
+        '<span style="font-size:9px;color:'+buyCol+'">▲'+d.buyers+'</span>'+
+        '<span style="font-size:9px;color:'+selCol+';margin-left:4px">▼'+d.sellers+'</span>'+
+        '<span style="font-size:8px;color:var(--txt3);margin-left:auto">'+d.date+'</span>'+
+      '</div>';
+    }).join('')+
+    '<div style="margin-top:6px;font-size:9px;color:var(--txt3)">'+
+      '<a href="https://www.moex.com/pokazatel-torgovoj-aktivnosti-insajderov" target="_blank" '+
+      'style="color:var(--cyan);text-decoration:none">Все данные на MOEX ↗</a>'+
+    '</div>';
+}
 
 function renderMarketsPage(){
   renderMktStocks();
