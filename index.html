@@ -830,6 +830,11 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <span id="mkt-volume-hdr" class="sbm-v" style="color:var(--txt3)">—</span>
       </div>
       <div class="sb-sep"></div>
+      <div id="moex-auth-badge" class="sbm" style="cursor:pointer;display:none" onclick="showPage('cab')" title="MOEX ISS авторизован — данные без задержки">
+        <div id="moex-realtime-dot" style="width:6px;height:6px;border-radius:50%;background:#00ffa3;box-shadow:0 0 6px #00ffa3;display:inline-block;margin-right:4px;vertical-align:middle"></div>
+        <span class="sbm-l">RT</span>
+      </div>
+      <div class="sb-sep"></div>
       <div class="sbm" style="cursor:pointer" onclick="toggleAg()" title="Запустить/остановить агентов">
         <div id="ag-hdr-dot" style="width:6px;height:6px;border-radius:50%;background:var(--txt3);display:inline-block;margin-right:4px;transition:all .3s;vertical-align:middle"></div>
         <span class="sbm-l">Агенты</span>
@@ -1162,6 +1167,46 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div id="cab-settings" class="hidden">
           <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:16px">Настройки</div>
           <div style="display:grid;gap:14px;max-width:480px">
+            <!-- MOEX ISS API — авторизация -->
+            <div class="ios-card" style="margin:0;border-color:rgba(0,229,255,.25)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:12px;font-weight:600;color:#00e5ff">
+                  <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00e5ffaa)">
+                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  MOEX ISS API — авторизация
+                </div>
+                <span id="moex-auth-st" style="font-size:10px;font-weight:600;color:var(--txt3)">не авторизован</span>
+              </div>
+              <div style="font-size:10px;color:var(--txt3);line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(0,229,255,.05);border-radius:8px;border:1px solid rgba(0,229,255,.1)">
+                <b style="color:#00e5ff">Что даёт авторизация:</b> данные без задержки 15 мин, 
+                полная история торгов, приоритет в rate limit.<br>
+                Логин = ваш аккаунт на <a href="https://passport.moex.com" target="_blank" style="color:#00e5ff">passport.moex.com</a> (бесплатная регистрация).
+              </div>
+              <label class="fl">Логин (email)</label>
+              <div style="display:flex;gap:6px;margin-bottom:8px">
+                <input type="email" id="s-moex-login" class="inp" placeholder="email@example.com" style="flex:1"
+                  oninput="secureSet('moex_login',this.value)"/>
+              </div>
+              <label class="fl">Пароль</label>
+              <div style="display:flex;gap:6px;margin-bottom:8px">
+                <input type="password" id="s-moex-pass" class="inp" placeholder="Пароль от passport.moex.com" style="flex:1"
+                  oninput="secureSet('moex_pass',this.value)"/>
+                <button onclick="toggleKeyVis('s-moex-pass',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0">
+                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+                </button>
+              </div>
+              <button onclick="moexAuth()" id="moex-auth-btn" class="btn" style="width:100%;justify-content:center;background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.3);color:#00e5ff;padding:9px">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#00e5ff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;margin-right:6px;vertical-align:-2px"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                Авторизоваться на MOEX
+              </button>
+              <div id="moex-auth-log" style="margin-top:8px;font-size:10px;color:var(--txt3)"></div>
+              <div style="font-size:10px;color:var(--txt3);margin-top:6px;line-height:1.5">
+                После авторизации cookie <code style="background:rgba(0,229,255,.1);padding:1px 4px;border-radius:3px">MicexPassportCert</code> 
+                сохраняется и используется автоматически. Действует до истечения срока.
+              </div>
+            </div>
             <!-- Groq API Key -->
             <div class="ios-card" style="margin:0">
               <div style="font-size:12px;font-weight:600;color:var(--ios-indigo);margin-bottom:10px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#5e5ce6;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #5e5ce6aa)"><rect x="5" y="7" width="14" height="12" rx="2"/><path d="M12 7V4M9 13h.01M15 13h.01"/></svg> AI — Groq API Key</div>
@@ -1682,6 +1727,282 @@ let agOn=false, agTimer=null, agEvs=[], agTrades=[], selAg=null;
 let lastCio=null;
 var chartType = localStorage.getItem('chartType')||'candle';
 const MOEX='https://iss.moex.com/iss';
+
+// ═══════════════════════════════════════════════════════════════════
+// ★ MOEX ISS API — АВТОРИЗАЦИЯ (passport.moex.com)
+// Из официального руководства разработчика v1.4 (PDF):
+// - Basic Auth → POST https://passport.moex.com/authenticate
+// - При успехе: cookie MicexPassportCert (сохранить до expire)
+// - Заголовок X-MicexPassport-Marker: granted = данные без задержки
+// - Без авторизации: задержка 15 минут на все данные (кроме индексов)
+// ═══════════════════════════════════════════════════════════════════
+
+var _moexAuthCookie = null;  // MicexPassportCert cookie
+var _moexAuthTs     = 0;     // время последней успешной авторизации
+var _moexAuthUser   = null;  // email авторизованного пользователя
+
+// Авторизация через passport.moex.com
+async function moexAuth(){
+  var login = secureGet('moex_login')||'';
+  var pass  = secureGet('moex_pass')||'';
+  var btn   = document.getElementById('moex-auth-btn');
+  var log   = document.getElementById('moex-auth-log');
+  var st    = document.getElementById('moex-auth-st');
+
+  if(!login || !pass){
+    if(log) log.textContent = '⚠ Введите логин и пароль';
+    return;
+  }
+
+  if(btn) btn.textContent = '⏳ Авторизация...';
+  if(log) log.textContent = '';
+
+  try{
+    // Из PDF v1.4: Basic Auth через HTTPS на passport.moex.com
+    // Заголовок Authorization: Basic base64(login:password)
+    var creds = btoa(unescape(encodeURIComponent(login + ':' + pass)));
+    var r = await fetch('https://passport.moex.com/authenticate', {
+      method: 'GET',
+      headers: { 'Authorization': 'Basic ' + creds },
+      credentials: 'include'
+    });
+
+    if(r.ok || r.status === 200){
+      // Пробуем получить cookie из заголовка Set-Cookie
+      // (в браузере httpOnly cookie ставится автоматически)
+      _moexAuthTs   = Date.now();
+      _moexAuthUser = login;
+      secureSet('moex_auth_ts', String(_moexAuthTs));
+      secureSet('moex_auth_user', login);
+
+      if(st) { st.textContent = '✓ авторизован'; st.style.color = '#00ffa3'; }
+      if(log) log.textContent = '✅ Авторизация успешна. Данные без задержки.';
+      if(btn) btn.textContent = '✓ Авторизован';
+
+      // Обновляем UI
+      _updateMoexAuthUI();
+      // Перезагружаем данные уже с авторизацией
+      fetchAllData();
+    } else {
+      throw new Error('HTTP ' + r.status);
+    }
+  }catch(e){
+    if(log) log.innerHTML =
+      '❌ Ошибка: ' + (e.message||'проверьте логин/пароль') + '<br>' +
+      '<span style="color:var(--txt3)">Возможная причина: CORS. ' +
+      'Для обхода используйте расширение CORS Unblock или Relay сервер.</span>';
+    if(btn) btn.textContent = 'Авторизоваться на MOEX';
+    if(st) { st.textContent = 'ошибка авторизации'; st.style.color = '#ff3b5c'; }
+  }
+}
+
+// Проверяем авторизован ли пользователь
+function isMoexAuthed(){
+  if(_moexAuthTs > 0) return true;
+  // Восстанавливаем из localStorage
+  var ts = secureGet('moex_auth_ts');
+  if(ts && Date.now() - parseInt(ts) < 24*3600000){
+    _moexAuthTs   = parseInt(ts);
+    _moexAuthUser = secureGet('moex_auth_user')||'';
+    return true;
+  }
+  return false;
+}
+
+// Формируем заголовки для запросов с авторизацией
+function moexHeaders(){
+  if(!isMoexAuthed()) return {};
+  var login = _moexAuthUser || secureGet('moex_login') || '';
+  var pass  = secureGet('moex_pass') || '';
+  if(!login || !pass) return {};
+  return {
+    'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(login + ':' + pass)))
+  };
+}
+
+function _updateMoexAuthUI(){
+  var st  = document.getElementById('moex-auth-st');
+  var btn = document.getElementById('moex-auth-btn');
+  var log = document.getElementById('moex-auth-log');
+  var user = _moexAuthUser || secureGet('moex_auth_user') || '';
+  if(isMoexAuthed()){
+    if(st) { st.textContent = '✓ ' + (user||'авторизован'); st.style.color = '#00ffa3'; }
+    if(btn) btn.textContent = '✓ Авторизован · Выйти';
+    if(btn) btn.onclick = moexLogout;
+    // Показываем статус в шапке
+    var hdrDot = document.getElementById('moex-realtime-dot');
+    if(hdrDot){ hdrDot.style.display='inline-block'; }
+  } else {
+    if(st) { st.textContent = 'не авторизован'; st.style.color = 'var(--txt3)'; }
+    if(btn){ btn.textContent = 'Авторизоваться на MOEX'; btn.onclick = moexAuth; }
+  }
+  // Показываем RT бейдж в шапке
+  var badge = document.getElementById('moex-auth-badge');
+  if(badge) badge.style.display = isMoexAuthed() ? '' : 'none';
+  if(loginInp && !loginInp.value) loginInp.value = secureGet('moex_login')||'';
+}
+
+function moexLogout(){
+  _moexAuthTs = 0; _moexAuthCookie = null; _moexAuthUser = null;
+  secureSet('moex_auth_ts',''); secureSet('moex_auth_user',''); secureSet('moex_pass','');
+  _updateMoexAuthUI();
+  showToast('MOEX ISS','Выход выполнен. Данные с задержкой 15 мин.',null);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ★ ПРАВИЛЬНАЯ ПАГИНАЦИЯ ЧЕРЕЗ CURSOR (из PDF v1.4 стр.10-11)
+// Паттерн: while (INDEX + PAGESIZE) < TOTAL → start += PAGESIZE
+// cursor блок: {INDEX, TOTAL, PAGESIZE}
+// По умолчанию PAGESIZE=100, можно задать limit=50/20/10/5/1
+// ═══════════════════════════════════════════════════════════════════
+
+// Универсальная функция с cursor-пагинацией
+async function issPagedFetch(url, blockName, maxRows){
+  maxRows = maxRows || 5000;
+  var all   = [];
+  var start = 0;
+  var headers = moexHeaders();
+
+  while(all.length < maxRows){
+    try{
+      var sep = url.indexOf('?')>=0 ? '&' : '?';
+      var r   = await fetch(url + sep + 'start=' + start, {
+        headers: headers,
+        credentials: 'include'
+      });
+      if(!r.ok) break;
+      var d = await r.json();
+
+      // Проверяем заголовок авторизации (PDF: X-MicexPassport-Marker)
+      var authMarker = r.headers.get('X-MicexPassport-Marker');
+      if(authMarker === 'denied' && !isMoexAuthed()){
+        console.warn('ISS: данные с задержкой 15 мин (X-MicexPassport-Marker: denied)');
+      }
+
+      var block = d[blockName];
+      if(!block || !block.data) break;
+      var cols = block.columns;
+      var rows = block.data;
+      if(!rows.length) break;
+
+      rows.forEach(function(row){
+        var o={}; cols.forEach(function(c,k){o[c]=row[k];});
+        all.push(o);
+      });
+
+      // Cursor-пагинация (PDF стр.11): пока (INDEX + PAGESIZE) < TOTAL
+      var cursorKey = blockName + '.cursor';
+      var cursor = d[cursorKey] || d['cursor'];
+      if(cursor && cursor.data && cursor.data.length){
+        var cCols = cursor.columns;
+        var cRow  = cursor.data[0];
+        var co={}; cCols.forEach(function(c,k){co[c]=cRow[k];});
+        var idx  = parseInt(co.INDEX||0);
+        var total= parseInt(co.TOTAL||0);
+        var psize= parseInt(co.PAGESIZE||100);
+        if((idx + psize) >= total) break;   // ← правильное условие из PDF
+        start = idx + psize;
+      } else {
+        // Fallback: если нет cursor — используем старый паттерн
+        if(rows.length < 100) break;
+        start += rows.length;
+      }
+
+      await new Promise(function(r){setTimeout(r,80);}); // rate limit
+    }catch(e){ console.warn('issPagedFetch error:', e.message); break; }
+  }
+  return all;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ★ ДИНАМИЧЕСКИЙ СПИСОК БУМАГ из /iss/index (securitycollections)
+// Из PDF: "Значения параметров могут запрашиваться динамически,
+//  обычно не меняются в течение торговой сессии,
+//  рекомендуется формировать раз в день."
+// ═══════════════════════════════════════════════════════════════════
+
+var _issIndexCache = null;
+var _issIndexTs    = 0;
+
+async function fetchISSIndex(){
+  // Загружаем глобальный справочник ISS раз в день
+  if(_issIndexTs > Date.now()-24*3600000 && _issIndexCache) return _issIndexCache;
+  try{
+    var r = await fetch(MOEX+'/index.json?iss.meta=off&lang=ru&iss.only=securitycollections,durations,securitytypes', {
+      headers: moexHeaders(), credentials:'include'
+    });
+    var d = await r.json();
+    _issIndexCache = d;
+    _issIndexTs    = Date.now();
+    return d;
+  }catch(e){ console.warn('fetchISSIndex:', e.message); return null; }
+}
+
+// Получаем топ-50 ликвидных акций из securitycollections
+async function fetchTopSecurities(){
+  var cached = localStorage.getItem('moex_syms_cache');
+  var cachedTs = parseInt(localStorage.getItem('moex_syms_ts')||0);
+  // Кеш на 24 часа
+  if(cached && Date.now()-cachedTs < 24*3600000){
+    var syms = JSON.parse(cached);
+    if(syms && syms.length > 10) return syms;
+  }
+  try{
+    // Коллекция "one" (1й уровень листинга) из группы "stock_shares"
+    var url = MOEX+'/securitygroups/stock_shares/collections/one/securities.json'+
+              '?iss.meta=off&securities.columns=SECID,SHORTNAME,LATNAME,DECIMALS'+
+              '&iss.only=securities&limit=100';
+    var rows = await issPagedFetch(url, 'securities', 200);
+
+    if(rows.length < 5){
+      // Fallback на boardgroup (более широкий список)
+      url = MOEX+'/engines/stock/markets/shares/boardgroups/57/securities.json'+
+            '?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME'+
+            '&marketdata.columns=SECID,VALTODAY'+
+            '&sort_column=VALTODAY&sort_order=desc&limit=100';
+      rows = await issPagedFetch(url, 'securities', 100);
+    }
+
+    var syms = rows
+      .map(function(r){return r.SECID||r.secid||'';})
+      .filter(function(s){return s && s.length>=3 && s.length<=6;})
+      .slice(0,80);
+
+    if(syms.length > 10){
+      localStorage.setItem('moex_syms_cache', JSON.stringify(syms));
+      localStorage.setItem('moex_syms_ts', String(Date.now()));
+      console.log('[MOEX ISS] Динамический список: '+syms.length+' бумаг');
+    }
+    return syms;
+  }catch(e){
+    console.warn('fetchTopSecurities:', e.message);
+    return [];
+  }
+}
+
+// Применяем динамический список (вызывается при инициализации)
+async function initDynamicSyms(){
+  var dynSyms = await fetchTopSecurities();
+  if(dynSyms && dynSyms.length > 10){
+    // Добавляем новые тикеры которых нет в ST[]
+    var added = 0;
+    dynSyms.forEach(function(sym){
+      if(!ST[sym]){
+        // Определяем базовый сектор по суффиксу (P = привилегированная)
+        var base = sym.replace(/P$|_S$/,'');
+        var baseInfo = ST[base]||{};
+        ST[sym] = {n: sym, s: baseInfo.s||'', pe:0, roe:0, div:0, pb:0};
+        added++;
+      }
+    });
+    if(added > 0){
+      console.log('[MOEX ISS] Добавлено '+added+' новых тикеров из securitycollections');
+    }
+    // Показываем статус
+    var el = document.getElementById('moex-syms-count');
+    if(el) el.textContent = Object.keys(ST).length + ' бумаг';
+  }
+}
 
 // ── Stocks ────────────────────────────────────
 const ST={
@@ -8833,6 +9154,8 @@ function showApp(){
   _loadRead();
   _loadSymMemory();
   _loadChatLog();
+  _updateMoexAuthUI();   // показываем статус авторизации MOEX
+  initDynamicSyms();     // загружаем динамический список бумаг
   popSels();
   lAS();
   rSectors();
