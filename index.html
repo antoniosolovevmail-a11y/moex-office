@@ -627,7 +627,28 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   display:flex;align-items:center;justify-content:space-between;gap:16px;
 }
 
-/* ── PAPER BOT UI ── */
+/* ── AGENT CHAT ── */
+.chat-wrap{display:flex;flex-direction:column;height:100%;background:rgba(5,7,20,.4)}
+.chat-msg{display:flex;gap:7px;padding:6px 10px;transition:background .15s}
+.chat-msg:hover{background:rgba(123,92,255,.05)}
+.chat-msg.system{background:rgba(0,255,163,.03);border-left:2px solid rgba(0,255,163,.25)}
+.chat-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
+.chat-bubble{flex:1;min-width:0}
+.chat-header{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.chat-name{font-size:10px;font-weight:700}
+.chat-role{font-size:8px;color:var(--txt3);opacity:.8}
+.chat-time{font-size:8px;color:var(--txt3);margin-left:auto;font-family:var(--mono)}
+.chat-text{font-size:11px;line-height:1.45;color:var(--txt2)}
+.chat-text .mention{font-weight:600;color:#00e5ff}
+.chat-text .ticker{font-family:var(--mono);font-weight:700;color:#ffb800}
+.chat-text .pnl-pos{color:#00ffa3;font-weight:600}
+.chat-text .pnl-neg{color:#ff3b5c;font-weight:600}
+.chat-text .tag{display:inline-block;padding:0 5px;border-radius:4px;font-size:9px;font-weight:600;margin-left:3px;vertical-align:middle}
+.chat-text .tag-trade{background:rgba(0,255,163,.12);color:#00ffa3}
+.chat-text .tag-study{background:rgba(123,92,255,.15);color:#a78bfa}
+.chat-text .tag-warn{background:rgba(255,184,0,.12);color:#ffb800}
+.chat-text .tag-flip{background:rgba(0,229,255,.12);color:#00e5ff}
+.chat-divider{text-align:center;font-size:8px;color:var(--txt3);padding:4px 0;letter-spacing:.06em}
 .pb-header{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
   padding:16px 20px 0;
@@ -963,12 +984,14 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
       <div class="evo-term">
         <div class="evo-tabs">
           <button class="etab on" onclick="swEvo('log')">События</button>
+          <button class="etab" onclick="swEvo('chat')" style="color:#00ffa3">Чат</button>
           <button class="etab" onclick="swEvo('sk')">Навыки</button>
           <button class="etab" onclick="swEvo('tr')">Сделки</button>
           <button class="etab" onclick="swEvo('kn')">Знания</button>
           <button class="etab" onclick="swEvo('prompts')">Промты</button>
         </div>
         <div id="evo-log" class="evo-body"></div>
+        <div id="evo-chat" class="evo-body hidden"></div>
         <div id="evo-sk" class="evo-body hidden"><div class="sk-grid" id="sk-grid"></div></div>
         <div id="evo-tr" class="evo-body hidden"></div>
         <div id="evo-kn" class="evo-body hidden"></div>
@@ -1255,6 +1278,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
           <div style="font-size:12px;font-weight:600;color:var(--label)">Журнал событий</div>
           <div style="display:flex;gap:4px">
             <button class="etab on" id="ag-tab-log" onclick="agTab('log')">События</button>
+            <button class="etab" id="ag-tab-chat" onclick="agTab('chat')" style="color:#00ffa3">Чат</button>
             <button class="etab" id="ag-tab-study" onclick="agTab('study')" style="color:var(--ios-green)">Обучение</button>
             <button class="etab" id="ag-tab-tr" onclick="agTab('tr')">Сделки</button>
             <button class="etab" id="ag-tab-sk" onclick="agTab('sk')">Навыки</button>
@@ -1262,6 +1286,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
           </div>
         </div>
         <div id="ag-page-log" style="height:260px;overflow-y:auto;padding:8px"></div>
+        <div id="ag-page-chat" class="hidden" style="height:260px;overflow-y:auto;padding:0"></div>
         <div id="ag-page-study" class="hidden" style="height:260px;overflow-y:auto;padding:8px"></div>
         <div id="ag-page-tr" class="hidden" style="height:260px;overflow-y:auto;padding:8px"></div>
         <div id="ag-page-sk" class="hidden" style="padding:12px"><div class="sk-grid" id="ag-page-sk-grid"></div></div>
@@ -1355,6 +1380,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <div class="pb-toggle-thumb"></div>
           </label>
           <button onclick="pbReset()" style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);color:#ff3b5c;border-radius:8px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--sans)" title="Сбросить бумажный портфель">↺ Сброс</button>
+          <button onclick="pbExportCSV()" style="background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);color:#00e5ff;border-radius:8px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--sans)" title="Экспорт истории в CSV">↓ CSV</button>
         </div>
       </div>
       <!-- Metrics row -->
@@ -2055,6 +2081,12 @@ async function agDeepStudyFor(ag, fallbackTopic){
       } else {
         topic = {t:newSrc.title, src:newSrc.source, sk:newSrc.skill, insight:newSrc.insight};
         isNew = true;
+        // Чат: делимся инсайтом с коллегами (с небольшой задержкой)
+        if(newSrc.insight){
+          setTimeout(function(){
+            _chatStudyInsight(ag, newSrc.title, newSrc.insight);
+          }, 500);
+        }
       }
     } else {
       topic = fallbackTopic;
@@ -2732,6 +2764,278 @@ function agNeedsBadge(a){
   return '<div style="font-size:9px;color:'+col+';padding:6px 8px;background:'+bg+';border-left:2px solid '+border+';border-radius:0 var(--r1) var(--r1) 0;margin-bottom:12px">'+icon+' '+text+'</div>';
 }
 
+// ═══════════════════════════════════════════════════════════
+// ★ AGENT CHAT ENGINE ★
+// Публичный чат агентов — все видят сообщения друг друга.
+// Подключён к ключевым событиям: совещание, Attribution,
+// Level 3 переворот, результат сделки, обучение, конфликт.
+// ═══════════════════════════════════════════════════════════
+
+var agChatLog = []; // {from, fromId, color, role, to, toId, msg, t, tag, ts}
+var _chatLastDay = '';
+
+// Добавить сообщение в чат
+function addChat(fromAg, msg, opts){
+  opts = opts||{};
+  var now = new Date();
+  var hm  = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  var day = now.toLocaleDateString('ru',{day:'2-digit',month:'short'});
+
+  var item = {
+    from:   fromAg ? fromAg.n    : 'СИСТЕМА',
+    fromId: fromAg ? fromAg.id   : 'sys',
+    color:  fromAg ? fromAg.c    : '#00ffa3',
+    role:   fromAg ? fromAg.r    : '',
+    emoji:  fromAg ? fromAg.e    : '⚙️',
+    to:     opts.to   || null,   // адресат (или null = всем)
+    toId:   opts.toId || null,
+    msg:    msg,
+    tag:    opts.tag  || null,   // 'trade'|'study'|'warn'|'flip'
+    t:      hm,
+    day:    day,
+    ts:     Date.now()
+  };
+  agChatLog.unshift(item);
+  if(agChatLog.length > 300) agChatLog.length = 300;
+
+  _renderChatItem(item, day);
+}
+
+// Рендер одного сообщения в DOM
+function _renderChatItem(item, day){
+  var targets = ['evo-chat','ag-page-chat'];
+  targets.forEach(function(elId){
+    var wrap = document.getElementById(elId);
+    if(!wrap) return;
+
+    // Разделитель по дням
+    if(day !== _chatLastDay){
+      _chatLastDay = day;
+      var sep = document.createElement('div');
+      sep.className = 'chat-divider';
+      sep.textContent = '── '+day+' ──';
+      wrap.insertBefore(sep, wrap.firstChild);
+    }
+
+    // Форматируем текст: @Агент-X → синим, тикеры → жёлтым
+    var fmtMsg = item.msg
+      .replace(/(@Агент-\w+)/g, '<span class="mention">$1</span>')
+      .replace(/\b([A-Z]{3,5})\b(?=[\s,\.!]|$)/g, function(m,sym){
+        return ST[sym] ? '<span class="ticker">'+sym+'</span>' : m;
+      })
+      .replace(/([+-]\d+\.?\d*%)/g, function(m,s){
+        return parseFloat(s)>=0
+          ? '<span class="pnl-pos">'+s+'</span>'
+          : '<span class="pnl-neg">'+s+'</span>';
+      });
+
+    var tagHtml = item.tag
+      ? '<span class="tag tag-'+item.tag+'">'+
+          ({trade:'СДЕЛКА',study:'УЧЁБА',warn:'РИСК',flip:'ПЕРЕВОРОТ'}[item.tag]||item.tag)+
+        '</span>'
+      : '';
+
+    var isSystem = item.fromId==='sys';
+    var div = document.createElement('div');
+    div.className = 'chat-msg'+(isSystem?' system':'');
+    div.innerHTML =
+      '<div class="chat-avatar" style="background:'+item.color+'22;border:1px solid '+item.color+'44;color:'+item.color+'">'+
+        item.emoji+
+      '</div>'+
+      '<div class="chat-bubble">'+
+        '<div class="chat-header">'+
+          '<span class="chat-name" style="color:'+item.color+'">'+item.from+'</span>'+
+          (item.role?'<span class="chat-role">'+item.role+'</span>':'')+
+          (item.to?'<span class="chat-role" style="color:#00e5ff">→ @'+item.to+'</span>':'')+
+          tagHtml+
+          '<span class="chat-time">'+item.t+'</span>'+
+        '</div>'+
+        '<div class="chat-text">'+fmtMsg+'</div>'+
+      '</div>';
+
+    wrap.insertBefore(div, wrap.firstChild);
+    // Ограничиваем DOM
+    while(wrap.children.length > 80) wrap.removeChild(wrap.lastChild);
+  });
+}
+
+// Рендер всего чат-лога (при переключении на вкладку)
+function rChatTab(elId){
+  var wrap = document.getElementById(elId);
+  if(!wrap) return;
+  if(agChatLog.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;padding:30px;font-size:11px;color:var(--txt3)">'+
+      'Чат пуст — запустите агентов чтобы увидеть их общение</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  _chatLastDay = '';
+  agChatLog.slice().reverse().forEach(function(item){
+    _renderChatItem(item, item.day);
+  });
+}
+
+// ── Подключение к событиям системы ─────────────────────────
+
+// После совещания CIO (agCouncil) — вставляется снаружи через addChat
+// Ниже — хуки для ключевых точек:
+
+// Хук: добавить в чат при открытии торговой позиции коллективом
+function _chatTradeOpen(sym, dir, conf, strength, reasoning, dissent){
+  var cio = AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+  addChat(cio,
+    'Принято решение: '+dir+' '+sym+'. '+
+    'Уверенность '+conf+'%, сила сигнала: '+strength+'. '+
+    (reasoning ? reasoning : ''),
+    {tag:'trade'});
+  if(dissent){
+    // Находим агента с особым мнением (случайный из меньшинства)
+    var minority = AGs.filter(function(a){
+      return a.id!=='6' && a.id!=='2';
+    });
+    var skeptic = minority[Math.floor(Math.random()*minority.length)];
+    setTimeout(function(){
+      addChat(skeptic,
+        '@'+cio.n+' не уверен в этом входе: '+dissent,
+        {to:cio.n, toId:cio.id, tag:'warn'});
+    }, 800);
+  }
+}
+
+// Хук: результат сделки — агенты реагируют
+function _chatTradeClose(sym, pnl, won, agentVotes){
+  var cio = AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+  addChat(cio,
+    'Сделка по '+sym+' закрыта: '+(pnl>=0?'+':'')+pnl.toFixed(2)+'%. '+
+    (won ? 'Коллектив сработал точно.' : 'Разбираемся что пошло не так.'),
+    {tag:'trade'});
+
+  if(!won && agentVotes){
+    // Агенты которые ошиблись с высокой уверенностью — оправдываются
+    var wrong = agentVotes.filter(function(v){return v.dir==='LONG'&&v.conf>=70;});
+    if(wrong.length){
+      var ag = AGs.filter(function(x){return x.id===wrong[0].id;})[0];
+      if(ag){
+        setTimeout(function(){
+          addChat(ag,
+            'Мой сигнал по '+sym+' был '+wrong[0].conf+'% LONG. '+
+            'Пересматриваю критерии входа для этого сектора.',
+            {to:cio.n, toId:cio.id, tag:'warn'});
+        }, 1200);
+      }
+    }
+    // Агент-5 Риск комментирует
+    var ag5 = AGs.filter(function(x){return x.id==='5';})[0];
+    if(ag5){
+      var mem = symMemory[sym];
+      var streak = mem ? mem.streak : 0;
+      setTimeout(function(){
+        addChat(ag5,
+          sym+(streak<=-2?' снова убыток (серия '+Math.abs(streak)+'). Предлагаю заблокировать на 24ч.':
+            ' — разовая потеря, статистически допустимо.'),
+          {tag:'warn'});
+      }, 2000);
+    }
+  } else if(won){
+    // Агент-13 Скринер хвалит
+    var ag13 = AGs.filter(function(x){return x.id==='13';})[0];
+    if(ag13){
+      setTimeout(function(){
+        addChat(ag13,
+          'Сигнал по '+sym+' был качественным. Моментум подтвердился.',
+          {});
+      }, 1000);
+    }
+  }
+}
+
+// Хук: Уровень 3 — переворот консенсуса
+function _chatL3Flip(sym, r1Dir, finalDir, boosted){
+  var cio = AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+  addChat(cio,
+    'Раунд 2 изменил итог по '+sym+': '+r1Dir+' → '+finalDir+'. '+
+    'Агенты в меньшинстве убедили коллектив: '+boosted.join(', ')+'.',
+    {tag:'flip'});
+  // Агент который переубедил — объясняет
+  if(boosted.length){
+    var winner = AGs.filter(function(a){return a.name===boosted[0]||a.n===boosted[0];})[0];
+    if(winner){
+      setTimeout(function(){
+        addChat(winner,
+          'По '+sym+' вижу данные которые большинство недооценило. '+
+          'Настаиваю на '+finalDir+' — мои метрики говорят об этом однозначно.',
+          {to:cio.n, toId:cio.id});
+      }, 600);
+    }
+  }
+}
+
+// Хук: Attribution — получивший штраф агент реагирует
+function _chatAttribution(ag, sym, conf, penalty){
+  var cio = AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+  setTimeout(function(){
+    addChat(ag,
+      'Признаю ошибку по '+sym+'. Моя уверенность '+conf+'% не оправдалась. '+
+      'IQ −'+penalty.toFixed(1)+'. Буду осторожнее с этим сектором.',
+      {to:cio.n, toId:cio.id, tag:'warn'});
+  }, 1500);
+}
+
+// Хук: Обучение — агент делится инсайтом
+function _chatStudyInsight(ag, topic, insight){
+  if(!insight || insight.length < 20) return;
+  // Адресуем агентам из смежных ролей
+  var related = AGs.filter(function(a){
+    return a.id!==ag.id && a.id!=='6' &&
+      (a.r===ag.r || Math.random()<0.15); // иногда рассылаем всем
+  }).slice(0,2);
+  var toAg = related.length ? related[0] : null;
+  addChat(ag,
+    'Прочитал: "'+topic.slice(0,35)+'". Ключевой вывод: '+insight.slice(0,90),
+    {to:toAg?toAg.n:null, toId:toAg?toAg.id:null, tag:'study'});
+  // Иногда кто-то из адресатов отвечает
+  if(toAg && Math.random() < 0.4){
+    setTimeout(function(){
+      var responses = [
+        'Интересно, учту в следующем анализе.',
+        'Совпадает с тем что я вижу по объёмам.',
+        'Хороший материал, добавил в свою методологию.',
+        'Согласен. Это объясняет паттерн который я видел на прошлой неделе.'
+      ];
+      addChat(toAg,
+        responses[Math.floor(Math.random()*responses.length)],
+        {to:ag.n, toId:ag.id});
+    }, 1000 + Math.random()*2000);
+  }
+}
+
+// Хук: Совещание агентов (agCouncil) — спикеры высказываются
+function _chatCouncil(sym, speakers, cs, verdict){
+  var cio = AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+  // Каждый спикер произносит реплику на основе своего score
+  speakers.forEach(function(sp, i){
+    setTimeout(function(){
+      var agData = cs && cs.agents ? cs.agents.filter(function(a){return a.id===sp.id;})[0] : null;
+      if(!agData) return;
+      var opinion = agData.dir==='LONG'
+        ? 'По '+sym+' вижу сигнал на LONG ('+agData.conf+'%). '+agData.reason.slice(0,60)+'.'
+        : agData.dir==='SHORT'
+        ? 'Осторожно по '+sym+' — SHORT ('+agData.conf+'%). '+agData.reason.slice(0,60)+'.'
+        : 'По '+sym+' пока нейтрально ('+agData.conf+'%). Жду подтверждения.';
+      addChat(sp, opinion, {to:cio.n, toId:cio.id});
+    }, i * 700);
+  });
+  // CIO подводит итог
+  if(verdict){
+    setTimeout(function(){
+      addChat(cio,
+        'Итог совещания по '+sym+': '+verdict.decision+' ('+verdict.confidence+'%). '+
+        (verdict.reasoning||'').slice(0,80),
+        {tag:'trade'});
+    }, speakers.length * 700 + 500);
+  }
+}
+
 function rSkGrid(){
   var el=document.getElementById('sk-grid');
   if(!el)return;
@@ -2910,6 +3214,8 @@ async function agCouncil(sym, cs, p){
 
   try{
     addEv('learn',cio,'Совещание: '+speakers.map(function(a){return a.n;}).join(', ')+' -> CIO...');
+    // Чат: спикеры высказываются перед Groq
+    _chatCouncil(sym, speakers, cs, null);
     var r=await groqFetch({
       model:'llama-3.3-70b-versatile',max_tokens:200,temperature:0.25,
       messages:[{role:'user',content:prompt}]
@@ -2924,6 +3230,10 @@ async function agCouncil(sym, cs, p){
     var icon=v.decision==='LONG'?'^':v.decision==='SHORT'?'v':'--';
     addEv('trade',cio,'CIO: '+icon+' '+v.decision+' '+sym+' | '+(v.confidence||cs.avgConf)+'% | '+(v.reasoning||'').slice(0,65));
     if(v.dissent) addEv('learn',cio,'Особое мнение: '+v.dissent.slice(0,75));
+    // Чат: финальный вердикт CIO
+    setTimeout(function(){
+      _chatCouncil(sym, [], cs, v);
+    }, speakers.length * 700 + 400);
     speakers.forEach(function(sp){aLearn(sp,1.5);});
     aLearn(cio,2.0); sAS();
     return v;
@@ -2967,6 +3277,15 @@ function runAgCy(){
   var dir=cs?cs.dir:(p.c>0?'LONG':'SHORT');
   var strength=cs?cs.strength:'weak';
   var longW=cs?cs.longW:50;
+  // Уровень 3: если был переворот мнения между раундами — логируем
+  if(cs && cs.r1r2flip){
+    var cio0=AGs.filter(function(x){return x.id==='6';})[0]||AGs[0];
+    addEv('learn',cio0,
+      'Уровень 3: переворот консенсуса по '+chosenSym+
+      (cs.r2boosted.length?' ('+cs.r2boosted.join(', ')+')'  :''));
+    // Чат: объявляем переворот
+    _chatL3Flip(chosenSym, cs.r1r2flip?'initial':dir, cs.dir, cs.r2boosted||[]);
+  }
 
   // === ФАЗА 3: ОБУЧЕНИЕ ИЛИ МОЗГОВОЙ ШТУРМ + ТОРГОВЛЯ ===
   if(Math.random()<0.18){
@@ -3023,6 +3342,8 @@ function runAgCy(){
       dIcon+' '+finalDir+' '+chosenSym+' @ '+p.p+'\u20BD'+
       ' | CIO: '+finalConf+'%'+
       (verdict.dissent?' | !':''));
+    // Чат: объявляем о сделке
+    _chatTradeOpen(chosenSym, finalDir, finalConf, strength, verdict.reasoning, verdict.dissent);
     rAgTr(); sAS();
     var ce=document.getElementById('ag-cnt');
     if(ce) ce.textContent=agTrades.length;
@@ -3047,6 +3368,8 @@ function runAgCy(){
         if(won){ag.wi++;ag.streak=(ag.streak||0)+1;}
         else   {ag.streak=0;}
       });
+      // Чат: реакция на результат
+      _chatTradeClose(chosenSym, pnl, won, trade.agentVotes);
       // Attribution: штрафуем тех кто ошибся с высокой уверенностью
       if(trade.agentVotes){
         trade.agentVotes.forEach(function(vote){
@@ -3058,9 +3381,12 @@ function runAgCy(){
             var sk=Object.keys(ag.sk).reduce(function(min,k){
               return ag.sk[k]<ag.sk[min]?k:min;},Object.keys(ag.sk)[0]);
             ag.sk[sk]=Math.max(0,ag.sk[sk]-penalty);
-            if(penalty>0.8) addEv('loss',ag,
-              'Attribution: неверный LONG '+chosenSym+
-              ' ('+vote.conf+'%) −'+penalty.toFixed(1)+'IQ');
+            if(penalty>0.8){
+              addEv('loss',ag,
+                'Attribution: неверный LONG '+chosenSym+
+                ' ('+vote.conf+'%) −'+penalty.toFixed(1)+'IQ');
+              _chatAttribution(ag, chosenSym, vote.conf, penalty);
+            }
           } else if(won && vote.dir===finalDir && vote.conf>=70){
             // Точный высокоуверенный прогноз → бонус
             aLearn(ag,1.5);
@@ -3734,16 +4060,17 @@ function showPage(p){
 }
 
 function swEvo(t){
-  ['log','sk','tr','kn','prompts'].forEach(function(x){
+  ['log','chat','sk','tr','kn','prompts'].forEach(function(x){
     var el=document.getElementById('evo-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
   });
   document.querySelectorAll('.etab').forEach(function(b,i){
-    b.classList.toggle('on',['log','sk','tr','kn','prompts'][i]===t);
+    b.classList.toggle('on',['log','chat','sk','tr','kn','prompts'][i]===t);
   });
   if(t==='sk')rSkGrid();
   if(t==='tr')rAgTr();
   if(t==='prompts')renderPrompts();
+  if(t==='chat')rChatTab('evo-chat');
 }
 
 function showCab(t){
@@ -4451,27 +4778,45 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-3 — Фундаментал: P/E + ROE + дивиденды
+      // Агент-3 — Фундаментал: P/E + ROE + дивиденды (IQ-адаптивный)
+      var ag3 = AGs.filter(function(x){return x.id==='3';})[0];
+      var iq3 = ag3 ? aIQ(ag3) : 10;
       var score = 50;
+
       if(info.pe){
-        if(info.pe < 6)  score += 20;
-        else if(info.pe < 10) score += 10;
-        else if(info.pe > 20) score -= 15;
+        // Эксперт знает что P/E < 4 может означать проблемы, а не дешевизну
+        var peLow  = iq3 > 60 ? 4  : 3;   // слишком дёшево — подозрительно
+        var peMed  = iq3 > 60 ? 8  : 6;   // хорошее значение
+        var peHigh = iq3 > 60 ? 18 : 20;  // дорого
+        if(info.pe > peLow && info.pe < peMed)  score += 20;
+        else if(info.pe >= peMed && info.pe < peHigh) score += 10;
+        else if(info.pe > peHigh) score -= 15;
+        else if(info.pe <= peLow && iq3 > 60) score -= 5; // эксперт осторожен
       }
       if(info.roe){
-        if(info.roe > 25) score += 15;
-        else if(info.roe > 15) score += 8;
-        else if(info.roe < 5)  score -= 10;
+        var roeHigh = iq3 > 60 ? 20 : 25; // эксперт понижает порог
+        var roeMed  = iq3 > 60 ? 12 : 15;
+        if(info.roe > roeHigh)    score += 15;
+        else if(info.roe > roeMed) score += 8;
+        else if(info.roe < 5)     score -= 10;
       }
       if(info.div){
         if(info.div > 10) score += 12;
         else if(info.div > 5) score += 6;
+        // Эксперт: слишком высокие дивиденды = дивидендная ловушка
+        if(iq3 > 70 && info.div > 20) score -= 8;
       }
       if(info.pb && info.pb < 1) score += 10;
+      // Эксперт: живой P/E по текущей цене
+      if(iq3 > 50 && info.eps && info.eps > 0 && p.p > 0){
+        var livePE = p.p / info.eps;
+        if(livePE < 6)        score += 8;
+        else if(livePE > 22)  score -= 8;
+      }
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
       var parts = [];
-      if(info.pe)  parts.push('P/E='+info.pe+'x');
+      if(info.pe)  parts.push('P/E='+info.pe);
       if(info.roe) parts.push('ROE='+info.roe+'%');
       if(info.div) parts.push('Div='+info.div+'%');
       return {id:'3',name:'Агент-3',role:'Фундам.',e:'📊',c:'#059669',
@@ -4518,11 +4863,12 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-7 — Макро: IMOEX + USD
+      // Агент-7 — Макро: IMOEX + USD + OFZ (IQ-адаптивный)
+      var ag7 = AGs.filter(function(x){return x.id==='7';})[0];
+      var iq7 = ag7 ? aIQ(ag7) : 10;
       var score = 50;
-      var imoexEl = document.getElementById('imoex-v');
-      var usdEl   = document.getElementById('usd-v');
-      // IMOEX direction from ticker
+
+      // IMOEX
       var imoexChg = 0;
       document.querySelectorAll('.tick-item').forEach(function(el){
         if(el.textContent.includes('IMOEX')){
@@ -4530,30 +4876,89 @@ function calcFullConsensus(sym, candlesOverride){
           if(m) imoexChg = parseFloat(m[1]);
         }
       });
-      if(imoexChg > 0.3) score += 15;
-      else if(imoexChg < -0.3) score -= 15;
-      // Sector correlation
-      if(info.s==='Нефть/Газ') score += (imoexChg>0?5:-5);
+      var imoexThresh = iq7 > 60 ? 0.2 : 0.3; // эксперт реагирует на меньшие движения
+      if(imoexChg > imoexThresh)       score += 15;
+      else if(imoexChg > 0)            score += 5;
+      else if(imoexChg < -imoexThresh) score -= 15;
+      else if(imoexChg < 0)            score -= 5;
+
+      // Секторная корреляция
+      var sectorCorr = {'Нефть/Газ':1.1,'Металлы':0.9,'Финансы':1.0,'Технологии':1.2};
+      var sectMult = sectorCorr[info.s] || 1.0;
+      score += Math.round(imoexChg * sectMult * (iq7 > 50 ? 4 : 2));
+
+      // Эксперт: учитывает OFZ и ставку ЦБ
+      if(iq7 > 60 && typeof ofzYield !== 'undefined' && ofzYield > 0){
+        // Высокая ставка ОФЗ = конкурент акциям
+        if(ofzYield > 15) score -= 10;
+        else if(ofzYield > 12) score -= 5;
+        else if(ofzYield < 8)  score += 8;
+      }
+
+      // USD/RUB — ослабление рубля хорошо для экспортёров
+      var usdStr = '';
+      var usdEl = document.getElementById('usd-v');
+      if(usdEl) usdStr = usdEl.textContent;
+      if(iq7 > 50 && (info.s==='Нефть/Газ'||info.s==='Металлы')){
+        var usdMatch = usdStr.match(/([+-]?\d+\.?\d*)%/);
+        if(usdMatch){
+          var usdChg = parseFloat(usdMatch[1]);
+          if(usdChg > 1) score += 8;  // рубль слабеет → экспортёры растут
+          else if(usdChg < -1) score -= 5;
+        }
+      }
+
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var imoexEl = document.getElementById('imoex-v');
       return {id:'7',name:'Агент-7',role:'Макро',e:'🌍',c:'#16a34a',
               dir:dir,conf:score,
-              reason:'IMOEX '+(imoexEl?imoexEl.textContent:'—')+' · USD '+(usdEl?usdEl.textContent:'—')};
+              reason:'IMOEX '+(imoexEl?imoexEl.textContent:'—')+
+                ' · USD '+usdStr+
+                (iq7>60?' · β'+sectMult.toFixed(1):'')};
     })(),
 
     (function(){
-      // Агент-13 — Скринер: сила сигнала
+      // Агент-13 — Скринер: моментум + относительная сила (IQ-адаптивный)
+      var ag13 = AGs.filter(function(x){return x.id==='13';})[0];
+      var iq13 = ag13 ? aIQ(ag13) : 10;
       var score = 50;
       var absChg = Math.abs(chg);
-      if(absChg > 3) score += 25;
+
+      // Базовый моментум
+      if(absChg > 3)      score += 25;
       else if(absChg > 1.5) score += 15;
       else if(absChg > 0.5) score += 5;
-      if(chg < 0) score = 100 - score; // invert for direction
+      if(chg < 0) score = 100 - score;
+
+      // Эксперт: относительная сила vs рынка
+      if(iq13 > 50){
+        // Средний % изменения по всем тикерам
+        var allChgs = Object.values(prices).map(function(x){return x.c||0;}).filter(function(c){return c!==0;});
+        if(allChgs.length > 5){
+          var avgMktChg = allChgs.reduce(function(s,c){return s+c;},0)/allChgs.length;
+          var relStr = chg - avgMktChg; // относительная сила
+          if(relStr > 1.5)       score += iq13>70 ? 15 : 10; // сильнее рынка
+          else if(relStr > 0.5)  score += 5;
+          else if(relStr < -1.5) score -= iq13>70 ? 12 : 8;  // слабее рынка
+        }
+      }
+
+      // Эксперт высокого уровня: фильтр — не торгуем при слабом объёме
+      if(iq13 > 70 && p.v){
+        var allVs = Object.values(prices).map(function(x){return x.v||0;}).filter(Boolean);
+        allVs.sort(function(a,b){return a-b;});
+        var med = allVs[Math.floor(allVs.length/2)]||1;
+        if(p.v < med * 0.4) score -= 12; // слабый объём = ненадёжный сигнал
+      }
+
       score = Math.max(5,Math.min(95,score));
-      var dir = chg>0?'LONG':chg<0?'SHORT':'HOLD';
+      var dir = chg > 0.1 ? 'LONG' : chg < -0.1 ? 'SHORT' : 'HOLD';
       return {id:'13',name:'Агент-13',role:'Скринер',e:'🔍',c:'#b45309',
               dir:dir,conf:score,
-              reason:'Изм. '+(chg>=0?'+':'')+chg.toFixed(2)+'% · '+Object.keys(prices).length+' акций'};
+              reason:'Изм.'+(chg>=0?'+':'')+chg.toFixed(2)+'%'+
+                (iq13>50?' · RS':'') +
+                ' · '+Object.keys(prices).length+'акц.'};
     })(),
 
     (function(){
@@ -4642,29 +5047,55 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-8 — Объёмы: volume spike + накопление
+      // Агент-8 — Объёмы: volume spike + накопление (IQ-адаптивный)
+      var ag8 = AGs.filter(function(x){return x.id==='8';})[0];
+      var iq8 = ag8 ? aIQ(ag8) : 10;
       var score = 50;
       var vol = p.v || 0;
-      // Медиана объёма по всем загруженным акциям для сравнения
+
+      // Медиана объёма по рынку
       var allVols = Object.values(prices).map(function(x){return x.v||0;}).filter(Boolean);
       allVols.sort(function(a,b){return a-b;});
       var medVol = allVols.length ? allVols[Math.floor(allVols.length/2)] : 1;
       var volRatio = medVol > 0 ? vol / medVol : 1;
-      if(volRatio > 3)      score += 20; // очень высокий объём
-      else if(volRatio > 2) score += 12;
-      else if(volRatio > 1.5) score += 6;
-      else if(volRatio < 0.5) score -= 8; // низкий объём = слабый сигнал
-      // Объём + рост = накопление (бычий)
-      if(chg > 0 && volRatio > 1.5)      score += 10;
-      // Объём + падение = распродажа (медвежий)
-      else if(chg < 0 && volRatio > 1.5) score -= 10;
+
+      // Базовый анализ
+      var spikeThresh = iq8 > 60 ? 2.0 : 2.5; // эксперт замечает аномалии раньше
+      if(volRatio > spikeThresh*1.5) score += 20;
+      else if(volRatio > spikeThresh) score += 12;
+      else if(volRatio > 1.3)        score += 6;
+      else if(volRatio < 0.5)        score -= 8;
+
+      // Направление + объём
+      if(chg > 0 && volRatio > 1.5)       score += 10; // накопление
+      else if(chg < 0 && volRatio > 1.5)  score -= 10; // распродажа
+
+      // Эксперт: OBV-like анализ по свечам
+      if(iq8 > 50 && cd.length >= 5){
+        var recentCandles = cd.slice(-5);
+        var obv = 0;
+        recentCandles.forEach(function(c,i){
+          if(i===0) return;
+          var cv = c.volume || c.vol || 0;
+          if(c.close > recentCandles[i-1].close) obv += cv;
+          else if(c.close < recentCandles[i-1].close) obv -= cv;
+        });
+        if(obv > 0)      score += iq8 > 70 ? 10 : 6;  // деньги входят
+        else if(obv < 0) score -= iq8 > 70 ? 10 : 6;  // деньги выходят
+      }
+
+      // Эксперт: аномальный объём без движения = накопление/распределение
+      if(iq8 > 70 && volRatio > 2 && Math.abs(chg) < 0.5){
+        score += 8; // высокий объём + флэт = тихое накопление
+      }
+
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
-      var reason = vol>0
-        ? 'Объём: '+fmtVol(vol)+' (×'+volRatio.toFixed(1)+' vs медиана)'
-        : 'Объём недоступен';
       return {id:'8',name:'Агент-8',role:'Объёмы',e:'📦',c:'#ca8a04',
-              dir:dir,conf:score,reason:reason};
+              dir:dir,conf:score,
+              reason:'Объём: '+(vol>0?fmtVol(vol):'—')+
+                ' (×'+volRatio.toFixed(1)+' vs медиана)'+
+                (iq8>60?' · OBV':'')};
     })(),
 
     (function(){
@@ -4772,6 +5203,8 @@ function calcFullConsensus(sym, candlesOverride){
     var ag=AGs.filter(function(x){return x.id===id;})[0];
     return ag ? Math.max(10, aIQ(ag)) : 10;
   }
+
+  // РАУНД 1: базовое голосование
   var totalW=0, longW=0, shortW=0, holdW=0, wConf=0;
   agents.forEach(function(a){
     var w=_wIQ(a.id);
@@ -4781,23 +5214,56 @@ function calcFullConsensus(sym, candlesOverride){
     else if(a.dir==='SHORT') shortW+=w;
     else holdW+=w;
   });
+  var r1Long = totalW>0 ? longW/totalW : 0;
+  var r1Dir  = r1Long > (totalW>0?shortW/totalW:0) ? 'LONG' : 'SHORT';
+
+  // УРОВЕНЬ 3 — РАУНД 2: агенты видят результат первого раунда
+  // Агенты в меньшинстве с высокой уверенностью (≥75%) могут усилить свой голос
+  // Агенты в большинстве с низкой уверенностью (<55%) немного снижают вес
+  // Это моделирует эффект совещания: сильный аргумент меняет картину
+  agents.forEach(function(a){
+    var inMajority = (r1Dir==='LONG' && a.dir==='LONG') ||
+                     (r1Dir==='SHORT' && a.dir==='SHORT');
+    if(!inMajority && a.conf >= 75){
+      // Агент в меньшинстве но очень уверен → удваиваем его вес
+      // (он видит что-то что другие пропустили)
+      a.weight *= 1.8;
+      a.r2boost = true;
+    } else if(inMajority && a.conf < 55){
+      // В большинстве но неуверен → снижаем влияние
+      a.weight *= 0.7;
+    }
+  });
+
+  // РАУНД 2: пересчёт с обновлёнными весами
+  totalW=0; longW=0; shortW=0; holdW=0; wConf=0;
+  agents.forEach(function(a){
+    totalW+=a.weight; wConf+=a.conf*a.weight;
+    if(a.dir==='LONG') longW+=a.weight;
+    else if(a.dir==='SHORT') shortW+=a.weight;
+    else holdW+=a.weight;
+  });
+
   var avgConf   = totalW>0 ? Math.round(wConf/totalW) : 50;
   var longPct   = totalW>0 ? longW/totalW  : 0;
   var shortPct  = totalW>0 ? shortW/totalW : 0;
   var finalDir  = longPct>shortPct?'LONG':shortPct>longPct?'SHORT':'HOLD';
   var consensus = Math.max(longPct,shortPct);
-  // Сила сигнала: strong>=65%, moderate>=50%, weak<50%
   var strength  = consensus>=0.65?'strong':consensus>=0.50?'moderate':'weak';
-  // Обратная совместимость с UI (счётчики голосов)
   var longVotes = agents.filter(function(a){return a.dir==='LONG';}).length;
   var shortVotes= agents.filter(function(a){return a.dir==='SHORT';}).length;
   var total     = agents.length;
   var majorityPct=Math.round(consensus*100);
+  // Флаг: был ли переворот мнения между раундами
+  var r1r2flip  = (r1Dir !== finalDir) && consensus >= 0.55;
 
   return {agents:agents,dir:finalDir,longVotes:longVotes,shortVotes:shortVotes,
           total:total,avgConf:avgConf,majorityPct:majorityPct,sym:sym,
           longW:Math.round(longPct*100),shortW:Math.round(shortPct*100),
-          strength:strength,totalW:totalW};
+          strength:strength,totalW:totalW,
+          r1r2flip:r1r2flip||false,
+          r2boosted:agents.filter(function(a){return a.r2boost;}).map(function(a){return a.name;})
+         };
 }
 
 function fmtVol(v){
@@ -7558,7 +8024,7 @@ function selAgPage(id){
 }
 
 function agTab(t){
-  ['log','study','tr','sk','prompts'].forEach(function(x){
+  ['log','chat','study','tr','sk','prompts'].forEach(function(x){
     var el=document.getElementById('ag-page-'+x);
     var btn=document.getElementById('ag-tab-'+x);
     if(el)el.classList.toggle('hidden',x!==t);
@@ -7581,9 +8047,8 @@ function agTab(t){
     var el=document.getElementById('ag-page-log');
     if(el)el.innerHTML=document.getElementById('evo-log').innerHTML;
   }
-  if(t==='study'){
-    rStudyTab();
-  }
+  if(t==='study') rStudyTab();
+  if(t==='chat')  rChatTab('ag-page-chat');
 }
 
 function rStudyTab(){
@@ -9312,8 +9777,57 @@ function pbToggle(on){
   if(on){ PB.start(); } else { PB.stop(); }
 }
 
-function pbReset(){
-  if(!confirm('Сбросить бумажный портфель? История сделок и equity curve будут удалены.')) return;
+function pbExportCSV(){
+  if(!PB.closed.length){
+    showToast('Нет данных для экспорта','Закройте хотя бы одну сделку',null);
+    return;
+  }
+  var headers = ['Тикер','Направление','Вход ₽','Выход ₽','Кол-во','Объём ₽',
+                 'PnL ₽','PnL %','Стоп','Цель','Открыта','Закрыта','Причина',
+                 'Сила сигнала','Уверенность CIO','Обоснование CIO'];
+  var rows = PB.closed.map(function(t){
+    return [
+      t.sym, t.dir||'LONG',
+      t.entry, t.closePrice,
+      t.qty, t.volRub.toFixed(0),
+      t.pnlRub, t.pnl,
+      t.stop, t.tgt,
+      t.openedAt ? t.openedAt.replace('T',' ').slice(0,16) : '',
+      t.closedAt ? t.closedAt.replace('T',' ').slice(0,16) : '',
+      t.reason||'',
+      t.strength||'',
+      t.cioConf||'',
+      (t.reasoning||'').replace(/,/g,';').replace(/\n/g,' ')
+    ].map(function(v){
+      // Экранируем запятые и кавычки
+      var s = String(v===null||v===undefined?'':v);
+      return s.indexOf(',')>=0||s.indexOf('"')>=0 ? '"'+s.replace(/"/g,'""')+'"' : s;
+    }).join(',');
+  });
+
+  // Добавляем сводку
+  var m = PB.calcMetrics();
+  rows.push('');
+  rows.push('СВОДКА');
+  rows.push('Equity ₽,'+m.equity.toFixed(0));
+  rows.push('Profit Factor,'+m.pf.toFixed(2));
+  rows.push('Win Rate,'+Math.round(m.winRate*100)+'%');
+  rows.push('Max Drawdown,'+Math.round(m.maxDD*100)+'%');
+  rows.push('E[сделка] ₽,'+m.eTrade.toFixed(0));
+  rows.push('Всего сделок,'+m.n);
+
+  var csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'bcs_paper_trades_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Экспорт готов',PB.closed.length+' сделок → CSV',null);
+}
+
+function pbReset(){  if(!confirm('Сбросить бумажный портфель? История сделок и equity curve будут удалены.')) return;
   PB.positions   = [];
   PB.closed      = [];
   PB.equityCurve = [];
