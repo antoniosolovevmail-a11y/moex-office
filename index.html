@@ -9302,8 +9302,8 @@ var PB = {
   STOP_ATR:   1.5,      // стоп = entry - ATR × 1.5
   TGT_ATR:    2.5,      // цель = entry + ATR × 2.5
   COMMISSION: 0.000531, // 0.0531% БКС на вход + выход
-  MIN_VOTES:  6,        // минимум агентов LONG из 14
-  MIN_CONF:   65,       // минимум avg confidence
+  MIN_VOTES:  5,        // минимум агентов LONG из 13 (38%)
+  MIN_CONF:   52,       // взвешенный avgConf — при спокойном рынке ~50-58
   MAX_SECTOR: 3,        // макс позиций в одном секторе
   DAY_STOP:   0.03,     // дневной стоп портфеля (−3%)
 
@@ -9411,9 +9411,18 @@ var PB = {
     // Агентский консенсус — реальные свечи тикера
     var res = await calcFullConsensusAsync(sym);
     if(!res) return;
-    if(res.dir !== 'LONG') return;
-    if(res.longVotes < PB.MIN_VOTES) return;
-    if(res.avgConf   < PB.MIN_CONF)  return;
+    if(res.dir !== 'LONG'){
+      if(Math.random()<0.05) PB.addLog(sym+': '+res.dir+' ('+res.longVotes+'/'+res.total+' за LONG, conf:'+res.avgConf+'%)', 'skip');
+      return;
+    }
+    if(res.longVotes < PB.MIN_VOTES){
+      PB.addLog(sym+': мало голосов LONG ('+res.longVotes+'/'+res.total+' < '+PB.MIN_VOTES+')', 'skip');
+      return;
+    }
+    if(res.avgConf < PB.MIN_CONF){
+      PB.addLog(sym+': низкая уверенность ('+res.avgConf+'% < '+PB.MIN_CONF+'%)', 'skip');
+      return;
+    }
 
     // Проверка экспозиции
     if(PB.calcExposure() >= PB.MAX_EXP) {
