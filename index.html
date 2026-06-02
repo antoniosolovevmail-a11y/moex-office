@@ -8066,124 +8066,110 @@ function initCh(callback){
 
 function _doInitCh(mainEl,volEl,rsiEl,macdEl){
   if(chart) return;
+  try{
 
   // ── Main chart ──
-  var mainH = Math.max(mainEl.offsetHeight, 260);
-  var mainOpts = commonChartOpts(mainEl, mainH);
-  mainOpts.layout.textColor = 'var(--label3)';
-  mainOpts.timeScale.visible = false; // hide time on main, show on bottom
-  chart = LightweightCharts.createChart(mainEl, mainOpts);
-  var _cs;
+  var mainH = Math.max(mainEl.offsetHeight, 320);
+  chart = LightweightCharts.createChart(mainEl, {
+    width: mainEl.offsetWidth || 800,
+    height: mainH,
+    layout:{background:{type:'solid',color:'#05060f'},textColor:'#9ba8c0',fontSize:11},
+    grid:{vertLines:{color:'rgba(123,92,255,.06)'},horzLines:{color:'rgba(123,92,255,.06)'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{borderVisible:false,scaleMargins:{top:.08,bottom:.08}},
+    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false},
+    handleScroll:true, handleScale:true,
+  });
+
   if(chartType==='line'){
-    _cs = chart.addLineSeries({color:'#00e5ff',lineWidth:2,crosshairMarkerVisible:true,priceLineVisible:true});
+    cs = chart.addLineSeries({color:'#00e5ff',lineWidth:2,crosshairMarkerVisible:true,priceLineVisible:true});
   } else {
-    _cs = chart.addCandlestickSeries({
+    cs = chart.addCandlestickSeries({
       upColor:'#00ffa3', downColor:'#ff3b5c',
       borderUpColor:'#00ffa3', borderDownColor:'#ff3b5c',
       wickUpColor:'#00ffa3', wickDownColor:'#ff3b5c'
     });
   }
-  cs = _cs;
-  // Set initial type button state
   var ctC=document.getElementById('ct-candle'),ctL=document.getElementById('ct-line');
   if(ctC&&ctL){ctC.classList.toggle('on',chartType==='candle');ctL.classList.toggle('on',chartType==='line');}
 
-
   // ── Volume chart ──
   if(volEl){
-    var volOpts = commonChartOpts(volEl, volEl.offsetHeight||50);
-    volOpts.timeScale.visible = false;
-    volChart = LightweightCharts.createChart(volEl, volOpts);
+    var vH = volEl.offsetHeight || 50;
+    volChart = LightweightCharts.createChart(volEl, {
+      width:volEl.offsetWidth||800, height:vH,
+      layout:{background:{type:'solid',color:'#05060f'},textColor:'#9ba8c0'},
+      grid:{vertLines:{color:'rgba(123,92,255,.04)'},horzLines:{color:'rgba(123,92,255,.04)'}},
+      rightPriceScale:{borderVisible:false,scaleMargins:{top:.1,bottom:0}},
+      timeScale:{borderVisible:false,visible:false},
+      handleScroll:false, handleScale:false,
+    });
     volSer = volChart.addHistogramSeries({
       priceFormat:{type:'volume'},
-      priceScaleId:'volume',
-      scaleMargins:{top:0,bottom:0}
+      priceScaleId:'right',
     });
   }
 
   // ── RSI chart ──
   if(rsiEl){
-    var rsiOpts = commonChartOpts(rsiEl, rsiEl.offsetHeight||72);
-    rsiOpts.timeScale.visible = false;
-    rsiChart = LightweightCharts.createChart(rsiEl, rsiOpts);
-    // RSI line
-    rsiLine = rsiChart.addLineSeries({
-      color:'#7b5cff', lineWidth:1.5,
-      priceScaleId:'rsi',
-      scaleMargins:{top:.1,bottom:.1}
+    var rH = rsiEl.offsetHeight || 72;
+    rsiChart = LightweightCharts.createChart(rsiEl, {
+      width:rsiEl.offsetWidth||800, height:rH,
+      layout:{background:{type:'solid',color:'#05060f'},textColor:'#9ba8c0'},
+      grid:{vertLines:{color:'rgba(123,92,255,.04)'},horzLines:{color:'rgba(123,92,255,.04)'}},
+      rightPriceScale:{borderVisible:false,scaleMargins:{top:.1,bottom:.1}},
+      timeScale:{borderVisible:false,visible:false},
+      handleScroll:false, handleScale:false,
     });
-    // Overbought line
-    rsiOB = rsiChart.addLineSeries({
-      color:'rgba(255,45,85,.4)', lineWidth:1,
-      lineStyle:LightweightCharts.LineStyle.Dashed,
-      priceScaleId:'rsi', crosshairMarkerVisible:false,
-      lastValueVisible:false, priceLineVisible:false
-    });
-    // Oversold line
-    rsiOS = rsiChart.addLineSeries({
-      color:'rgba(0,255,136,.4)', lineWidth:1,
-      lineStyle:LightweightCharts.LineStyle.Dashed,
-      priceScaleId:'rsi', crosshairMarkerVisible:false,
-      lastValueVisible:false, priceLineVisible:false
-    });
-    rsiChart.priceScale('rsi').applyOptions({
-      scaleMargins:{top:.05,bottom:.05},
-      mode:0
-    });
+    rsiLine = rsiChart.addLineSeries({color:'#7b5cff',lineWidth:1.5,priceLineVisible:false,lastValueVisible:true});
+    rsiOB   = rsiChart.addLineSeries({color:'rgba(255,45,85,.4)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    rsiOS   = rsiChart.addLineSeries({color:'rgba(0,255,136,.4)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
   }
 
   // ── MACD chart ──
   if(macdEl){
-    var macdOpts = commonChartOpts(macdEl, macdEl.offsetHeight||72);
-    macdOpts.layout.textColor = 'var(--label3)';
-    macdChart = LightweightCharts.createChart(macdEl, macdOpts);
-    // Histogram
-    macdHist = macdChart.addHistogramSeries({
-      priceScaleId:'macd',
-      scaleMargins:{top:.1,bottom:.1}
+    var mH = macdEl.offsetHeight || 72;
+    macdChart = LightweightCharts.createChart(macdEl, {
+      width:macdEl.offsetWidth||800, height:mH,
+      layout:{background:{type:'solid',color:'#05060f'},textColor:'#9ba8c0'},
+      grid:{vertLines:{color:'rgba(123,92,255,.04)'},horzLines:{color:'rgba(123,92,255,.04)'}},
+      rightPriceScale:{borderVisible:false,scaleMargins:{top:.1,bottom:.1}},
+      timeScale:{borderVisible:false,visible:true,timeVisible:true,secondsVisible:false},
+      handleScroll:false, handleScale:false,
     });
-    // MACD line
-    macdLine = macdChart.addLineSeries({
-      color:'#60a5fa', lineWidth:1.5,
-      priceScaleId:'macd',
-      lastValueVisible:false, priceLineVisible:false
-    });
-    // Signal line
-    macdSignal = macdChart.addLineSeries({
-      color:'#f97316', lineWidth:1,
-      priceScaleId:'macd',
-      lastValueVisible:false, priceLineVisible:false
-    });
+    macdHist   = macdChart.addHistogramSeries({priceLineVisible:false,lastValueVisible:false});
+    macdLine   = macdChart.addLineSeries({color:'#60a5fa',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});
+    macdSignal = macdChart.addLineSeries({color:'#f97316',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
   }
 
   // ── Sync time scales ──
-  function onRangeChange(range, source){
+  var syncingCharts=false;
+  function _onRange(range, source){
     if(syncingCharts||!range)return;
     syncingCharts=true;
     [chart,volChart,rsiChart,macdChart].forEach(function(c){
-      if(c&&c!==source){
-        try{c.timeScale().setVisibleLogicalRange(range);}catch(e){}
-      }
+      if(c&&c!==source){try{c.timeScale().setVisibleLogicalRange(range);}catch(e){}}
     });
     syncingCharts=false;
   }
   [chart,volChart,rsiChart,macdChart].forEach(function(c){
     if(!c)return;
-    c.timeScale().subscribeVisibleLogicalRangeChange(function(r){
-      onRangeChange(r,c);
-    });
+    c.timeScale().subscribeVisibleLogicalRangeChange(function(r){_onRange(r,c);});
   });
 
   // ── Resize observer ──
   var ro=new ResizeObserver(function(){
-    var w=mainEl.offsetWidth||600, h=Math.max(mainEl.offsetHeight,260);
-    if(chart)  chart.applyOptions({width:w,height:h});
-    if(volEl&&volChart)   volChart.applyOptions({width:volEl.offsetWidth||w,height:volEl.offsetHeight||50});
-    if(rsiEl&&rsiChart)   rsiChart.applyOptions({width:rsiEl.offsetWidth||w,height:rsiEl.offsetHeight||72});
-    if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth||w,height:macdEl.offsetHeight||72});
+    if(chart)  chart.applyOptions({width:mainEl.offsetWidth||800,height:Math.max(mainEl.offsetHeight,320)});
+    if(volEl&&volChart)   volChart.applyOptions({width:volEl.offsetWidth||800,height:volEl.offsetHeight||50});
+    if(rsiEl&&rsiChart)   rsiChart.applyOptions({width:rsiEl.offsetWidth||800,height:rsiEl.offsetHeight||72});
+    if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth||800,height:macdEl.offsetHeight||72});
   });
   [mainEl,volEl,rsiEl,macdEl].filter(Boolean).forEach(function(el){ro.observe(el);});
-  // Chart initialized — caller will invoke loadH
+
+  }catch(e){
+    console.error('Chart init error:', e);
+    chart=null; cs=null;
+  }
 }
 
 async function loadH(sym, tf){
