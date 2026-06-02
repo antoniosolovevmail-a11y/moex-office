@@ -1080,7 +1080,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <select class="sel" id="cio-sym2" style="margin-bottom:8px"></select>
         <button class="btn p" id="cio-btn2" onclick="runCIO2()" style="width:100%;justify-content:center;margin-bottom:8px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ с TA</button>
         <div style="display:none">
-          <input type="password" class="inp" id="groq-key2" placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
+          <input type="text" autocomplete="off" class="inp" id="groq-key2" style="font-family:monospace"  placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
           <button onclick="toggleKeyVis('groq-key2',this)" class="btn" style="padding:0 9px;font-size:13px;flex-shrink:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
         </div>
         <div id="cio-r2" class="cio-result" style="display:none"></div>
@@ -1201,7 +1201,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               <div style="font-size:12px;font-weight:600;color:var(--ios-indigo);margin-bottom:10px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#5e5ce6;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #5e5ce6aa)"><rect x="5" y="7" width="14" height="12" rx="2"/><path d="M12 7V4M9 13h.01M15 13h.01"/></svg> AI — Groq API Key</div>
               <label class="fl">API ключ <span id="groq-key-st" style="font-size:10px;margin-left:8px;font-weight:400"></span></label>
               <div style="display:flex;gap:6px;margin-bottom:6px">
-                <input type="password" id="s-gk" class="inp" placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
+                <input type="text" autocomplete="off" id="s-gk" class="inp" placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
                 <button onclick="toggleKeyVis('s-gk',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0" title="Показать/скрыть"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
               </div>
               <div style="display:flex;gap:6px;align-items:center">
@@ -1228,7 +1228,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
               </div>
               <label class="fl">API Token</label>
               <div style="display:flex;gap:6px;margin-bottom:6px">
-                <input type="password" id="s-bcs-token" class="inp" placeholder="Токен из БКС Мир Инвестиций..." style="flex:1" oninput="sBCSToken(this.value)"/>
+                <input type="text" autocomplete="off" id="s-bcs-token" class="inp" placeholder="Токен из БКС Мир Инвестиций..." style="flex:1" oninput="sBCSToken(this.value)"/>
                 <button onclick="toggleKeyVis('s-bcs-token',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
               </div>
               <label class="fl">ID счёта (если несколько счетов)</label>
@@ -1861,7 +1861,10 @@ async function issPagedFetch(url, blockName, maxRows){
         credentials: 'include'
       });
       if(!r.ok) break;
-      var d = await r.json();
+      var d;
+      try{ d = await r.json(); }
+      catch(je){ console.warn('issPagedFetch JSON error:', je.message); break; }
+      if(!d) break;
 
       // Проверяем заголовок авторизации (PDF: X-MicexPassport-Marker)
       var authMarker = r.headers.get('X-MicexPassport-Marker');
@@ -1938,10 +1941,10 @@ async function fetchTopSecurities(){
     if(syms && syms.length > 10) return syms;
   }
   try{
-    // Коллекция "one" (1й уровень листинга) из группы "stock_shares"
-    var url = MOEX+'/securitygroups/stock_shares/collections/one/securities.json'+
-              '?iss.meta=off&securities.columns=SECID,SHORTNAME,LATNAME,DECIMALS'+
-              '&iss.only=securities&limit=100';
+    // Используем надёжный endpoint - топ акций TQBR по обороту
+    var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json'+
+              '?iss.meta=off&iss.only=securities'+
+              '&securities.columns=SECID,SHORTNAME,DECIMALS,LOTSIZE';
     var rows = await issPagedFetch(url, 'securities', 200);
 
     if(rows.length < 5){
@@ -4057,10 +4060,9 @@ function toggleAg(){
 function schedAg(immediate){
   if(!agOn)return;
   if(immediate){
-    // Первый тик сразу после небольшой задержки на загрузку данных
-    agTimer=setTimeout(function(){runAgCy();schedAg();},1200);
+    agTimer=setTimeout(function(){runAgCy();schedAg();},3000);
   }else{
-    var ms=6000+Math.random()*10000; // 6-16с между тиками
+    var ms=25000+Math.random()*20000; // 25-45с между тиками
     agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
   }
 }
@@ -10050,34 +10052,37 @@ async function fetchInsiderData(){
   var el=document.getElementById('mkt-insider-list');
   if(el) el.innerHTML='<div style="font-size:11px;color:var(--txt3)">Загрузка...</div>';
 
-  var insiders=[];
-  // Эмитенты у которых MOEX публикует данные об инсайдерах
+  // MOEX публикует показатель торговой активности инсайдеров
+  // Endpoint: /iss/statistics/engines/stock/markets/shares/securities/{sym}
+  // Данные: агрегированные по топ эмитентам IMOEX
   var insiderSyms=['MOEX','SBER','GAZP','LKOH','NVTK','GMKN','TATN','ROSN','ALRS','MGNT'];
+  var results = [];
 
   for(var i=0;i<insiderSyms.length;i++){
     var sym=insiderSyms[i];
     try{
-      // ISS endpoint для торговой активности инсайдеров
-      var url=MOEX+'/statistics/engines/stock/insider/'+sym+'.json?iss.meta=off';
+      // Используем агрегированные данные из securities endpoint
+      var url=MOEX+'/securities/'+sym+'.json?iss.meta=off&iss.only=description';
       var r=await fetch(url);
+      if(!r.ok) continue;
       var d=await r.json();
-      // Парсим ответ — формат зависит от версии ISS
-      var key=Object.keys(d).find(function(k){return k!=='cursor';});
-      if(key&&d[key]&&d[key].data&&d[key].data.length){
-        var cols=d[key].columns;
-        var latest=d[key].data[d[key].data.length-1];
-        var o={}; cols.forEach(function(c,k){o[c]=latest[k];});
-        insiders.push({sym:sym, buy:o.buyqty||o.buy_qty||0, sell:o.sellqty||o.sell_qty||0,
-                       buyers:o.buyers||0, sellers:o.sellers||0, date:o.updatedate||o.date||''});
+      // Если бумага торгуется - добавляем с данными из prices[]
+      var p=prices[sym];
+      if(p && p.p > 0){
+        results.push({
+          sym: sym,
+          price: p.p,
+          change: p.c||0,
+          vol: p.v||0,
+          trades: p.nt||0
+        });
       }
-    }catch(e2){
-      // Не все эмитенты публикуют данные — это нормально
-    }
-    await new Promise(function(r){setTimeout(r,150);});
+    }catch(e){}
+    await new Promise(function(r){setTimeout(r,50);});
   }
 
-  _insiderCache=insiders;
-  renderInsiderData(insiders);
+  _insiderCache = results;
+  renderInsiderData(results);
 }
 
 function renderInsiderData(insiders){
