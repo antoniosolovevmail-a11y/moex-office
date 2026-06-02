@@ -8047,16 +8047,20 @@ function commonChartOpts(el, height){
   };
 }
 
-function initCh(){
+function initCh(callback){
   var mainEl = document.getElementById('chart-container');
   var volEl  = document.getElementById('vol-container');
   var rsiEl  = document.getElementById('rsi-container');
   var macdEl = document.getElementById('macd-container');
-  if(!mainEl||chart) return;
+  if(!mainEl) return;
+  if(chart){ if(callback) callback(); return; } // already init
 
   // Double rAF ensures browser has completed layout before reading dimensions
   requestAnimationFrame(function(){
-    requestAnimationFrame(function(){ _doInitCh(mainEl,volEl,rsiEl,macdEl); });
+    requestAnimationFrame(function(){
+      _doInitCh(mainEl,volEl,rsiEl,macdEl);
+      if(callback) callback();
+    });
   });
 }
 
@@ -8179,18 +8183,11 @@ function _doInitCh(mainEl,volEl,rsiEl,macdEl){
     if(macdEl&&macdChart) macdChart.applyOptions({width:macdEl.offsetWidth||w,height:macdEl.offsetHeight||72});
   });
   [mainEl,volEl,rsiEl,macdEl].filter(Boolean).forEach(function(el){ro.observe(el);});
-
-  loadH(curSym, curTF);
+  // Chart initialized — caller will invoke loadH
 }
 
 async function loadH(sym, tf){
   curSym=sym; curTF=tf;
-  // Убеждаемся что chart инициализирован
-  if(!chart) initCh();
-  // Если после initCh всё ещё нет - ждём rAF
-  if(!chart){
-    await new Promise(function(r){requestAnimationFrame(function(){requestAnimationFrame(r);});});
-  }
   var cfg=TFM[tf]||TFM['1Y'];
   var today=new Date();
   var tomorrow=new Date(today.getTime()+86400000);
@@ -9155,19 +9152,17 @@ function showApp(){
   rSectors();
   rAgCards();
   renderConsensusPanel(curSym);
-  initCh();
+  // Инициализируем график, потом грузим данные
+  initCh(function(){
+    loadH(curSym, curTF);
+  });
   setTimeout(initChartContextMenu, 500);
-  rTaKb();
-  updCabUI();
-  lCabTr();
-  if(agOn)schedAg(true); // восстанавливаем после перезагрузки
-  if(agOn)schedStudy();  // восстанавливаем учёбу
-  // Parallel data load
+  rTaKb(); updCabUI(); lCabTr();
+  if(agOn)schedAg(true);
+  if(agOn)schedStudy();
   fetchAllData().then(function(){
     rSigs(); rCabTr(); updateChartLivePrice();
     renderConsensusPanel(curSym);
-    // Загружаем график при старте
-    loadH(curSym, curTF);
   });
   addEv('learn',null,'BCS Terminal v3.0 запущен. Данные MOEX загружаются...');
   setInterval(function(){
