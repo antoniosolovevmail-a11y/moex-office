@@ -2862,8 +2862,7 @@ function calcRSI(cls){
   return Math.round(100-(100/(1+ag/al)));
 }
 
-// ── Chart ─────────────────────────────────────
-var chart=null,cs=null;
+// ── Chart variables declared below near chart init ──────
 
 
 
@@ -8197,6 +8196,12 @@ function _doInitCh(mainEl,volEl,rsiEl,macdEl){
 
 async function loadH(sym, tf){
   curSym=sym; curTF=tf;
+  // Убеждаемся что chart инициализирован
+  if(!chart) initCh();
+  // Если после initCh всё ещё нет - ждём rAF
+  if(!chart){
+    await new Promise(function(r){requestAnimationFrame(function(){requestAnimationFrame(r);});});
+  }
   var cfg=TFM[tf]||TFM['1Y'];
   var today=new Date();
   var tomorrow=new Date(today.getTime()+86400000);
@@ -9168,10 +9173,12 @@ function showApp(){
   lCabTr();
   if(agOn)schedAg(true); // восстанавливаем после перезагрузки
   if(agOn)schedStudy();  // восстанавливаем учёбу
-  // Parallel data load (Task 5 integration)
+  // Parallel data load
   fetchAllData().then(function(){
-    rSigs();rCabTr();updateChartLivePrice();
+    rSigs(); rCabTr(); updateChartLivePrice();
     renderConsensusPanel(curSym);
+    // Загружаем график при старте
+    loadH(curSym, curTF);
   });
   addEv('learn',null,'BCS Terminal v3.0 запущен. Данные MOEX загружаются...');
   setInterval(function(){
