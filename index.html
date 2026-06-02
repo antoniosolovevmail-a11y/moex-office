@@ -8049,18 +8049,21 @@ function commonChartOpts(el, height){
 
 function initCh(callback){
   var mainEl = document.getElementById('chart-container');
-  var volEl  = document.getElementById('vol-container');
-  var rsiEl  = document.getElementById('rsi-container');
-  var macdEl = document.getElementById('macd-container');
-  if(!mainEl) return;
-  if(chart){ if(callback) callback(); return; } // already init
+  if(!mainEl){ console.error('chart-container not found'); if(callback)callback(); return; }
+  if(chart){ if(callback) callback(); return; }
 
-  // Double rAF ensures browser has completed layout before reading dimensions
+  // Single rAF is enough when called from showApp (DOM already rendered)
   requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      _doInitCh(mainEl,volEl,rsiEl,macdEl);
-      if(callback) callback();
-    });
+    try{
+      _doInitCh(mainEl,
+        document.getElementById('vol-container'),
+        document.getElementById('rsi-container'),
+        document.getElementById('macd-container'));
+      console.log('Chart init OK, chart=', !!chart, 'cs=', !!cs);
+    }catch(e){
+      console.error('_doInitCh failed:', e);
+    }
+    if(callback) callback();
   });
 }
 
@@ -8174,6 +8177,17 @@ function _doInitCh(mainEl,volEl,rsiEl,macdEl){
 
 async function loadH(sym, tf){
   curSym=sym; curTF=tf;
+  console.log('loadH called:', sym, tf, 'chart=', !!chart, 'cs=', !!cs);
+  // Если chart не создан - пробуем инициализировать
+  if(!chart || !cs){
+    console.warn('Chart not ready in loadH, retrying initCh...');
+    return new Promise(function(resolve){
+      initCh(function(){
+        console.log('After retry: chart=', !!chart, 'cs=', !!cs);
+        loadH(sym, tf).then(resolve);
+      });
+    });
+  }
   var cfg=TFM[tf]||TFM['1Y'];
   var today=new Date();
   var tomorrow=new Date(today.getTime()+86400000);
