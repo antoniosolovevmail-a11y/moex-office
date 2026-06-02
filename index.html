@@ -1828,6 +1828,7 @@ function _updateMoexAuthUI(){
   // Показываем RT бейдж в шапке
   var badge = document.getElementById('moex-auth-badge');
   if(badge) badge.style.display = isMoexAuthed() ? '' : 'none';
+  var loginInp = document.getElementById('s-moex-login');
   if(loginInp && !loginInp.value) loginInp.value = secureGet('moex_login')||'';
 }
 
