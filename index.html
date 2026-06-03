@@ -5832,7 +5832,7 @@ async function fetchAllData(){
     fetchMoexNews()
   ]);
   // SerpAPI batch — раз в 6 часов, не блокирует основной поток
-  if(hasSerpKey()) fetchFundamentalsSerpAPI();
+  // SerpAPI не используется — данные из MOEX ISS fetchFundamentals()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6170,12 +6170,11 @@ function calcFullConsensus(sym, candlesOverride){
       var iq3 = ag3 ? aIQ(ag3) : 10;
       var score = 50;
 
-      // Берём данные: SerpAPI (реальные) → ST[] (статические)
-      var serpD = _serpCache && _serpCache[sym];
-      var pe3   = (serpD && serpD.pe > 0)       ? serpD.pe       : info.pe;
-      var eps3  = (serpD && serpD.eps > 0)      ? serpD.eps      : info.eps;
-      var div3  = (serpD && serpD.divYield > 0) ? serpD.divYield : info.div;
-      var hasSerpData = !!(serpD && serpD.ts);
+      // Агент-3 берёт данные: ST[] обновляется через fetchFundamentals() из MOEX ISS
+      var pe3   = info.pe;
+      var eps3  = info.eps;
+      var div3  = info.div;
+      var hasSerpData = !!(info._fundamentalSrc === 'MOEX');
 
       if(pe3){
         var peLow  = iq3 > 60 ? 4  : 3;
@@ -9706,7 +9705,6 @@ function showApp(){
   _loadSymMemory();
   _loadChatLog();
   _updateMoexAuthUI();   // показываем статус авторизации MOEX
-  _updateSerpUI();       // показываем статус SerpAPI ключа
   initDynamicSyms();     // загружаем динамический список бумаг
   popSels();
   lAS();
