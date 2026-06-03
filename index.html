@@ -3949,7 +3949,7 @@ async function _runForwardTestBody(){
 
       // Обновляем экспозицию
       exposure += entry2*qty2/equity;
-      if(exposure >= maxExpPct) break;
+      if(exposure + maxPosPct > maxExpPct) break; // учитываем следующую позицию
 
       openPositions[sym2] = {entry:entry2, stop:stop2, tgt:tgt2,
                               qty:qty2, volRub:entry2*qty2, commission:comm2};
@@ -11719,9 +11719,10 @@ var PB = {
   calcExposure: function(){
     var eq = PB.calcEquity();
     if(eq <= 0) return 0;
+    // Считаем по ценам входа (volRub) — стабильная метрика
+    // Рыночная переоценка не должна автоматически менять экспозицию
     var invested = PB.positions.reduce(function(s,pos){
-      var p = prices[pos.sym];
-      return s + (p && p.p ? p.p*pos.qty : pos.volRub);
+      return s + pos.volRub;
     },0);
     return invested / eq;
   },
@@ -11775,9 +11776,12 @@ var PB = {
       return;
     }
 
-    // Проверка экспозиции
-    if(PB.calcExposure() >= PB.MAX_EXP) {
-      PB.addLog(sym+': пропуск — экспозиция '+Math.round(PB.calcExposure()*100)+'%≥'+Math.round(PB.MAX_EXP*100)+'%', 'skip');
+    // Проверка экспозиции — с учётом размера новой позиции
+    var curExp = PB.calcExposure();
+    var newPosExp = PB.MAX_POS; // примерная доля новой позиции
+    if(curExp + newPosExp > PB.MAX_EXP) {
+      PB.addLog(sym+': пропуск — экспозиция '+Math.round(curExp*100)+'%+'
+        +Math.round(newPosExp*100)+'%>'+Math.round(PB.MAX_EXP*100)+'%', 'skip');
       return;
     }
 
@@ -11791,15 +11795,21 @@ var PB = {
       return;
     }
 
-    // Расчёт позиции
+    // Расчёт позиции с учётом лотности MOEX
     var equity   = PB.calcEquity();
     var maxVolRub= equity * PB.MAX_POS;
+    // Дополнительный лимит: не превысить MAX_EXP суммарно
+    var freeExp  = Math.max(0, PB.MAX_EXP - PB.calcExposure());
+    maxVolRub    = Math.min(maxVolRub, equity * freeExp);
     var entry    = prices[sym].p;
     var atr      = PB.getATR(sym);
-    var stop     = parseFloat((entry - atr * PB.STOP_ATR).toFixed(2));
-    var tgt      = parseFloat((entry + atr * PB.TGT_ATR).toFixed(2));
-    // Округляем лоты: 1 лот = 1 акция (упрощение)
-    var qty      = Math.max(1, Math.floor(maxVolRub / entry));
+    var stop     = parseFloat((entry - atr * PB.STOP_ATR).toFixed(getDec(sym)));
+    var tgt      = parseFloat((entry + atr * PB.TGT_ATR).toFixed(getDec(sym)));
+    // Лотность из MOEX ISS (минимальная единица покупки)
+    var lotSize  = (moexFundamentals[sym] && moexFundamentals[sym].lotSize) || 1;
+    var qtyRaw   = Math.floor(maxVolRub / entry);
+    // Округляем вниз до целого числа лотов
+    var qty      = Math.max(lotSize, Math.floor(qtyRaw / lotSize) * lotSize);
     var volRub   = qty * entry;
     var commission = volRub * PB.COMMISSION;
 
@@ -12150,7 +12160,8 @@ var PB = {
     var elExp = document.getElementById('pb-m-exp');
     if(elExp){
       elExp.textContent = Math.round(m.exposure*100)+'%';
-      elExp.style.color = m.exposure>0.7?'#ff3b5c':m.exposure>0.5?'#ffb800':'#00ffa3';
+      elExp.title = 'По ценам входа: '+Math.round(m.exposure*100)+'% | Лимит: '+Math.round(PB.MAX_EXP*100)+'%';
+      elExp.style.color = m.exposure > PB.MAX_EXP ? '#ff3b5c' : m.exposure > PB.MAX_EXP*0.8 ? '#ffb800' : '#00ffa3';
     }
     var elTr = document.getElementById('pb-m-trades');
     if(elTr){
