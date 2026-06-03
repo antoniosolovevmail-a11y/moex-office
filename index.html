@@ -4115,9 +4115,9 @@ function toggleAg(){
 function schedAg(immediate){
   if(!agOn)return;
   if(immediate){
-    agTimer=setTimeout(function(){runAgCy();schedAg();},3000);
+    agTimer=setTimeout(function(){runAgCy();schedAg();},5000);
   }else{
-    var ms=25000+Math.random()*20000; // 25-45с между тиками
+    var ms=45000+Math.random()*45000; // 45-90с между тиками агентов
     agTimer=setTimeout(function(){runAgCy();schedAg();},ms);
   }
 }
@@ -4593,8 +4593,22 @@ async function groqFetch(payload){
   var gk=secureGet('groq_key')||'';
   if(!gk)throw new Error('Groq API ключ не задан. Добавьте ключ в Настройках.');
   var lastErr;
+// ── Глобальная очередь Groq (предотвращает параллельные запросы) ──
+var _groqLastCall = 0;
+var _groqMinInterval = 4000; // минимум 4сек между запросами
+
+async function _groqThrottle(){
+  var now = Date.now();
+  var since = now - _groqLastCall;
+  if(since < _groqMinInterval){
+    await new Promise(function(r){setTimeout(r, _groqMinInterval - since + 200);});
+  }
+  _groqLastCall = Date.now();
+}
+
   for(var attempt=0;attempt<3;attempt++){
     try{
+      await _groqThrottle(); // ждём минимальный интервал
       var controller=new AbortController();
       var tid=setTimeout(function(){controller.abort();},30000);
       var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -4605,14 +4619,17 @@ async function groqFetch(payload){
       });
       clearTimeout(tid);
       if(r.status===429){
-        var wait=parseInt(r.headers.get('retry-after')||'3',10)*1000;
+        var retryAfter = parseInt(r.headers.get('retry-after')||'0',10);
+        var wait = retryAfter > 0 ? retryAfter*1000 : 15000*(attempt+1); // мин 15сек backoff
+        console.warn('[Groq] 429 — ждём '+Math.round(wait/1000)+'с перед retry '+(attempt+1));
+        _groqLastCall = Date.now() + wait; // сдвигаем следующий разрешённый вызов
         await new Promise(function(res){setTimeout(res,wait);});
         continue;
       }
       return r;
     }catch(e){
       lastErr=e;
-      if(attempt<2)await new Promise(function(res){setTimeout(res,900*(attempt+1));});
+      if(attempt<2)await new Promise(function(res){setTimeout(res,2000*(attempt+1));});
     }
   }
   throw lastErr||new Error('Не удалось подключиться к Groq API');
@@ -10583,8 +10600,7 @@ async function fetchCorpEvents(){
     var till  = new Date(today.getTime()+60*86400000).toISOString().split('T')[0];
     var url   = MOEX+'/statistics/engines/stock/corpactions/history.json'+
                 '?from='+from+'&till='+till+
-                '&iss.meta=off&limit=50'+
-                '&sort_order=asc&sort_column=label';
+                '&iss.meta=off&limit=50';
     var r = await fetch(url);
     var d = await r.json();
     var key = Object.keys(d).filter(function(k){return k!=='cursor';})[0];
