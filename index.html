@@ -2976,8 +2976,20 @@ function rInd(data){
     atrTag='<span class="itag ineut">ATR14: '+atrP+'%</span>';
   }
 
+  // ADX(14) — сила тренда
+  var adxTag='';
+  if(n>=30){
+    var adxRes=calcADX(hhs,lls,cls,14);
+    var adxV=adxRes.adx[adxRes.adx.length-1];
+    if(adxV!==null){
+      var adxCls=adxV>25?'ibull':adxV<20?'ibear':'ineut';
+      var adxLbl=adxV>40?'СИЛЬНЫЙ':adxV>25?'ТРЕНД':adxV<20?'ФЛЭТ':'СЛАБЫЙ';
+      adxTag='<span class="itag '+adxCls+'">ADX: '+adxV.toFixed(0)+' — '+adxLbl+'</span>';
+    }
+  }
+
   var html='<span class="itag i'+rc+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
-    bbTag+atrTag+
+    bbTag+atrTag+adxTag+
     '<span class="itag '+(ma20>ma50?'ibull':'ibear')+'">MA20 '+(ma20>ma50?'>':'<')+' MA50</span>'+
     '<span class="itag isig">СВЕЧА: '+(dc>=0?'+':'')+dc+'%</span>'+
     '<span class="itag '+(last.close>ma20?'ibull':'ibear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
@@ -6112,6 +6124,23 @@ function calcFullConsensus(sym, candlesOverride){
     atr = p.h&&p.l ? (p.h-p.l) : p.p*0.01;
   }
 
+  // ADX(14) — сила тренда; вычисляем один раз для всех агентов
+  var _adxVal = 0, _pdiVal = 0, _mdiVal = 0, _adxTrend = false, _adxFlat = false;
+  if(n >= 30){
+    var _adxH = cd.map(function(c){return c.high||c.close;});
+    var _adxL = cd.map(function(c){return c.low||c.close;});
+    var _adxC = cd.map(function(c){return c.close;});
+    var _adxRes = calcADX(_adxH, _adxL, _adxC, 14);
+    var _adxLast = _adxRes.adx[_adxRes.adx.length-1];
+    if(_adxLast !== null){
+      _adxVal   = _adxLast;
+      _pdiVal   = _adxRes.pdi[_adxRes.pdi.length-1]||0;
+      _mdiVal   = _adxRes.mdi[_adxRes.mdi.length-1]||0;
+      _adxTrend = _adxVal > 25; // сильный тренд
+      _adxFlat  = _adxVal < 20; // флэт / консолидация
+    }
+  }
+
   // BB(20,2σ) для агентов — вычисляем один раз
   var _bb5 = null, _bbPctB = 50, _bbWidth = 0, _bbSqueeze = false;
   if(n >= 22){
@@ -6141,7 +6170,7 @@ function calcFullConsensus(sym, candlesOverride){
   var agents = [
 
     (function(){
-      // Агент-4 — Техника: RSI + Stochastic + BB + MA + patterns
+      // Агент-4 — Техника: RSI + Stochastic + BB + MA + ADX-адаптивные веса
       var ag4 = AGs.filter(function(x){return x.id==='4';})[0];
       var iq4 = ag4 ? aIQ(ag4) : 10;
 
@@ -6150,47 +6179,63 @@ function calcFullConsensus(sym, candlesOverride){
       var highs4  = cs4.map(function(c){return c.high||c.close;});
       var lows4   = cs4.map(function(c){return c.low||c.close;});
 
-      // RSI пороги адаптивные по IQ
+      // ── ADX-адаптивность: в тренде → трендовые, во флэте → осцилляторы ──
+      // ADX > 25: MA и MACD важнее; ADX < 20: RSI и Stochastic важнее
+      var trendMult = _adxTrend ? 1.4 : (_adxFlat ? 0.6 : 1.0);
+      var oscMult   = _adxFlat  ? 1.4 : (_adxTrend ? 0.7 : 1.0);
+
+      // RSI — осциллятор (усиливается во флэте)
       var rsiOBt = iq4 > 70 ? 72 : iq4 > 40 ? 68 : 65;
       var rsiOSt = iq4 > 70 ? 30 : iq4 > 40 ? 33 : 35;
-      if(rsi < rsiOSt)      score += 25;
-      else if(rsi < 45)     score += 10;
-      else if(rsi > rsiOBt) score -= 20;
-      else if(rsi > 55)     score -= 8;
+      var rsiScore = 0;
+      if(rsi < rsiOSt)      rsiScore = 25;
+      else if(rsi < 45)     rsiScore = 10;
+      else if(rsi > rsiOBt) rsiScore = -20;
+      else if(rsi > 55)     rsiScore = -8;
+      score += Math.round(rsiScore * oscMult);
 
-      // Stochastic %K/%D — дополнительный осциллятор
+      // Stochastic — осциллятор (усиливается во флэте)
       if(closes4.length >= 17){
         var stoch = calcStochastic(highs4, lows4, closes4);
         var lastK = stoch.k[stoch.k.length-1];
         var lastD = stoch.d[stoch.d.length-1];
-        if(lastK < 20 && lastD < 20)       score += 15; // перепродан
-        else if(lastK > 80 && lastD > 80)  score -= 12; // перекуплен
-        // Crossover: K пересёк D снизу вверх при OS = сильный сигнал
+        var stochScore = 0;
+        if(lastK < 20 && lastD < 20)      stochScore = 15;
+        else if(lastK > 80 && lastD > 80) stochScore = -12;
         if(iq4 > 50){
           var prevK = stoch.k[stoch.k.length-2]||lastK;
           var prevD = stoch.d[stoch.d.length-2]||lastD;
-          if(prevK < prevD && lastK > lastD && lastK < 40) score += 10; // бычий cross в OS
-          if(prevK > prevD && lastK < lastD && lastK > 60) score -= 10; // медвежий cross в OB
+          if(prevK < prevD && lastK > lastD && lastK < 40) stochScore += 10;
+          if(prevK > prevD && lastK < lastD && lastK > 60) stochScore -= 10;
         }
+        score += Math.round(stochScore * oscMult);
       }
 
-      // Bollinger Bands %B позиция цены
+      // BB %B — волатильность (нейтральна к ADX)
       if(closes4.length >= 22 && iq4 > 40){
         var bb4 = calcBB(closes4, 20, 2);
         var lastPctB = bb4.pctB[bb4.pctB.length-1];
-        if(lastPctB < 10)      score += 12; // у нижней полосы — перепродан
-        else if(lastPctB > 90) score -= 10; // у верхней — перекуплен
-        else if(lastPctB < 25) score += 5;
-        else if(lastPctB > 75) score -= 5;
+        if(lastPctB < 10)       score += 12;
+        else if(lastPctB < 25)  score += 5;
+        else if(lastPctB > 90)  score -= 10;
+        else if(lastPctB > 75)  score -= 5;
       }
 
-      // MA cross
-      if(p.p > ma20) score += 8;
-      if(ma20 > ma50) score += 8;
+      // MA cross — трендовый (усиливается в тренде)
+      var maScore = 0;
+      if(p.p > ma20) maScore += 8;
+      if(ma20 > ma50) maScore += 8;
       if(iq4 > 60 && n >= 50){
         var distMA20 = ma20 > 0 ? (p.p-ma20)/ma20*100 : 0;
-        if(distMA20 > 8)  score -= 8;
-        if(distMA20 < -5) score += 8;
+        if(distMA20 > 8)  maScore -= 8;
+        if(distMA20 < -5) maScore += 8;
+      }
+      score += Math.round(maScore * trendMult);
+
+      // ADX +DI/-DI — направление тренда (только при сильном тренде)
+      if(_adxTrend && iq4 > 50){
+        if(_pdiVal > _mdiVal) score += 8;   // бычий тренд
+        else                  score -= 8;   // медвежий тренд
       }
 
       // Паттерны
@@ -6203,13 +6248,19 @@ function calcFullConsensus(sym, candlesOverride){
         if(rsi > 60 && bearPats > 0) score -= 8;
       }
 
-      score = Math.max(5,Math.min(95,score));
+      score = Math.max(5, Math.min(95, score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
-      var reason = pats.length
-        ? pats[0].n+' · RSI'+rsi+(iq4>40?' · Stoch'+(closes4.length>=17?calcStochastic(highs4,lows4,closes4).k.slice(-1)[0].toFixed(0):'?'):'')
-        : 'RSI'+rsi+' · MA'+(ma20>ma50?'↑':'↓')+(iq4>40&&closes4.length>=22?' · BB%B'+calcBB(closes4,20,2).pctB.slice(-1)[0].toFixed(0):'');
+
+      // Reason с ADX info
+      var adxStr = _adxVal > 0
+        ? ' · ADX:'+_adxVal.toFixed(0)+(_adxTrend?'⬆тренд':_adxFlat?'⬇флэт':'')
+        : '';
+      var reason4 = pats.length
+        ? pats[0].n+' · RSI'+rsi+adxStr
+        : 'RSI'+rsi+' · MA'+(ma20>ma50?'↑':'↓')+adxStr;
+
       return {id:'4',name:'Агент-4',role:'Техника',e:'📈',c:'#dc2626',
-              dir:dir,conf:score,reason:reason};
+              dir:dir,conf:score,reason:reason4};
     })(),
 
     (function(){
@@ -8442,6 +8493,60 @@ function calcATR14(highs, lows, closes){
     tr.push(Math.max(hl,hc,lc));
   }
   return calcSMMA(tr, 14);
+}
+
+// ── ADX(14) — Average Directional Index ──────────
+// Измеряет СИЛУ тренда (не направление)
+// ADX > 25 = сильный тренд → используем трендовые индикаторы
+// ADX < 20 = флэт → используем осцилляторы
+// +DI > -DI = бычий тренд; -DI > +DI = медвежий
+function calcADX(highs, lows, closes, period){
+  period = period || 14;
+  var n = closes.length;
+  if(n < period+1) return {adx:[], pdi:[], mdi:[]};
+
+  // 1. True Range и направленное движение
+  var tr=[], pdm=[], mdm=[];
+  for(var i=1; i<n; i++){
+    var h=highs[i], l=lows[i], ph=highs[i-1], pl=lows[i-1], pc=closes[i-1];
+    tr.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+    var up   = h - ph;
+    var down = pl - l;
+    pdm.push(up>down && up>0 ? up : 0);   // +DM
+    mdm.push(down>up && down>0 ? down : 0); // -DM
+  }
+
+  // 2. Сглаживаем через SMMA (Wilder)
+  var atrW  = calcSMMA(tr,  period);
+  var pdmW  = calcSMMA(pdm, period);
+  var mdmW  = calcSMMA(mdm, period);
+
+  // 3. +DI / -DI
+  var pdi=[], mdi=[], dx=[];
+  for(var i=0; i<atrW.length; i++){
+    var atr = atrW[i] || 0.0001;
+    var p = pdmW[i]/atr*100;
+    var m = mdmW[i]/atr*100;
+    pdi.push(parseFloat(p.toFixed(2)));
+    mdi.push(parseFloat(m.toFixed(2)));
+    var dxv = (p+m)>0 ? Math.abs(p-m)/(p+m)*100 : 0;
+    dx.push(dxv);
+  }
+
+  // 4. ADX = SMMA(DX, period)
+  var adxRaw = calcSMMA(dx, period);
+
+  // Выравниваем длину с closes (добавляем null в начало)
+  var pad = n - adxRaw.length;
+  var adxOut = [], pdiOut = [], mdiOut = [];
+  for(var i=0; i<pad; i++){ adxOut.push(null); pdiOut.push(null); mdiOut.push(null); }
+  for(var i=0; i<adxRaw.length; i++){
+    adxOut.push(parseFloat(adxRaw[i].toFixed(1)));
+    pdiOut.push(pdi[i] || null);
+    mdiOut.push(mdi[i] || null);
+  }
+
+  return {adx: adxOut, pdi: pdiOut, mdi: mdiOut};
 }
 
 // ── Stochastic %K/%D (14,3) ───────────────────────
