@@ -5895,47 +5895,73 @@ function calcFullConsensus(sym, candlesOverride){
   var agents = [
 
     (function(){
-      // Агент-4 — Техника: RSI + MA cross + patterns
-      // IQ адаптирует пороги: новичок использует базовые, эксперт — тонкие
+      // Агент-4 — Техника: RSI + Stochastic + BB + MA + patterns
       var ag4 = AGs.filter(function(x){return x.id==='4';})[0];
       var iq4 = ag4 ? aIQ(ag4) : 10;
 
       var score = 50;
-      // RSI пороги: новичок 35/65, эксперт 30/72 + дивергенция
-      var rsiOB = iq4 > 70 ? 72 : iq4 > 40 ? 68 : 65;
-      var rsiOS = iq4 > 70 ? 30 : iq4 > 40 ? 33 : 35;
-      if(rsi < rsiOS)      score += 25;
-      else if(rsi < 45)    score += 10;
-      else if(rsi > rsiOB) score -= 20;
-      else if(rsi > 55)    score -= 8;
+      var closes4 = cs4.map(function(c){return c.close;});
+      var highs4  = cs4.map(function(c){return c.high||c.close;});
+      var lows4   = cs4.map(function(c){return c.low||c.close;});
 
-      // MA: новичок — только MA20, эксперт — MA20+MA50 + расстояние
-      if(p.p > ma20) score += 10;
-      if(ma20 > ma50) score += 10;
-      if(iq4 > 60 && n >= 50){
-        // Эксперт считает расстояние от MA — перегрев
-        var distMA20 = ma20 > 0 ? (p.p-ma20)/ma20*100 : 0;
-        if(distMA20 > 8)  score -= 8;  // слишком далеко — откат вероятен
-        if(distMA20 < -5) score += 8;  // ниже MA на 5% — недооценён
+      // RSI пороги адаптивные по IQ
+      var rsiOBt = iq4 > 70 ? 72 : iq4 > 40 ? 68 : 65;
+      var rsiOSt = iq4 > 70 ? 30 : iq4 > 40 ? 33 : 35;
+      if(rsi < rsiOSt)      score += 25;
+      else if(rsi < 45)     score += 10;
+      else if(rsi > rsiOBt) score -= 20;
+      else if(rsi > 55)     score -= 8;
+
+      // Stochastic %K/%D — дополнительный осциллятор
+      if(closes4.length >= 17){
+        var stoch = calcStochastic(highs4, lows4, closes4);
+        var lastK = stoch.k[stoch.k.length-1];
+        var lastD = stoch.d[stoch.d.length-1];
+        if(lastK < 20 && lastD < 20)       score += 15; // перепродан
+        else if(lastK > 80 && lastD > 80)  score -= 12; // перекуплен
+        // Crossover: K пересёк D снизу вверх при OS = сильный сигнал
+        if(iq4 > 50){
+          var prevK = stoch.k[stoch.k.length-2]||lastK;
+          var prevD = stoch.d[stoch.d.length-2]||lastD;
+          if(prevK < prevD && lastK > lastD && lastK < 40) score += 10; // бычий cross в OS
+          if(prevK > prevD && lastK < lastD && lastK > 60) score -= 10; // медвежий cross в OB
+        }
       }
 
-      // Паттерны: эксперт весит confluence
+      // Bollinger Bands %B позиция цены
+      if(closes4.length >= 22 && iq4 > 40){
+        var bb4 = calcBB(closes4, 20, 2);
+        var lastPctB = bb4.pctB[bb4.pctB.length-1];
+        if(lastPctB < 10)      score += 12; // у нижней полосы — перепродан
+        else if(lastPctB > 90) score -= 10; // у верхней — перекуплен
+        else if(lastPctB < 25) score += 5;
+        else if(lastPctB > 75) score -= 5;
+      }
+
+      // MA cross
+      if(p.p > ma20) score += 8;
+      if(ma20 > ma50) score += 8;
+      if(iq4 > 60 && n >= 50){
+        var distMA20 = ma20 > 0 ? (p.p-ma20)/ma20*100 : 0;
+        if(distMA20 > 8)  score -= 8;
+        if(distMA20 < -5) score += 8;
+      }
+
+      // Паттерны
       var bullPats = pats.filter(function(p){return p.t==='bull';}).length;
       var bearPats = pats.filter(function(p){return p.t==='bear';}).length;
-      var patW = iq4 > 70 ? 15 : iq4 > 40 ? 12 : 10;
+      var patW = iq4 > 70 ? 14 : iq4 > 40 ? 11 : 9;
       score += bullPats*patW - bearPats*patW;
-
-      // Эксперт: confluence-бонус — RSI+паттерн в одном направлении
       if(iq4 > 60){
-        if(rsi < 40 && bullPats > 0) score += 8;  // перепродан + бычий паттерн
+        if(rsi < 40 && bullPats > 0) score += 8;
         if(rsi > 60 && bearPats > 0) score -= 8;
       }
 
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
       var reason = pats.length
-        ? pats[0].n+' · RSI'+rsi+(iq4>60?' · IQ'+iq4.toFixed(0):'')
-        : 'RSI'+rsi+' · MA'+(ma20>ma50?'↑':'↓');
+        ? pats[0].n+' · RSI'+rsi+(iq4>40?' · Stoch'+(closes4.length>=17?calcStochastic(highs4,lows4,closes4).k.slice(-1)[0].toFixed(0):'?'):'')
+        : 'RSI'+rsi+' · MA'+(ma20>ma50?'↑':'↓')+(iq4>40&&closes4.length>=22?' · BB%B'+calcBB(closes4,20,2).pctB.slice(-1)[0].toFixed(0):'');
       return {id:'4',name:'Агент-4',role:'Техника',e:'📈',c:'#dc2626',
               dir:dir,conf:score,reason:reason};
     })(),
@@ -6210,7 +6236,7 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-8 — Объёмы: volume spike + накопление (IQ-адаптивный)
+      // Агент-8 — Объёмы: OBV полный + CMF + volume spike (IQ-адаптивный)
       var ag8 = AGs.filter(function(x){return x.id==='8';})[0];
       var iq8 = ag8 ? aIQ(ag8) : 10;
       var score = 50;
@@ -6222,43 +6248,58 @@ function calcFullConsensus(sym, candlesOverride){
       var medVol = allVols.length ? allVols[Math.floor(allVols.length/2)] : 1;
       var volRatio = medVol > 0 ? vol / medVol : 1;
 
-      // Базовый анализ
-      var spikeThresh = iq8 > 60 ? 2.0 : 2.5; // эксперт замечает аномалии раньше
+      // Volume spike
+      var spikeThresh = iq8 > 60 ? 2.0 : 2.5;
       if(volRatio > spikeThresh*1.5) score += 20;
       else if(volRatio > spikeThresh) score += 12;
       else if(volRatio > 1.3)        score += 6;
       else if(volRatio < 0.5)        score -= 8;
+      if(chg > 0 && volRatio > 1.5)       score += 10;
+      else if(chg < 0 && volRatio > 1.5)  score -= 10;
 
-      // Направление + объём
-      if(chg > 0 && volRatio > 1.5)       score += 10; // накопление
-      else if(chg < 0 && volRatio > 1.5)  score -= 10; // распродажа
+      // OBV полный (replaces 5-candle approximation)
+      if(iq8 > 40 && cd.length >= 10){
+        var closes8  = cd.map(function(c){return c.close;});
+        var volumes8 = cd.map(function(c){return c.volume||c.vol||0;});
+        var highs8   = cd.map(function(c){return c.high||c.close;});
+        var lows8    = cd.map(function(c){return c.low||c.close;});
 
-      // Эксперт: OBV-like анализ по свечам
-      if(iq8 > 50 && cd.length >= 5){
-        var recentCandles = cd.slice(-5);
-        var obv = 0;
-        recentCandles.forEach(function(c,i){
-          if(i===0) return;
-          var cv = c.volume || c.vol || 0;
-          if(c.close > recentCandles[i-1].close) obv += cv;
-          else if(c.close < recentCandles[i-1].close) obv -= cv;
-        });
-        if(obv > 0)      score += iq8 > 70 ? 10 : 6;  // деньги входят
-        else if(obv < 0) score -= iq8 > 70 ? 10 : 6;  // деньги выходят
-      }
+        // OBV полный
+        var obvArr = calcOBV(closes8, volumes8);
+        var obvLast = obvArr[obvArr.length-1];
+        var obvPrev = obvArr[Math.max(0,obvArr.length-6)]; // за 5 свечей
+        if(obvLast > obvPrev*1.01)       score += iq8>70?12:8;  // OBV растёт
+        else if(obvLast < obvPrev*0.99)  score -= iq8>70?12:8;  // OBV падает
 
-      // Эксперт: аномальный объём без движения = накопление/распределение
-      if(iq8 > 70 && volRatio > 2 && Math.abs(chg) < 0.5){
-        score += 8; // высокий объём + флэт = тихое накопление
+        // CMF(20) — денежный поток
+        if(iq8 > 50 && cd.length >= 22){
+          var cmfArr = calcCMF(highs8, lows8, closes8, volumes8, 20);
+          var lastCMF = cmfArr[cmfArr.length-1];
+          if(lastCMF > 0.1)        score += 10; // деньги входят
+          else if(lastCMF > 0.05)  score += 5;
+          else if(lastCMF < -0.1)  score -= 10; // деньги выходят
+          else if(lastCMF < -0.05) score -= 5;
+        }
+
+        // Аномальный объём без движения = тихое накопление
+        if(iq8 > 70 && volRatio > 2 && Math.abs(chg) < 0.5){
+          score += 8;
+        }
       }
 
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
+      var cmf8str = '';
+      if(iq8>50&&cd.length>=22){
+        var cf=calcCMF(cd.map(function(c){return c.high||c.close;}),
+                       cd.map(function(c){return c.low||c.close;}),
+                       cd.map(function(c){return c.close;}),
+                       cd.map(function(c){return c.volume||c.vol||0;}),20);
+        cmf8str=' · CMF'+(cf[cf.length-1]>=0?'+':'')+cf[cf.length-1].toFixed(2);
+      }
       return {id:'8',name:'Агент-8',role:'Объёмы',e:'📦',c:'#ca8a04',
               dir:dir,conf:score,
-              reason:'Объём: '+(vol>0?fmtVol(vol):'—')+
-                ' (×'+volRatio.toFixed(1)+' vs медиана)'+
-                (iq8>60?' · OBV':'')};
+              reason:'Vol×'+volRatio.toFixed(1)+(iq8>40?' · OBV':'')+(iq8>50?cmf8str:'')};
     })(),
 
     (function(){
@@ -8006,6 +8047,197 @@ function calcEMA(data, period){
   return result;
 }
 
+// ── SMMA / Wilder MA (RMA) ────────────────────────
+// Используется в ATR, RSI. SMMA[i] = (SMMA[i-1]*(n-1) + p[i]) / n
+function calcSMMA(data, period){
+  var result=[], prev=null;
+  data.forEach(function(v){
+    if(prev===null){ prev=v; result.push(v); }
+    else{ prev=(prev*(period-1)+v)/period; result.push(prev); }
+  });
+  return result;
+}
+
+// ── LWMA (линейно-взвешенная MA) ──────────────────
+// Последние цены имеют больший линейный вес
+// LWMA = sum(p[i]*w[i]) / sum(w); w[i] = i+1
+function calcLWMA(data, period){
+  var result=[];
+  var denom = period*(period+1)/2; // сумма весов 1+2+...+n
+  for(var i=0;i<data.length;i++){
+    if(i<period-1){ result.push(data[i]); continue; }
+    var sum=0;
+    for(var j=0;j<period;j++) sum+=data[i-period+1+j]*(j+1);
+    result.push(sum/denom);
+  }
+  return result;
+}
+
+// ── ATR(14) — правильный True Range ───────────────
+// TR = max(H-L, |H-prevClose|, |L-prevClose|)
+// ATR = SMMA(TR, 14)
+function calcATR14(highs, lows, closes){
+  var tr=[];
+  for(var i=0;i<closes.length;i++){
+    if(i===0){ tr.push(highs[i]-lows[i]); continue; }
+    var hl=highs[i]-lows[i];
+    var hc=Math.abs(highs[i]-closes[i-1]);
+    var lc=Math.abs(lows[i]-closes[i-1]);
+    tr.push(Math.max(hl,hc,lc));
+  }
+  return calcSMMA(tr, 14);
+}
+
+// ── Stochastic %K/%D (14,3) ───────────────────────
+// %K = (C - minL14) / (maxH14 - minL14) * 100
+// %D = SMA(%K, 3)
+function calcStochastic(highs, lows, closes, kPeriod, dPeriod){
+  kPeriod = kPeriod||14; dPeriod = dPeriod||3;
+  var kArr=[], dArr=[];
+  for(var i=0;i<closes.length;i++){
+    if(i<kPeriod-1){ kArr.push(50); dArr.push(50); continue; }
+    var sl_h=highs.slice(i-kPeriod+1,i+1);
+    var sl_l=lows.slice(i-kPeriod+1,i+1);
+    var maxH=Math.max.apply(null,sl_h);
+    var minL=Math.min.apply(null,sl_l);
+    var k = maxH===minL ? 50 : (closes[i]-minL)/(maxH-minL)*100;
+    kArr.push(Math.round(k*10)/10);
+  }
+  // %D = SMA(kArr, dPeriod)
+  for(var i=0;i<kArr.length;i++){
+    if(i<dPeriod-1){ dArr.push(kArr[i]); continue; }
+    var s=0; for(var j=0;j<dPeriod;j++) s+=kArr[i-j];
+    dArr.push(Math.round(s/dPeriod*10)/10);
+  }
+  return {k:kArr, d:dArr};
+}
+
+// ── Bollinger Bands (20, 2σ) ──────────────────────
+// mid=SMA20; upper=mid+2σ; lower=mid-2σ
+// %B = (price-lower)/(upper-lower) — позиция в канале
+function calcBB(closes, period, mult){
+  period=period||20; mult=mult||2;
+  var mid=[], upper=[], lower=[], pctB=[];
+  for(var i=0;i<closes.length;i++){
+    if(i<period-1){
+      mid.push(closes[i]); upper.push(closes[i]);
+      lower.push(closes[i]); pctB.push(50);
+      continue;
+    }
+    var sl=closes.slice(i-period+1,i+1);
+    var mean=sl.reduce(function(a,b){return a+b;},0)/period;
+    var variance=sl.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/period;
+    var std=Math.sqrt(variance);
+    var u=mean+mult*std, l=mean-mult*std;
+    mid.push(Math.round(mean*100)/100);
+    upper.push(Math.round(u*100)/100);
+    lower.push(Math.round(l*100)/100);
+    var pb=(u-l)>0 ? (closes[i]-l)/(u-l)*100 : 50;
+    pctB.push(Math.round(pb*10)/10);
+  }
+  return {mid:mid, upper:upper, lower:lower, pctB:pctB};
+}
+
+// ── Alligator Билла Уильямса ──────────────────────
+// Три SMMA с разными периодами + временной сдвиг вперёд
+// Jaw  = SMMA(13) сдвиг +8 баров (синяя)
+// Teeth= SMMA(8)  сдвиг +5 баров (красная)
+// Lips = SMMA(5)  сдвиг +3 бара  (зелёная)
+function calcAlligator(hl2){
+  // hl2 = (high+low)/2 для каждой свечи
+  var jaw_raw  = calcSMMA(hl2, 13);
+  var teeth_raw= calcSMMA(hl2, 8);
+  var lips_raw = calcSMMA(hl2, 5);
+  function shift(arr, n){ // сдвиг вперёд = добавляем null в конец и убираем с начала
+    var res=arr.slice(n);
+    while(res.length<arr.length) res.push(null);
+    return res;
+  }
+  return {
+    jaw:   shift(jaw_raw,   8),  // смещение 8 баров
+    teeth: shift(teeth_raw, 5),  // смещение 5 баров
+    lips:  shift(lips_raw,  3),  // смещение 3 бара
+  };
+}
+
+// ── OBV (On Balance Volume) ───────────────────────
+// Полный накопительный OBV (не 5-свечной)
+function calcOBV(closes, volumes){
+  var obv=[], cur=0;
+  for(var i=0;i<closes.length;i++){
+    if(i===0){ obv.push(0); continue; }
+    if(closes[i]>closes[i-1])      cur+=volumes[i];
+    else if(closes[i]<closes[i-1]) cur-=volumes[i];
+    obv.push(cur);
+  }
+  return obv;
+}
+
+// ── Williams %R (14) ─────────────────────────────
+// (maxH14 - C) / (maxH14 - minL14) * -100
+// <-80 = перепродан, >-20 = перекуплен
+function calcWilliamsR(highs, lows, closes, period){
+  period=period||14;
+  var result=[];
+  for(var i=0;i<closes.length;i++){
+    if(i<period-1){ result.push(-50); continue; }
+    var sl_h=highs.slice(i-period+1,i+1);
+    var sl_l=lows.slice(i-period+1,i+1);
+    var maxH=Math.max.apply(null,sl_h);
+    var minL=Math.min.apply(null,sl_l);
+    var r=(maxH-minL)===0 ? -50 : (maxH-closes[i])/(maxH-minL)*-100;
+    result.push(Math.round(r*10)/10);
+  }
+  return result;
+}
+
+// ── CMF (Chaikin Money Flow, 20) ─────────────────
+// CMF = sum(CLV*vol, 20) / sum(vol, 20)
+// CLV = ((2C-H-L)/(H-L))
+// >0 = деньги входят, <0 = выходят
+function calcCMF(highs, lows, closes, volumes, period){
+  period=period||20;
+  var result=[];
+  for(var i=0;i<closes.length;i++){
+    if(i<period-1){ result.push(0); continue; }
+    var sumMFV=0, sumVol=0;
+    for(var j=i-period+1;j<=i;j++){
+      var hl=highs[j]-lows[j];
+      var clv=hl===0?0:(2*closes[j]-highs[j]-lows[j])/hl;
+      sumMFV+=clv*volumes[j];
+      sumVol+=volumes[j];
+    }
+    result.push(sumVol>0?Math.round(sumMFV/sumVol*1000)/1000:0);
+  }
+  return result;
+}
+
+// ── Awesome Oscillator ────────────────────────────
+// AO = SMA(HL2, 5) - SMA(HL2, 34)
+function calcAO(highs, lows){
+  var hl2=highs.map(function(h,i){return (h+lows[i])/2;});
+  function sma(arr,n){
+    return arr.map(function(_,i){
+      if(i<n-1)return null;
+      var s=0;for(var j=i-n+1;j<=i;j++)s+=arr[j];
+      return s/n;
+    });
+  }
+  var s5=sma(hl2,5), s34=sma(hl2,34);
+  return s5.map(function(v,i){return (v!=null&&s34[i]!=null)?Math.round((v-s34[i])*100)/100:null;});
+}
+
+// ── SMA helper ───────────────────────────────────
+function calcSMA(data, period){
+  var result=[];
+  for(var i=0;i<data.length;i++){
+    if(i<period-1){result.push(data[i]);continue;}
+    var s=0;for(var j=i-period+1;j<=i;j++)s+=data[j];
+    result.push(s/period);
+  }
+  return result;
+}
+
 // ── MACD ─────────────────────────────────────────
 function calcMACDFull(closes){
   var e12=calcEMA(closes,12);
@@ -8245,6 +8477,70 @@ async function loadH(sym, tf){
     } else {
       cs.setData(all);
       cs.setMarkers(calcMrk(all));
+    }
+  }
+
+  // ── MA20 / MA50 / BB / VWAP поверх свечей ────────
+  if(chart && all.length > 20){
+    var closes = all.map(function(c){return c.close;});
+    var highs  = all.map(function(c){return c.high||c.close;});
+    var lows   = all.map(function(c){return c.low||c.close;});
+
+    // Удаляем старые overlay серии если есть
+    if(chart._ma20s){ try{chart.removeSeries(chart._ma20s);}catch(e){} }
+    if(chart._ma50s){ try{chart.removeSeries(chart._ma50s);}catch(e){} }
+    if(chart._bbUs){  try{chart.removeSeries(chart._bbUs); }catch(e){} }
+    if(chart._bbLs){  try{chart.removeSeries(chart._bbLs); }catch(e){} }
+    if(chart._bbMs){  try{chart.removeSeries(chart._bbMs); }catch(e){} }
+    if(chart._vwaps){ try{chart.removeSeries(chart._vwaps);}catch(e){} }
+
+    // MA20 — золотая линия
+    var ma20 = calcSMA(closes, 20);
+    chart._ma20s = chart.addLineSeries({color:'#FFB800',lineWidth:1,
+      priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
+    chart._ma20s.setData(all.slice(19).map(function(c,i){
+      return {time:c.time, value:ma20[i+19]};
+    }));
+
+    // MA50 — синяя линия
+    if(all.length > 50){
+      var ma50 = calcSMA(closes, 50);
+      chart._ma50s = chart.addLineSeries({color:'#00E5FF',lineWidth:1,
+        priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
+      chart._ma50s.setData(all.slice(49).map(function(c,i){
+        return {time:c.time, value:ma50[i+49]};
+      }));
+    }
+
+    // Bollinger Bands (20, 2σ) — канал
+    var bb = calcBB(closes, 20, 2);
+    // Upper
+    chart._bbUs = chart.addLineSeries({color:'rgba(191,90,242,.5)',lineWidth:1,
+      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    chart._bbUs.setData(all.slice(19).map(function(c,i){
+      return {time:c.time, value:bb.upper[i+19]};
+    }));
+    // Lower
+    chart._bbLs = chart.addLineSeries({color:'rgba(191,90,242,.5)',lineWidth:1,
+      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    chart._bbLs.setData(all.slice(19).map(function(c,i){
+      return {time:c.time, value:bb.lower[i+19]};
+    }));
+    // Mid
+    chart._bbMs = chart.addLineSeries({color:'rgba(191,90,242,.25)',lineWidth:1,
+      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    chart._bbMs.setData(all.slice(19).map(function(c,i){
+      return {time:c.time, value:bb.mid[i+19]};
+    }));
+
+    // VWAP из prices[sym].wp (WAPRICE от ISS) — горизонтальная линия дня
+    var vwap = prices[sym] && prices[sym].wp;
+    if(vwap && vwap > 0){
+      chart._vwaps = chart.addLineSeries({color:'rgba(0,255,163,.6)',lineWidth:1,
+        lineStyle:2,priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
+      // Рисуем VWAP как горизонталь за последние 30 свечей
+      var vwapData = all.slice(-30).map(function(c){return {time:c.time, value:vwap};});
+      chart._vwaps.setData(vwapData);
     }
   }
 
