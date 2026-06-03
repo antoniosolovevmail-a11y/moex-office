@@ -2910,6 +2910,8 @@ function rInd(data){
   var el=document.getElementById('ind-bar');
   if(!el||!data.length)return;
   var cls=data.map(function(d){return d.close;});
+  var hhs=data.map(function(d){return d.high||d.close;});
+  var lls=data.map(function(d){return d.low||d.close;});
   var rsi=calcRSI(cls);
   var n=data.length;
   var ma20=cls.slice(-20).reduce(function(s,v){return s+v;},0)/Math.min(20,n);
@@ -2919,14 +2921,39 @@ function rInd(data){
   var pats=dPats(data.slice(-20));
   var rc=rsi>70?'bear':rsi<30?'bull':'neut';
   var rl=rsi>70?'ПЕРЕКУПЛ':rsi<30?'ПЕРЕПРОДАН':'НОРМА';
+
+  // BB %B и Width
+  var bbTag='';
+  if(n>=22){
+    var bbR=calcBB(cls,20,2);
+    var pctB=bbR.pctB[bbR.pctB.length-1];
+    var lastU=bbR.upper[bbR.upper.length-1];
+    var lastL=bbR.lower[bbR.lower.length-1];
+    var lastM=bbR.mid[bbR.mid.length-1];
+    var bbW=lastM>0?(lastU-lastL)/lastM*100:0;
+    var bbCls=pctB<20?'ibull':pctB>80?'ibear':'ineut';
+    var bbLbl=pctB<10?'ниж.полоса':pctB>90?'верх.полоса':pctB<30?'ниж.зона':pctB>70?'верх.зона':'центр';
+    bbTag='<span class="itag '+bbCls+'">BB%B: '+Math.round(pctB)+' — '+bbLbl+'</span>'
+         +'<span class="itag ineut">BB Width: '+bbW.toFixed(1)+'%'+(bbW<2?'⚡':'')+'</span>';
+  }
+
+  // ATR(14)
+  var atrTag='';
+  if(n>=15){
+    var atrArr=calcATR14(hhs,lls,cls);
+    var atrV=atrArr[atrArr.length-1];
+    var atrP=last.close>0?(atrV/last.close*100).toFixed(1):'—';
+    atrTag='<span class="itag ineut">ATR14: '+atrP+'%</span>';
+  }
+
   var html='<span class="itag i'+rc+'">RSI(14): '+(rsi||'—')+' — '+rl+'</span>'+
+    bbTag+atrTag+
     '<span class="itag '+(ma20>ma50?'ibull':'ibear')+'">MA20 '+(ma20>ma50?'>':'<')+' MA50</span>'+
     '<span class="itag isig">СВЕЧА: '+(dc>=0?'+':'')+dc+'%</span>'+
     '<span class="itag '+(last.close>ma20?'ibull':'ibear')+'">'+(last.close>ma20?'▲ ВОСХ.':'▼ НИСХ.')+'</span>'+
     pats.slice(0,2).map(function(p){return '<span class="itag '+(p.t==='bull'?'ibull':p.t==='bear'?'ibear':'ineut')+'">'+p.n+'</span>';}).join('')+
     '<span class="itag ineut">'+data.length+' св. · '+curSym+' '+curTF+'</span>';
   el.innerHTML=html;
-  // Re-render IMOEX overlay if active
   if(typeof imoexEnabled!=='undefined'&&imoexEnabled) renderImoexOverlay();
 }
 
@@ -6020,7 +6047,46 @@ function calcFullConsensus(sym, candlesOverride){
   var ma20= n>=20 ? cd.slice(-20).reduce(function(s,c){return s+c.close;},0)/20 : p.p;
   var ma50= n>=50 ? cd.slice(-50).reduce(function(s,c){return s+c.close;},0)/50 : p.p;
   var chg = p.c||0;
-  var atr = p.h&&p.l ? (p.h-p.l) : p.p*0.01;
+
+  // cs4 = алиас cd для агентов (исторически)
+  var cs4 = cd;
+
+  // ATR(14) правильный — используем calcATR14 если есть свечи
+  var atr;
+  if(n >= 15){
+    var _h = cd.map(function(c){return c.high||c.close;});
+    var _l = cd.map(function(c){return c.low||c.close;});
+    var _c = cd.map(function(c){return c.close;});
+    var _atrArr = calcATR14(_h, _l, _c);
+    atr = _atrArr[_atrArr.length-1] || (p.h&&p.l ? (p.h-p.l) : p.p*0.01);
+  } else {
+    atr = p.h&&p.l ? (p.h-p.l) : p.p*0.01;
+  }
+
+  // BB(20,2σ) для агентов — вычисляем один раз
+  var _bb5 = null, _bbPctB = 50, _bbWidth = 0, _bbSqueeze = false;
+  if(n >= 22){
+    var _closes5 = cd.map(function(c){return c.close;});
+    _bb5 = calcBB(_closes5, 20, 2);
+    _bbPctB   = _bb5.pctB[_bb5.pctB.length-1];
+    var lastU = _bb5.upper[_bb5.upper.length-1];
+    var lastL = _bb5.lower[_bb5.lower.length-1];
+    var lastM = _bb5.mid[_bb5.mid.length-1];
+    _bbWidth  = lastM > 0 ? (lastU - lastL) / lastM * 100 : 0;
+    // BB Squeeze: ширина ниже 20-периодного мин → взрыв близко
+    if(_bb5.upper.length >= 20){
+      var widths = [];
+      for(var _wi = _bb5.upper.length-20; _wi < _bb5.upper.length; _wi++){
+        var uw = _bb5.upper[_wi] - _bb5.lower[_wi];
+        var mw = _bb5.mid[_wi];
+        if(mw > 0) widths.push(uw/mw*100);
+      }
+      if(widths.length){
+        var minW = Math.min.apply(null, widths);
+        _bbSqueeze = (_bbWidth <= minW * 1.05); // текущая ширина ≈ минимум за 20 баров
+      }
+    }
+  }
 
   // ── Agent scoring algorithms ──────────────────────
   var agents = [
@@ -6167,26 +6233,72 @@ function calcFullConsensus(sym, candlesOverride){
     })(),
 
     (function(){
-      // Агент-5 — Риск: волатильность + позиция в диапазоне + история тикера
+      // Агент-5 — Риск: BB %B + ATR14 + BB Squeeze + диапазон + история
+      var ag5  = AGs.filter(function(x){return x.id==='5';})[0];
+      var iq5  = ag5 ? aIQ(ag5) : 10;
       var score = 50;
-      var rangePos = (p.h&&p.l&&p.h>p.l) ? (p.p-p.l)/(p.h-p.l) : 0.5;
-      if(rangePos < 0.3)      score += 20;  // у нижней границы = хороший вход
-      else if(rangePos > 0.8) score -= 15;  // у верхней = рискованно
-      var atrPct = p.p>0 ? (atr/p.p*100) : 2;
-      if(atrPct > 4)  score -= 10; // высокая волатильность = риск
-      if(atrPct < 1)  score += 5;  // низкая волатильность = стабильно
-      // Память: штраф/бонус по истории сделок по этому тикеру
-      var memBonus = _symScore(sym);
-      score += memBonus;
-      score = Math.max(5,Math.min(95,score));
+
+      // 1. Позиция цены в Bollinger Bands (%B) — главный сигнал
+      // %B < 10 = у нижней полосы → хороший вход (перепродан по волатильности)
+      // %B > 90 = у верхней полосы → рискованно (перегрет)
+      if(_bb5){
+        if(_bbPctB < 5)        score += 22; // за нижней полосой = экстремум
+        else if(_bbPctB < 20)  score += 15;
+        else if(_bbPctB < 35)  score += 7;
+        else if(_bbPctB > 95)  score -= 20; // за верхней полосой = экстремум
+        else if(_bbPctB > 80)  score -= 13;
+        else if(_bbPctB > 65)  score -= 6;
+
+        // BB Squeeze: узкий канал + ATR растёт → взрыв волатильности близко
+        // Агент-5 не знает направление взрыва → нейтрален, но iqHigher знает
+        if(_bbSqueeze){
+          if(iq5 > 60){
+            // Опытный: смотрит на направление последнего движения
+            if(chg > 0.5) score += 10; // сжатие + рост → LONG
+            else if(chg < -0.5) score -= 10;
+            // иначе ждёт
+          }
+          // Визуальная подсказка в reason
+        }
+
+        // BB Width: очень широкий канал = высокая волатильность = риск
+        if(_bbWidth > 8 && iq5 > 40)  score -= 8;  // слишком волатильно
+        if(_bbWidth < 2 && iq5 > 40)  score += 5;  // низкая волатильность = стабильно
+      } else {
+        // Fallback на дневной диапазон если нет свечей
+        var rangePos = (p.h&&p.l&&p.h>p.l) ? (p.p-p.l)/(p.h-p.l) : 0.5;
+        if(rangePos < 0.3)      score += 15;
+        else if(rangePos > 0.8) score -= 12;
+      }
+
+      // 2. ATR(14) в % от цены — мера волатильности
+      var atrPct = p.p > 0 ? (atr/p.p*100) : 2;
+      var atrThreshHigh = iq5 > 60 ? 3.5 : 4.0; // эксперт осторожнее
+      var atrThreshLow  = iq5 > 60 ? 0.8 : 1.0;
+      if(atrPct > atrThreshHigh*1.5) score -= 15; // очень высокая волатильность
+      else if(atrPct > atrThreshHigh) score -= 8;
+      else if(atrPct < atrThreshLow)  score += 6;  // спокойный рынок
+
+      // 3. Память тикера (история P&L по этому символу)
+      score += _symScore(sym);
+
+      score = Math.max(5, Math.min(95, score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
-      var m = symMemory[sym];
-      var memTxt = m && (m.wins+m.losses)>=2
-        ? ' · W/L:'+(m.wins+'/'+m.losses)+(m.streak<=-2?' ⚠':'')
-        : '';
+
+      // Формируем reason
+      var reasonParts = [];
+      if(_bb5){
+        reasonParts.push('BB%B:'+(Math.round(_bbPctB)));
+        if(_bbSqueeze) reasonParts.push('⚡SQUEEZE');
+        reasonParts.push('W:'+_bbWidth.toFixed(1)+'%');
+      }
+      reasonParts.push('ATR:'+atrPct.toFixed(1)+'%');
+      var m5 = symMemory[sym];
+      if(m5 && (m5.wins+m5.losses)>=2)
+        reasonParts.push('W/L:'+m5.wins+'/'+m5.losses+(m5.streak<=-2?' ⚠':''));
+
       return {id:'5',name:'Агент-5',role:'Риск',e:'🛡️',c:'#0891b2',
-              dir:dir,conf:score,
-              reason:'Диапазон:'+(rangePos*100).toFixed(0)+'% · ATR:'+atrPct.toFixed(1)+'%'+memTxt};
+              dir:dir,conf:score,reason:reasonParts.join(' · ')};
     })(),
 
     (function(){
@@ -8653,26 +8765,34 @@ async function loadH(sym, tf){
       }));
     }
 
-    // Bollinger Bands (20, 2σ) — канал
+    // Bollinger Bands (20, 2σ) — канал с заливкой
     var bb = calcBB(closes, 20, 2);
-    // Upper
-    chart._bbUs = chart.addLineSeries({color:'rgba(191,90,242,.5)',lineWidth:1,
-      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    chart._bbUs.setData(all.slice(19).map(function(c,i){
-      return {time:c.time, value:bb.upper[i+19]};
-    }));
-    // Lower
-    chart._bbLs = chart.addLineSeries({color:'rgba(191,90,242,.5)',lineWidth:1,
-      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    chart._bbLs.setData(all.slice(19).map(function(c,i){
-      return {time:c.time, value:bb.lower[i+19]};
-    }));
-    // Mid
-    chart._bbMs = chart.addLineSeries({color:'rgba(191,90,242,.25)',lineWidth:1,
-      lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    chart._bbMs.setData(all.slice(19).map(function(c,i){
-      return {time:c.time, value:bb.mid[i+19]};
-    }));
+    var bbData = all.slice(19).map(function(c,i){
+      return {time:c.time, upper:bb.upper[i+19], mid:bb.mid[i+19], lower:bb.lower[i+19]};
+    });
+
+    // Upper band
+    chart._bbUs = chart.addLineSeries({
+      color:'rgba(191,90,242,.7)', lineWidth:1, lineStyle:0,
+      priceLineVisible:false, lastValueVisible:true, crosshairMarkerVisible:false,
+      title:'BB+'
+    });
+    chart._bbUs.setData(bbData.map(function(d){return {time:d.time, value:d.upper};}));
+
+    // Lower band
+    chart._bbLs = chart.addLineSeries({
+      color:'rgba(191,90,242,.7)', lineWidth:1, lineStyle:0,
+      priceLineVisible:false, lastValueVisible:true, crosshairMarkerVisible:false,
+      title:'BB-'
+    });
+    chart._bbLs.setData(bbData.map(function(d){return {time:d.time, value:d.lower};}));
+
+    // Mid (SMA20) — пунктир
+    chart._bbMs = chart.addLineSeries({
+      color:'rgba(191,90,242,.35)', lineWidth:1, lineStyle:2,
+      priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false
+    });
+    chart._bbMs.setData(bbData.map(function(d){return {time:d.time, value:d.mid};}));
 
     // VWAP из prices[sym].wp (WAPRICE от ISS) — горизонтальная линия дня
     var vwap = prices[sym] && prices[sym].wp;
