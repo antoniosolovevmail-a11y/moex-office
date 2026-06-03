@@ -916,7 +916,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <button class="cio-run-btn" id="cio-btn" onclick="runCIO()" title="AI анализирует акцию и выдаёт сигнал"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Анализ</button>
           </div>
           <div style="display:none">
-            <input type="password" class="cio-key" id="groq-key" placeholder="Groq API ключ (gsk_...)" oninput="sGK(this.value)" style="flex:1"/>
+            <input type="text" autocomplete="off" class="cio-key" id="groq-key" placeholder="Groq API ключ (gsk_...)" oninput="sGK(this.value)" style="flex:1"/>
             <button onclick="toggleKeyVis('groq-key',this)" style="background:var(--fill2);border:0.5px solid var(--sep);color:var(--label3);border-radius:var(--r2);padding:0 8px;font-size:13px;cursor:pointer;flex-shrink:0" title="Показать/скрыть"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
           </div>
         </div>
