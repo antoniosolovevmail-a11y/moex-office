@@ -1090,9 +1090,9 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
     </div>
     <div id="sig-view-backtest" class="hidden" style="flex:1;overflow-y:auto;padding:20px">
       <div class="bt-controls">
-        <div><label class="fl">Акция</label><select id="bt-sym" class="sel"></select></div>
-        <div><label class="fl">Период</label><select id="bt-period" class="sel"><option value="6M">6 мес</option><option value="1Y" selected>1 год</option><option value="2Y">2 года</option><option value="3Y">3 года</option><option value="5Y">5 лет</option></select></div>
-        <div><label class="fl">Порог сигнала</label><select id="bt-thresh" class="sel"><option value="55">55% — агрессивный</option><option value="60" selected>60% — стандарт</option><option value="65">65% — умеренный</option><option value="70">70% — консерват.</option></select></div>
+        <div><div class="fl">Акция</div><select id="bt-sym" class="sel"></select></div>
+        <div><div class="fl">Период</div><select id="bt-period" class="sel"><option value="6M">6 мес</option><option value="1Y" selected>1 год</option><option value="2Y">2 года</option><option value="3Y">3 года</option><option value="5Y">5 лет</option></select></div>
+        <div><div class="fl">Порог сигнала</div><select id="bt-thresh" class="sel"><option value="55">55% — агрессивный</option><option value="60" selected>60% — стандарт</option><option value="65">65% — умеренный</option><option value="70">70% — консерват.</option></select></div>
         <div style="display:flex;align-items:flex-end"><button id="bt-run-btn" onclick="runBacktest()" class="btn p">▶ Запустить</button></div>
       </div>
       <div id="bt-status" style="font-size:12px;color:var(--label3);margin-bottom:12px">Выберите параметры и запустите бэктест</div>
@@ -1159,12 +1159,12 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
         <div id="cab-open" class="hidden">
           <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:14px">Новая сделка</div>
           <div class="form-grid">
-            <div><label class="fl">Акция</label><select id="ot-sym" class="sel"></select></div>
-            <div><label class="fl">Направление</label><select id="ot-dir" class="sel"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
-            <div><label class="fl">Вход ₽</label><input type="number" id="ot-en" class="inp" placeholder="0.00"/></div>
-            <div><label class="fl">Стоп ₽</label><input type="number" id="ot-st" class="inp" placeholder="0.00"/></div>
-            <div><label class="fl">Цель 1 ₽</label><input type="number" id="ot-t1" class="inp" placeholder="0.00"/></div>
-            <div><label class="fl">Объём ₽</label><input type="number" id="ot-vl" class="inp" placeholder="10000"/></div>
+            <div><div class="fl">Акция</div><select id="ot-sym" class="sel"></select></div>
+            <div><div class="fl">Направление</div><select id="ot-dir" class="sel"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div>
+            <div><div class="fl">Вход ₽</div><input type="number" id="ot-en" class="inp" placeholder="0.00"/></div>
+            <div><div class="fl">Стоп ₽</div><input type="number" id="ot-st" class="inp" placeholder="0.00"/></div>
+            <div><div class="fl">Цель 1 ₽</div><input type="number" id="ot-t1" class="inp" placeholder="0.00"/></div>
+            <div><div class="fl">Объём ₽</div><input type="number" id="ot-vl" class="inp" placeholder="10000"/></div>
           </div>
           <div style="display:flex;gap:8px"><button class="btn p" onclick="openTrade()">Открыть</button><button class="btn" onclick="fillCIO()">Из CIO</button><button class="btn" onclick="showCab('trades')">Назад</button></div>
         </div>
@@ -1199,7 +1199,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <!-- Groq API Key -->
             <div class="ios-card" style="margin:0">
               <div style="font-size:12px;font-weight:600;color:var(--ios-indigo);margin-bottom:10px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#5e5ce6;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #5e5ce6aa)"><rect x="5" y="7" width="14" height="12" rx="2"/><path d="M12 7V4M9 13h.01M15 13h.01"/></svg> AI — Groq API Key</div>
-              <label class="fl">API ключ <span id="groq-key-st" style="font-size:10px;margin-left:8px;font-weight:400"></span></label>
+              <div class="fl">API ключ <span id="groq-key-st" style="font-size:10px;margin-left:8px;font-weight:400"></span></div>
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <input type="text" autocomplete="off" id="s-gk" class="inp" placeholder="gsk_..." style="flex:1" oninput="sGK(this.value)"/>
                 <button onclick="toggleKeyVis('s-gk',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0" title="Показать/скрыть"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
@@ -1213,7 +1213,7 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <!-- Groq key quick-input (same field) also in left panel and signals -->
             <div class="ios-card" style="margin:0">
               <div style="font-size:12px;font-weight:600;color:var(--ios-teal);margin-bottom:10px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#5ac8f5;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #5ac8f5aa)"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg> Twelvedata API Key (Brent)</div>
-              <label class="fl">API ключ (опционально)</label>
+              <div class="fl">API ключ (опционально)</div>
               <div style="display:flex;gap:6px">
                 <input type="text" id="s-tdkey" class="inp" placeholder="Ключ twelvedata.com" style="flex:1" oninput="localStorage.setItem('twelvedata_key',this.value)"/>
                 <button onclick="toggleKeyVis('s-tdkey',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
@@ -1226,12 +1226,12 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
                 <div style="font-size:12px;font-weight:600;color:var(--ios-orange)"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#ffb800;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #ffb800aa)"><path d="M3 17l5-5 3 3 8-8M16 7h5v5"/></svg> БКС Брокер — Live портфель</div>
                 <span id="bcs-settings-st" style="font-size:10px;color:var(--label3)">не подключён</span>
               </div>
-              <label class="fl">API Token</label>
+              <div class="fl">API Token</div>
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <input type="text" autocomplete="off" id="s-bcs-token" class="inp" placeholder="Токен из БКС Мир Инвестиций..." style="flex:1" oninput="sBCSToken(this.value)"/>
                 <button onclick="toggleKeyVis('s-bcs-token',this)" class="btn" style="padding:0 10px;font-size:16px;flex-shrink:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7b5cff;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #7b5cffaa)"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></button>
               </div>
-              <label class="fl">ID счёта (если несколько счетов)</label>
+              <div class="fl">ID счёта (если несколько счетов)</div>
               <div style="display:flex;gap:6px;margin-bottom:8px">
                 <input type="text" id="s-bcs-acc" class="inp" placeholder="Например: 123456 (необязательно)" style="flex:1" oninput="localStorage.setItem('bcs_account',this.value)"/>
                 <input type="text" id="s-bcs-baseurl" class="inp" placeholder="API URL (необязательно)" style="width:160px" oninput="localStorage.setItem('bcs_api_url',this.value)"/>
@@ -1273,8 +1273,8 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             </div>
             <!-- Risk & Agents -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
-              <div style="display:flex;flex-direction:column;gap:4px"><label class="fl">Авто-агенты</label><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
+              <div><div class="fl">Риск на сделку</div><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><div class="fl">Авто-агенты</div><button class="btn" onclick="toggleAg()" id="s-ag-btn">—</button></div>
             </div>
             <button class="btn p" onclick="saveSettings()" style="width:100%;justify-content:center;padding:11px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#00ffa3;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #00ffa3aa)"><path d="M5 3h12l4 4v14H5zM8 3v6h8V3M8 21v-7h8v7"/></svg> Сохранить настройки</button>
             <div style="border-top:0.5px solid var(--sep);padding-top:14px"><div class="ios-card" style="margin-bottom:16px;padding:16px">
@@ -1326,12 +1326,12 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
             <div style="font-size:13px;font-weight:600;color:#00ffa3;margin-bottom:4px">Параметры бота</div>
             <div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:12px;line-height:1.5">Порог входа: ≥6/14 агентов LONG + conf≥65. Позиция ≤15%, экспозиция ≤70%. Комиссия 0.0531%.</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div><label class="fl">Макс. позиция %</label><input type="number" id="pb-max-pos-inp" class="inp" value="15" min="5" max="25" step="1"/></div>
-              <div><label class="fl">Макс. экспозиция %</label><input type="number" id="pb-max-exp-inp" class="inp" value="70" min="30" max="95" step="5"/></div>
+              <div><div class="fl">Макс. позиция %</div><input type="number" id="pb-max-pos-inp" class="inp" value="15" min="5" max="25" step="1"/></div>
+              <div><div class="fl">Макс. экспозиция %</div><input type="number" id="pb-max-exp-inp" class="inp" value="70" min="30" max="95" step="5"/></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div><label class="fl">Стоп ATR×</label><input type="number" id="pb-stop-atr-inp" class="inp" value="1.5" min="0.5" max="3" step="0.25"/></div>
-              <div><label class="fl">Цель ATR×</label><input type="number" id="pb-tgt-atr-inp" class="inp" value="2.5" min="1" max="5" step="0.25"/></div>
+              <div><div class="fl">Стоп ATR×</div><input type="number" id="pb-stop-atr-inp" class="inp" value="1.5" min="0.5" max="3" step="0.25"/></div>
+              <div><div class="fl">Цель ATR×</div><input type="number" id="pb-tgt-atr-inp" class="inp" value="2.5" min="1" max="5" step="0.25"/></div>
             </div>
             <button onclick="pbSaveParams()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,255,163,.3);background:rgba(0,255,163,.08);color:#00ffa3;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">Сохранить параметры</button>
           </div>
@@ -1682,8 +1682,8 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
   <div class="mbg hidden" id="an-modal"><div class="mbox" style="max-width:680px"><div class="mhdr"><span class="mt" id="an-title">—</span><button class="mc" onclick="closeMod('an-modal')">✕</button></div><div class="mbody" id="an-body"></div></div></div>
   <div class="mbg hidden" id="audit-modal"><div class="mbox"><div class="mhdr"><span class="mt"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#bf5af2;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #bf5af2aa)"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Совещание агентов</span><button class="mc" onclick="closeMod('audit-modal')">✕</button></div><div class="mbody"><div style="font-size:11px;color:var(--label3);margin-bottom:12px" id="audit-sub">Подключение...</div><div id="audit-feed"></div><div id="audit-sum" class="a-sum hidden"></div></div></div></div>
   <div class="mbg hidden" id="alert-modal"><div class="mbox" style="max-width:460px"><div class="mhdr"><span class="mt"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#ffb800;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #ffb800aa)"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/></svg> Алерты — <span id="al-sym">—</span> <span id="al-cur-price" style="color:var(--ios-green);font-size:12px"></span></span><button class="mc" onclick="closeAlertModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="al-grid"><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-green);margin-bottom:8px">Выше ▲</div><input type="number" id="al-price-above" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'above',document.getElementById('al-price-above').value)" class="btn p" style="width:100%;justify-content:center">+ Алерт выше</button></div><div class="al-card"><div style="font-size:11px;font-weight:600;color:var(--ios-red);margin-bottom:8px">Ниже ▼</div><input type="number" id="al-price-below" class="inp" style="margin-bottom:8px" placeholder="Цена ₽"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'below',document.getElementById('al-price-below').value)" class="btn d" style="width:100%;justify-content:center">+ Алерт ниже</button></div></div><div class="ios-card" style="margin:0"><div style="font-size:11px;font-weight:500;color:var(--ios-orange);margin-bottom:8px">Движение %</div><div style="display:flex;gap:8px"><input type="number" id="al-pct" class="inp" style="width:80px" placeholder="2" value="2"/><button onclick="addAlert(document.getElementById('al-sym').textContent,'change',0,document.getElementById('al-pct').value)" class="btn" style="flex:1;justify-content:center;color:var(--ios-orange)">+ На движение</button></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;font-weight:500;color:var(--label3)">Активные алерты</span><button onclick="clearTriggered()" class="btn" style="font-size:11px;padding:3px 9px">Очистить</button></div><div id="alerts-list-modal"></div></div></div></div></div>
-  <div class="mbg hidden" id="journal-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="font-size:11px;font-weight:500;color:var(--label3);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jm-ai-entry" style="color:var(--label)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--ios-red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--ios-green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--ios-purple)">—</b></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="fl">Цена входа ₽</label><input type="number" id="jm-exec-price" class="inp" step="0.01"/></div><div><label class="fl">Объём ₽</label><input type="number" id="jm-volume" class="inp" placeholder="10000"/></div></div><div><label class="fl">Как исполнили?</label><select id="jm-tag" class="sel"><option value="exact">✅ Точно по AI</option><option value="modified">⚠️ Изменил вход</option><option value="partial">½ Частично</option></select></div><div><label class="fl">Заметка</label><input type="text" id="jm-note" class="inp" placeholder="Почему сейчас..."/></div><input type="hidden" id="jm-signal-id"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitExecution()" style="flex:1;justify-content:center">Записать</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div></div></div></div>
-  <div class="mbg hidden" id="journal-close-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jcm-entry">—</b></span><span id="jcm-cur" style="color:var(--ios-green)"></span></div></div><div><label class="fl">Цена закрытия ₽</label><input type="number" id="jcm-close-price" class="inp" step="0.01"/></div><div><label class="fl">Итог / причина</label><textarea id="jcm-result-note" class="inp" style="height:72px;resize:none" placeholder="Что сработало..."></textarea></div><input type="hidden" id="jcm-signal-id2"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitClose()" style="flex:1;justify-content:center">Закрыть</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div></div></div></div>
+  <div class="mbg hidden" id="journal-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">▶ Исполнить — <span id="jm-dir">LONG</span> <span id="jm-sym">—</span></span><button class="mc" onclick="closeJournalModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="font-size:11px;font-weight:500;color:var(--label3);margin-bottom:6px">Сигнал AI</div><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jm-ai-entry" style="color:var(--label)">—</b></span><span>Стоп: <b id="jm-ai-stop" style="color:var(--ios-red)">—</b></span><span>Цель: <b id="jm-ai-tg1" style="color:var(--ios-green)">—</b></span><span>AI: <b id="jm-ai-conf" style="color:var(--ios-purple)">—</b></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><div class="fl">Цена входа ₽</div><input type="number" id="jm-exec-price" class="inp" step="0.01"/></div><div><div class="fl">Объём ₽</div><input type="number" id="jm-volume" class="inp" placeholder="10000"/></div></div><div><div class="fl">Как исполнили?</div><select id="jm-tag" class="sel"><option value="exact">✅ Точно по AI</option><option value="modified">⚠️ Изменил вход</option><option value="partial">½ Частично</option></select></div><div><div class="fl">Заметка</div><input type="text" id="jm-note" class="inp" placeholder="Почему сейчас..."/></div><input type="hidden" id="jm-signal-id"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitExecution()" style="flex:1;justify-content:center">Записать</button><button class="btn" onclick="closeJournalModal()">Отмена</button></div></div></div></div>
+  <div class="mbg hidden" id="journal-close-modal"><div class="mbox" style="max-width:480px"><div class="mhdr"><span class="mt">■ Закрыть — <span id="jcm-dir">LONG</span> <span id="jcm-sym">—</span></span><button class="mc" onclick="closeJournalCloseModal()">✕</button></div><div class="mbody" style="display:flex;flex-direction:column;gap:10px"><div class="jm-recap"><div style="display:flex;gap:14px;font-family:var(--mono);font-size:12px"><span>Вход: <b id="jcm-entry">—</b></span><span id="jcm-cur" style="color:var(--ios-green)"></span></div></div><div><div class="fl">Цена закрытия ₽</div><input type="number" id="jcm-close-price" class="inp" step="0.01"/></div><div><div class="fl">Итог / причина</div><textarea id="jcm-result-note" class="inp" style="height:72px;resize:none" placeholder="Что сработало..."></textarea></div><input type="hidden" id="jcm-signal-id2"/><div style="display:flex;gap:8px"><button class="btn p" onclick="submitClose()" style="flex:1;justify-content:center">Закрыть</button><button class="btn" onclick="closeJournalCloseModal()">Отмена</button></div></div></div></div>
 
   <!-- Context Menu -->
   <div id="chart-ctx-menu">
@@ -11301,7 +11301,7 @@ function switchTT(tab){
 }
 
 function _ttInput(id,label,val,suf){
-  return '<div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">'+label+'</label>'+
+  return '<div><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">'+label+'</label>'+
     '<div style="display:flex;align-items:center;gap:6px"><input id="'+id+'" value="'+val+'" oninput="ttRecalc()" '+
     'style="flex:1;background:rgba(123,92,255,.06);border:1px solid rgba(123,92,255,.2);border-radius:10px;padding:9px 11px;color:#fff;font-family:var(--mono);font-size:14px;outline:none"/>'+
     (suf?'<span style="font-size:12px;color:rgba(234,240,255,.4)">'+suf+'</span>':'')+'</div></div>';
@@ -11330,7 +11330,7 @@ function renderDivTool(){
     .map(function(s){return '<option value="'+s+'">'+s+' — '+ST[s].n+' ('+ST[s].div+'%)</option>';}).join('');
   el.innerHTML =
     '<div style="font-size:11px;color:rgba(234,240,255,.5);margin-bottom:14px">Расчёт дивидендного дохода (по последним данным)</div>'+
-    '<div style="margin-bottom:12px"><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Акция</label>'+
+    '<div style="margin-bottom:12px"><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Акция</label>'+
       '<select id="dv-sym" onchange="ttRecalc()" style="width:100%;background:rgba(123,92,255,.06);border:1px solid rgba(123,92,255,.2);border-radius:10px;padding:9px 11px;color:#fff;font-size:13px;outline:none">'+opts+'</select></div>'+
     '<div style="margin-bottom:12px">'+_ttInput('dv-amount','Сумма вложений (₽)','100000','')+'</div>'+
     '<div id="dv-result"></div>';
@@ -12247,10 +12247,10 @@ setTimeout(injectExpandBtns,1500);
   </div>
   <div class="mbody">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Депозит ₽</label><input type="number" id="calc-deposit" class="inp" value="100000" oninput="recalcPosition()"/></div>
-      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Риск %</label><input type="number" id="calc-risk" class="inp" value="2" step="0.5" oninput="recalcPosition()"/></div>
-      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Вход ₽</label><input type="number" id="calc-entry" class="inp" value="320" step="0.01" oninput="recalcPosition()"/></div>
-      <div><label style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Стоп ₽</label><input type="number" id="calc-stop" class="inp" value="315" step="0.01" oninput="recalcPosition()"/></div>
+      <div><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Депозит ₽</label><input type="number" id="calc-deposit" class="inp" value="100000" oninput="recalcPosition()"/></div>
+      <div><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Риск %</label><input type="number" id="calc-risk" class="inp" value="2" step="0.5" oninput="recalcPosition()"/></div>
+      <div><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Вход ₽</label><input type="number" id="calc-entry" class="inp" value="320" step="0.01" oninput="recalcPosition()"/></div>
+      <div><div style="font-size:11px;color:rgba(234,240,255,.5);display:block;margin-bottom:4px">Стоп ₽</label><input type="number" id="calc-stop" class="inp" value="315" step="0.01" oninput="recalcPosition()"/></div>
     </div>
     <div id="calc-result" style="padding:16px;border-radius:14px;background:rgba(0,255,163,.06);border:1px solid rgba(0,255,163,.2)"></div>
   </div>
