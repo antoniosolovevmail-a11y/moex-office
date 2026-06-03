@@ -1826,6 +1826,28 @@ function isMoexAuthed(){
   return false;
 }
 
+// ── IsRealTime() — паттерн из MicexAuth.vb ────────────────────────
+// If passport.Expired Then Auth() — автообновление сессии
+// Cookie MicexPassportCert живёт ~23 часа. Рефрешим за 1 час до истечения.
+var _moexAuthRefreshing = false;
+async function ensureAuth(){
+  if(!isMoexAuthed()) return; // не авторизован — не трогаем
+  var ts = _moexAuthTs || parseInt(secureGet('moex_auth_ts')||'0');
+  var age = Date.now() - ts;
+  // Рефрешим если сессии > 22 часов (за 1 час до истечения 23-часового cookie)
+  if(age > 22*3600000 && !_moexAuthRefreshing){
+    _moexAuthRefreshing = true;
+    console.log('[MOEX Auth] Сессия истекает, тихое обновление...');
+    try{
+      await moexAuth(); // тихий рефреш — UI не меняется если успешно
+      console.log('[MOEX Auth] Сессия обновлена.');
+    }catch(e){
+      console.warn('[MOEX Auth] Не удалось обновить сессию:', e.message);
+    }
+    _moexAuthRefreshing = false;
+  }
+}
+
 // Формируем заголовки для запросов с авторизацией
 function moexHeaders(){
   if(!isMoexAuthed()) return {};
@@ -1843,7 +1865,15 @@ function _updateMoexAuthUI(){
   var log = document.getElementById('moex-auth-log');
   var user = _moexAuthUser || secureGet('moex_auth_user') || '';
   if(isMoexAuthed()){
-    if(st) { st.textContent = '✓ ' + (user||'авторизован'); st.style.color = '#00ffa3'; }
+    var age = Date.now() - (_moexAuthTs || 0);
+    var hoursLeft = Math.max(0, Math.round((23*3600000 - age) / 3600000));
+    var expiring = hoursLeft <= 2; // < 2 часов = предупреждение
+    if(st){
+      st.textContent = expiring
+        ? '⚠ истекает через '+hoursLeft+'ч'
+        : '✓ ' + (user||'авторизован');
+      st.style.color = expiring ? '#ffb800' : '#00ffa3';
+    }
     if(btn) btn.textContent = '✓ Авторизован · Выйти';
     if(btn) btn.onclick = moexLogout;
     // Показываем статус в шапке
@@ -5837,6 +5867,8 @@ function updateMacroBar(){
 
 
 async function fetchAllData(){
+  // Проверяем авторизацию MOEX — тихий рефреш если нужно
+  await ensureAuth();
   // Run all data fetchers in parallel
   await Promise.allSettled([
     fetchP(),
@@ -9828,6 +9860,8 @@ function showApp(){
   setInterval(fetchOFZ,60000);
   setInterval(fetchFundamentals,300000); // every 5 min
   setInterval(function(){fetchNewsMulti(curSym);},180000); // every 3 min
+  // IsRealTime() — авто-рефреш MOEX сессии каждые 30 мин (паттерн MicexAuth.vb)
+  setInterval(function(){ ensureAuth(); }, 30*60*1000);
   // Auto-refresh chart for intraday views
   setInterval(function(){
     if(curTF==='1m')loadH(curSym,curTF);
