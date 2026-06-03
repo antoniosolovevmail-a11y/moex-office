@@ -2675,33 +2675,43 @@ async function fetchP(){
       var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json'+
               '?securities='+chunk.join(',')+
               '&iss.meta=off&iss.only=marketdata,securities'+
-              '&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME,WAPRICE,NUMTRADES'+
-              '&securities.columns=SECID,LOTSIZE';
+              '&marketdata.columns=SECID,LAST,CHANGE,HIGH,LOW,VOLUME,WAPRICE,NUMTRADES,TRADINGSTATUS,HIGHLIMIT,LOWLIMIT'+
+              '&securities.columns=SECID,LOTSIZE,DECIMALS,MINSTEP';
       var r=await fetch(url);
       var d=await r.json();
       var mcols=d.marketdata.columns;
       var scols=(d.securities&&d.securities.columns)||[];
-      // Индексы лотов по SECID
-      var lotMap={};
+      // Индексы из securities блока
+      var secMap={};
       if(d.securities&&d.securities.data){
         d.securities.data.forEach(function(row){
           var o={}; scols.forEach(function(c,k){o[c]=row[k];});
-          if(o.SECID) lotMap[o.SECID]=o.LOTSIZE||1;
+          if(o.SECID) secMap[o.SECID]=o;
         });
       }
       d.marketdata.data.forEach(function(row){
         var o={}; mcols.forEach(function(c,k){o[c]=row[k];});
         if(o.SECID&&o.LAST){
+          var sec = secMap[o.SECID]||{};
           prices[o.SECID]={
             p:  parseFloat(o.LAST)||0,
             c:  parseFloat(o.CHANGE||0),
             h:  parseFloat(o.HIGH||o.LAST||0),
             l:  parseFloat(o.LOW||o.LAST||0),
             v:  parseFloat(o.VOLUME||0),
-            wp: parseFloat(o.WAPRICE||o.LAST||0),  // средневзвешенная цена
-            nt: parseInt(o.NUMTRADES||0),           // кол-во сделок
-            lot:lotMap[o.SECID]||1                  // размер лота
+            wp: parseFloat(o.WAPRICE||o.LAST||0),
+            nt: parseInt(o.NUMTRADES||0),
+            lot:parseInt(sec.LOTSIZE||1),
+            // НОВЫЕ ПОЛЯ из /engines/stock/markets/shares/securities
+            status:  o.TRADINGSTATUS||'',          // торговый статус
+            hiLimit: parseFloat(o.HIGHLIMIT||0),   // верхняя планка дня
+            loLimit: parseFloat(o.LOWLIMIT||0),    // нижняя планка дня
           };
+          // Сохраняем MINSTEP и DECIMALS в moexFundamentals
+          if(!moexFundamentals[o.SECID]) moexFundamentals[o.SECID]={};
+          if(sec.MINSTEP)  moexFundamentals[o.SECID].minStep  = parseFloat(sec.MINSTEP);
+          if(sec.DECIMALS) moexFundamentals[o.SECID].decimals = parseInt(sec.DECIMALS);
+          if(sec.LOTSIZE)  moexFundamentals[o.SECID].lotSize  = parseInt(sec.LOTSIZE);
         }
       });
     }catch(e){console.warn('fetchP chunk error',e);}
@@ -6381,6 +6391,20 @@ function calcFullConsensus(sym, candlesOverride){
       // 3. Память тикера (история P&L по этому символу)
       score += _symScore(sym);
 
+      // 4. Верхняя/нижняя планка MOEX (HIGHLIMIT/LOWLIMIT)
+      var hiLim5 = p.hiLimit || 0;
+      var loLim5 = p.loLimit || 0;
+      if(hiLim5 > 0 && p.p > 0){
+        var distHi5 = (hiLim5 - p.p) / p.p * 100;
+        if(distHi5 < 2)       score -= 20; // у верхней планки — очень рискованно
+        else if(distHi5 < 5)  score -= 10;
+      }
+      if(loLim5 > 0 && p.p > 0){
+        var distLo5 = (p.p - loLim5) / p.p * 100;
+        if(distLo5 < 2)       score += 15; // у нижней планки — перепродан
+        else if(distLo5 < 5)  score += 7;
+      }
+
       score = Math.max(5, Math.min(95, score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
 
@@ -8704,6 +8728,14 @@ function fmtP(sym, price){
   var dec = getDec(sym);
   return parseFloat(price).toFixed(dec);
 }
+// Округление к ближайшему шагу MINSTEP (для стопов/целей)
+// SBER: MINSTEP=0.01 → 324.57; GAZP: MINSTEP=0.01; FEES: MINSTEP=0.0001
+function snapToStep(sym, price){
+  var mf = moexFundamentals && moexFundamentals[sym];
+  var step = (mf && mf.minStep > 0) ? mf.minStep : Math.pow(10, -getDec(sym));
+  var snapped = Math.round(price / step) * step;
+  return parseFloat(snapped.toFixed(getDec(sym)));
+}
 
 function calcSMA(data, period){
   var result=[];
@@ -8970,6 +9002,8 @@ async function loadH(sym, tf){
     if(chart._bbLs){  try{chart.removeSeries(chart._bbLs); }catch(e){} }
     if(chart._bbMs){  try{chart.removeSeries(chart._bbMs); }catch(e){} }
     if(chart._vwaps){ try{chart.removeSeries(chart._vwaps);}catch(e){} }
+    if(chart._hiLimS){try{chart.removeSeries(chart._hiLimS);}catch(e){} }
+    if(chart._loLimS){try{chart.removeSeries(chart._loLimS);}catch(e){} }
 
     // MA20 — золотая линия
     var ma20 = calcSMA(closes, 20);
@@ -9023,9 +9057,30 @@ async function loadH(sym, tf){
     if(vwap && vwap > 0){
       chart._vwaps = chart.addLineSeries({color:'rgba(0,255,163,.6)',lineWidth:1,
         lineStyle:2,priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
-      // Рисуем VWAP как горизонталь за последние 30 свечей
       var vwapData = all.slice(-30).map(function(c){return {time:c.time, value:vwap};});
       chart._vwaps.setData(vwapData);
+    }
+
+    // HIGHLIMIT / LOWLIMIT — дневные планки MOEX (красный/зелёный пунктир)
+    if(chart._hiLimS){ try{chart.removeSeries(chart._hiLimS);}catch(e){} }
+    if(chart._loLimS){ try{chart.removeSeries(chart._loLimS);}catch(e){} }
+    var hiLim = prices[sym] && prices[sym].hiLimit;
+    var loLim = prices[sym] && prices[sym].loLimit;
+    if(hiLim && hiLim > 0){
+      chart._hiLimS = chart.addLineSeries({
+        color:'rgba(255,59,92,.6)',lineWidth:1,lineStyle:3,
+        priceLineVisible:false,lastValueVisible:true,
+        crosshairMarkerVisible:false,title:'ПЛ+'
+      });
+      chart._hiLimS.setData(all.slice(-50).map(function(c){return {time:c.time,value:hiLim};}));
+    }
+    if(loLim && loLim > 0){
+      chart._loLimS = chart.addLineSeries({
+        color:'rgba(52,199,89,.6)',lineWidth:1,lineStyle:3,
+        priceLineVisible:false,lastValueVisible:true,
+        crosshairMarkerVisible:false,title:'ПЛ-'
+      });
+      chart._loLimS.setData(all.slice(-50).map(function(c){return {time:c.time,value:loLim};}));
     }
   }
 
@@ -11776,6 +11831,14 @@ var PB = {
       return;
     }
 
+    // Проверка торгового статуса (TRADINGSTATUS из MOEX)
+    var tradSt = prices[sym].status || '';
+    if(tradSt && tradSt !== 'T' && tradSt !== 'N' && tradSt !== ''){
+      // Статус не "торгуется" — пропускаем
+      PB.addLog(sym+': пропуск — торговый статус "'+tradSt+'"', 'skip');
+      return;
+    }
+
     // Проверка экспозиции — с учётом размера новой позиции
     var curExp = PB.calcExposure();
     var newPosExp = PB.MAX_POS; // примерная доля новой позиции
@@ -11795,20 +11858,29 @@ var PB = {
       return;
     }
 
+    // Проверка верхней планки — не входить если цена >97% от HIGHLIMIT
+    var hiLim = prices[sym].hiLimit;
+    if(hiLim > 0 && entry >= hiLim * 0.97){
+      PB.addLog(sym+': пропуск — цена близко к верхней планке ('+fmtP(sym,entry)+'/'+fmtP(sym,hiLim)+')', 'skip');
+      return;
+    }
+
     // Расчёт позиции с учётом лотности MOEX
     var equity   = PB.calcEquity();
     var maxVolRub= equity * PB.MAX_POS;
-    // Дополнительный лимит: не превысить MAX_EXP суммарно
     var freeExp  = Math.max(0, PB.MAX_EXP - PB.calcExposure());
     maxVolRub    = Math.min(maxVolRub, equity * freeExp);
     var entry    = prices[sym].p;
     var atr      = PB.getATR(sym);
-    var stop     = parseFloat((entry - atr * PB.STOP_ATR).toFixed(getDec(sym)));
-    var tgt      = parseFloat((entry + atr * PB.TGT_ATR).toFixed(getDec(sym)));
-    // Лотность из MOEX ISS (минимальная единица покупки)
+    // Стоп и цель — с округлением к минимальному шагу цены
+    var stop     = snapToStep(sym, entry - atr * PB.STOP_ATR);
+    var tgt      = snapToStep(sym, entry + atr * PB.TGT_ATR);
+    // Проверка: стоп не ниже нижней планки
+    var loLim = prices[sym].loLimit;
+    if(loLim > 0 && stop < loLim) stop = snapToStep(sym, loLim + (entry-stop)*0.1);
+    // Лотность из MOEX ISS
     var lotSize  = (moexFundamentals[sym] && moexFundamentals[sym].lotSize) || 1;
     var qtyRaw   = Math.floor(maxVolRub / entry);
-    // Округляем вниз до целого числа лотов
     var qty      = Math.max(lotSize, Math.floor(qtyRaw / lotSize) * lotSize);
     var volRub   = qty * entry;
     var commission = volRub * PB.COMMISSION;
