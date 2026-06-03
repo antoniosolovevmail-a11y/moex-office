@@ -1243,6 +1243,34 @@ kbd{background:rgba(123,92,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-
                 После подключения портфель обновляется каждые 30 сек.
               </div>
             </div>
+            <!-- MOEX ISS — Фундаментальные данные (автоматически) -->
+            <div class="ios-card" style="margin:0;border-color:rgba(52,199,89,.2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div style="font-size:12px;font-weight:600;color:#34c759">
+                  <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#34c759;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;filter:drop-shadow(0 0 3px #34c75988)">
+                    <path d="M3 17l5-5 3 3 8-8M16 7h5v5"/>
+                  </svg>
+                  Фундаментальные данные
+                </div>
+                <span id="fund-status-st" style="font-size:10px;font-weight:600;color:#34c759">MOEX ISS</span>
+              </div>
+              <div style="font-size:10px;color:var(--txt3);line-height:1.6;padding:8px;background:rgba(52,199,89,.05);border-radius:8px;border:1px solid rgba(52,199,89,.12)">
+                <b style="color:#34c759">Источник: MOEX ISS — бесплатно, без ключей</b><br>
+                P/E, EPS, P/B, дивдоходность, Market Cap — загружаются автоматически из официальных данных биржи.<br>
+                Обновление каждые 4 часа. Покрытие: топ-20 тикеров MOEX.
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button onclick="fetchFundamentals().then(function(){showToast('✅ Обновлено','Фундаментальные данные загружены из MOEX ISS',null);})"
+                  class="btn" style="flex:1;justify-content:center;background:rgba(52,199,89,.08);border-color:rgba(52,199,89,.3);color:#34c759;padding:9px">
+                  ↻ Обновить сейчас
+                </button>
+                <button onclick="showFundamentalsDebug()"
+                  class="btn" style="padding:9px 12px;font-size:11px">
+                  Данные
+                </button>
+              </div>
+              <div id="fund-debug-log" style="margin-top:8px;display:none"></div>
+            </div>
             <!-- Risk & Agents -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <div><label class="fl">Риск на сделку</label><select id="s-risk" class="sel"><option value="1">1%</option><option value="2" selected>2%</option><option value="3">3%</option><option value="5">5%</option></select></div>
@@ -5437,41 +5465,141 @@ function updateChartLivePrice(){
 // ── TASK 1: Real-time fundamentals from MOEX ──────────────
 var moexFundamentals={};
 async function fetchFundamentals(){
+  // ── Шаг 1: статические данные по всем бумагам TQBR ─────────────
+  // ISSUECAPITALIZATION = рыночная капитализация напрямую от MOEX
+  // LOTSIZE, FACEVALUE, LISTLEVEL — справочные данные
   try{
-    var url=MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,ISSUESIZE,LOTSIZE,FACEVALUE,LISTLEVEL,PREVPRICE,CURRENCYID';
-    var r=await fetch(url);var d=await r.json();
-    var cols=d.securities.columns;
+    var url = MOEX+'/engines/stock/markets/shares/boards/TQBR/securities.json'
+      +'?iss.meta=off&iss.only=securities'
+      +'&securities.columns=SECID,ISSUESIZE,LOTSIZE,FACEVALUE,LISTLEVEL,'
+      +'PREVPRICE,CURRENCYID,ISSUECAPITALIZATION,SHORTNAME,DECIMALS';
+    var r = await fetch(url);
+    var d = await r.json();
+    var cols = d.securities.columns;
     d.securities.data.forEach(function(row){
-      var o={};cols.forEach(function(c,i){o[c]=row[i];});
-      if(!o.SECID)return;
-      moexFundamentals[o.SECID]={
-        issueSize:parseFloat(o.ISSUESIZE)||0,
-        lotSize:parseInt(o.LOTSIZE)||1,
-        faceValue:parseFloat(o.FACEVALUE)||0,
-        listLevel:parseInt(o.LISTLEVEL)||3,
-        prevPrice:parseFloat(o.PREVPRICE)||0,
-        currency:o.CURRENCYID||'RUB'
+      var o={}; cols.forEach(function(c,i){o[c]=row[i];});
+      if(!o.SECID) return;
+      var mcapDirect = parseFloat(o.ISSUECAPITALIZATION)||0;
+      moexFundamentals[o.SECID] = {
+        issueSize:  parseFloat(o.ISSUESIZE)||0,
+        lotSize:    parseInt(o.LOTSIZE)||1,
+        faceValue:  parseFloat(o.FACEVALUE)||0,
+        listLevel:  parseInt(o.LISTLEVEL)||3,
+        prevPrice:  parseFloat(o.PREVPRICE)||0,
+        currency:   o.CURRENCYID||'RUB',
+        mcapDirect: mcapDirect,           // ← рыночная кап. напрямую от MOEX
+        decimals:   parseInt(o.DECIMALS)||2,
+        shortName:  o.SHORTNAME||o.SECID
       };
+      // Обновляем DECIMALS в ST[]
+      if(!ST[o.SECID]) ST[o.SECID]={};
+      ST[o.SECID].dec = parseInt(o.DECIMALS)||2;
     });
-    console.log('[MOEX ISS] Fundamentals:',Object.keys(moexFundamentals).length,'securities');
-  }catch(ex){console.warn('fetchFundamentals',ex);}
+    console.log('[MOEX ISS] Fundamentals: '+Object.keys(moexFundamentals).length+' securities');
+  }catch(ex){ console.warn('fetchFundamentals step1:', ex); }
+
+  // ── Шаг 2: расширенные данные по топ-тикерам (EPS, P/E, дивиденды) ──
+  // /iss/securities/{sym}.json содержит поля EARNINGSPERSHARE, PE_RATIO
+  // и другие фундаментальные показатели
+  var priority = ['SBER','GAZP','LKOH','NVTK','GMKN','TATN','ROSN','MGNT',
+                  'ALRS','YNDX','SBERP','MTSS','MOEX','VTBR','NLMK','CHMF',
+                  'PHOR','FIVE','TCSG','AFLT'];
+  for(var i=0; i<priority.length; i++){
+    var sym = priority[i];
+    if(ST[sym] && ST[sym]._fundamentalTs &&
+       Date.now()-ST[sym]._fundamentalTs < 4*3600000) continue; // кеш 4 часа
+    try{
+      var url2 = MOEX+'/securities/'+sym+'.json?iss.meta=off&iss.only=description';
+      var r2 = await fetch(url2);
+      var d2 = await r2.json();
+      if(!d2.description || !d2.description.data) continue;
+      var dcols = d2.description.columns;
+      var descMap = {};
+      d2.description.data.forEach(function(row){
+        var o={}; dcols.forEach(function(c,i){o[c]=row[i];});
+        if(o.name) descMap[o.name] = o.value;
+      });
+      // Извлекаем фундаментальные поля
+      var eps = parseFloat(descMap['EARNINGSPERSHARE']||descMap['EPS']||0);
+      var pe  = parseFloat(descMap['PE_RATIO']||descMap['PRICEEARNINGS']||0);
+      var bv  = parseFloat(descMap['BOOKVALUE']||0);          // балансовая стоимость
+      var div = parseFloat(descMap['DIVIDENDPERSHARE']||0);   // дивиденд на акцию
+      var issueSize = parseFloat(descMap['ISSUESIZE']||0);
+
+      if(!ST[sym]) ST[sym] = {};
+      // Обновляем только если данные реальные (не нули)
+      if(eps > 0)  ST[sym].eps = parseFloat(eps.toFixed(2));
+      if(pe > 0)   ST[sym].pe  = parseFloat(pe.toFixed(1));
+      if(bv > 0 && prices[sym] && prices[sym].p > 0)
+                   ST[sym].pb  = parseFloat((prices[sym].p/bv).toFixed(2));
+      // Дивидендная доходность из дивиденда на акцию
+      if(div > 0 && prices[sym] && prices[sym].p > 0){
+        ST[sym].div = parseFloat((div/prices[sym].p*100).toFixed(1));
+      }
+      if(issueSize > 0) {
+        if(!moexFundamentals[sym]) moexFundamentals[sym]={};
+        moexFundamentals[sym].issueSize = issueSize;
+      }
+      ST[sym]._fundamentalTs = Date.now();
+      ST[sym]._fundamentalSrc = 'MOEX'; // источник данных
+
+      if(eps>0||pe>0||div>0)
+        console.log('[MOEX ISS Fund] '+sym+': P/E='+pe+' EPS='+eps+' Div/sh='+div);
+
+    }catch(e2){ /* тикер может не иметь description */ }
+    // Небольшая задержка между запросами
+    await new Promise(function(r){setTimeout(r,120);});
+  }
 }
 
 function getLiveMultipliers(sym){
-  var info=ST[sym]||{};
-  var p=prices[sym];var mf=moexFundamentals[sym]||{};
-  var price=p?p.p:(mf.prevPrice||0);
-  var pe_live=null;
-  if(info.eps&&info.eps>0&&price>0) pe_live=parseFloat((price/info.eps).toFixed(1));
-  else pe_live=info.pe||null;
-  var mcap_str=null;
-  if(mf.issueSize>0&&price>0){
-    var bn=price*mf.issueSize/1e9;
-    mcap_str=bn>=1000?(bn/1000).toFixed(1)+'T':(bn).toFixed(0)+'B';
+  var info = ST[sym]||{};
+  var p    = prices[sym];
+  var mf   = moexFundamentals[sym]||{};
+  var price= p ? p.p : (mf.prevPrice||0);
+
+  // P/E: сначала реальный из MOEX description, потом живой (цена/EPS), потом статичный
+  var pe_live = null;
+  if(info.pe && info.pe > 0){
+    pe_live = info.pe; // реальный из MOEX ISS description
+  } else if(info.eps && info.eps > 0 && price > 0){
+    pe_live = parseFloat((price/info.eps).toFixed(1));
+  } else {
+    pe_live = null;
   }
-  return {pe_live:pe_live,pe_static:info.pe,pb:info.pb,roe:info.roe,div:info.div,
-          eps:info.eps,issueSize:mf.issueSize,lotSize:mf.lotSize||1,
-          listLevel:mf.listLevel||3,mcap_str:mcap_str,price:price};
+
+  // Market Cap: сначала прямой от MOEX (ISSUECAPITALIZATION), потом расчётный
+  var mcap_str = null;
+  var mcapVal  = 0;
+  if(mf.mcapDirect && mf.mcapDirect > 0){
+    mcapVal   = mf.mcapDirect;
+  } else if(mf.issueSize > 0 && price > 0){
+    mcapVal   = price * mf.issueSize;
+  }
+  if(mcapVal > 0){
+    var bn = mcapVal / 1e9;
+    mcap_str = bn >= 1000 ? (bn/1000).toFixed(1)+'T₽' : bn.toFixed(0)+'B₽';
+  }
+
+  // P/B из реальных данных
+  var pb = info.pb || null;
+
+  return {
+    pe_live:    pe_live,
+    pe_static:  info.pe,
+    pb:         pb,
+    roe:        info.roe,
+    div:        info.div,
+    eps:        info.eps,
+    issueSize:  mf.issueSize,
+    lotSize:    mf.lotSize||1,
+    listLevel:  mf.listLevel||3,
+    mcap_str:   mcap_str,
+    mcapVal:    mcapVal,
+    price:      price,
+    decimals:   mf.decimals||info.dec||2,
+    src:        info._fundamentalSrc||'static' // 'MOEX' или 'static'
+  };
 }
 
 // ── TASK 2: Brent oil price from MOEX futures ─────────────
@@ -5663,6 +5791,7 @@ function updateMacroBar(){
   // Already updated by fetchMa
 }
 
+
 async function fetchAllData(){
   // Run all data fetchers in parallel
   await Promise.allSettled([
@@ -5672,9 +5801,11 @@ async function fetchAllData(){
     fetchOFZ(),
     fetchFundamentals(),
     fetchNewsMulti(curSym),
-    fetchTurnovers(),   // NEW: обороты рынков
-    fetchMoexNews()     // NEW: официальные новости MOEX
+    fetchTurnovers(),
+    fetchMoexNews()
   ]);
+  // SerpAPI batch — раз в 6 часов, не блокирует основной поток
+  if(hasSerpKey()) fetchFundamentalsSerpAPI();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -5968,46 +6099,53 @@ function calcFullConsensus(sym, candlesOverride){
 
     (function(){
       // Агент-3 — Фундаментал: P/E + ROE + дивиденды (IQ-адаптивный)
+      // Если есть SerpAPI ключ — использует реальные данные Google Finance
       var ag3 = AGs.filter(function(x){return x.id==='3';})[0];
       var iq3 = ag3 ? aIQ(ag3) : 10;
       var score = 50;
 
-      if(info.pe){
-        // Эксперт знает что P/E < 4 может означать проблемы, а не дешевизну
-        var peLow  = iq3 > 60 ? 4  : 3;   // слишком дёшево — подозрительно
-        var peMed  = iq3 > 60 ? 8  : 6;   // хорошее значение
-        var peHigh = iq3 > 60 ? 18 : 20;  // дорого
-        if(info.pe > peLow && info.pe < peMed)  score += 20;
-        else if(info.pe >= peMed && info.pe < peHigh) score += 10;
-        else if(info.pe > peHigh) score -= 15;
-        else if(info.pe <= peLow && iq3 > 60) score -= 5; // эксперт осторожен
+      // Берём данные: SerpAPI (реальные) → ST[] (статические)
+      var serpD = _serpCache && _serpCache[sym];
+      var pe3   = (serpD && serpD.pe > 0)       ? serpD.pe       : info.pe;
+      var eps3  = (serpD && serpD.eps > 0)      ? serpD.eps      : info.eps;
+      var div3  = (serpD && serpD.divYield > 0) ? serpD.divYield : info.div;
+      var hasSerpData = !!(serpD && serpD.ts);
+
+      if(pe3){
+        var peLow  = iq3 > 60 ? 4  : 3;
+        var peMed  = iq3 > 60 ? 8  : 6;
+        var peHigh = iq3 > 60 ? 18 : 20;
+        if(pe3 > peLow && pe3 < peMed)  score += 20;
+        else if(pe3 >= peMed && pe3 < peHigh) score += 10;
+        else if(pe3 > peHigh) score -= 15;
+        else if(pe3 <= peLow && iq3 > 60) score -= 5;
       }
       if(info.roe){
-        var roeHigh = iq3 > 60 ? 20 : 25; // эксперт понижает порог
+        var roeHigh = iq3 > 60 ? 20 : 25;
         var roeMed  = iq3 > 60 ? 12 : 15;
         if(info.roe > roeHigh)    score += 15;
         else if(info.roe > roeMed) score += 8;
         else if(info.roe < 5)     score -= 10;
       }
-      if(info.div){
-        if(info.div > 10) score += 12;
-        else if(info.div > 5) score += 6;
-        // Эксперт: слишком высокие дивиденды = дивидендная ловушка
-        if(iq3 > 70 && info.div > 20) score -= 8;
+      if(div3){
+        if(div3 > 10) score += 12;
+        else if(div3 > 5) score += 6;
+        if(iq3 > 70 && div3 > 20) score -= 8; // дивидендная ловушка
       }
       if(info.pb && info.pb < 1) score += 10;
-      // Эксперт: живой P/E по текущей цене
-      if(iq3 > 50 && info.eps && info.eps > 0 && p.p > 0){
-        var livePE = p.p / info.eps;
+      // EPS из реальных данных
+      if(iq3 > 50 && eps3 && eps3 > 0 && p.p > 0){
+        var livePE = p.p / eps3;
         if(livePE < 6)        score += 8;
         else if(livePE > 22)  score -= 8;
       }
       score = Math.max(5,Math.min(95,score));
       var dir = score>=55?'LONG':score<=45?'SHORT':'HOLD';
       var parts = [];
-      if(info.pe)  parts.push('P/E='+info.pe);
-      if(info.roe) parts.push('ROE='+info.roe+'%');
-      if(info.div) parts.push('Div='+info.div+'%');
+      if(pe3)       parts.push('P/E='+parseFloat(pe3).toFixed(1));
+      if(info.roe)  parts.push('ROE='+info.roe+'%');
+      if(div3)      parts.push('Div='+parseFloat(div3).toFixed(1)+'%');
+      if(hasSerpData) parts.push('📊GF');
       return {id:'3',name:'Агент-3',role:'Фундам.',e:'📊',c:'#059669',
               dir:dir,conf:score,reason:parts.join(' · ')||'Нет данных'};
     })(),
@@ -6565,6 +6703,9 @@ async function _enrichConsensusPanel(sym){
   if(!el) return;
 
   var extra = '';
+
+  // Фундаментальные данные из MOEX ISS (всегда доступны, без ключей)
+  renderFundamentalsInConsensus(sym);
 
   // Индексы
   if(indices && indices.length){
@@ -9445,6 +9586,7 @@ function showApp(){
   _loadSymMemory();
   _loadChatLog();
   _updateMoexAuthUI();   // показываем статус авторизации MOEX
+  _updateSerpUI();       // показываем статус SerpAPI ключа
   initDynamicSyms();     // загружаем динамический список бумаг
   popSels();
   lAS();
