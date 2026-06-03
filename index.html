@@ -2748,7 +2748,7 @@ function rTick(){
   var html=all.map(function(pair){
     var s=pair[0],p=pair[1];
     var col=p.c>=0?'var(--green)':'var(--red)';
-    return '<div class="tick-item"><span class="tick-sym">'+s+'</span><span class="tick-p">'+p.p+'</span><span class="tick-c '+(p.c>=0?'up':'dn')+'"> '+(p.c>=0?'+':'')+p.c.toFixed(2)+'%</span></div>';
+    return '<div class="tick-item"><span class="tick-sym">'+s+'</span><span class="tick-p">'+fmtP(s,p.p)+'</span><span class="tick-c '+(p.c>=0?'up':'dn')+'"> '+(p.c>=0?'+':'')+p.c.toFixed(2)+'%</span></div>';
   }).join('');
   var el=document.getElementById('ticker');
   if(el)el.innerHTML=html||'—';
@@ -2771,7 +2771,7 @@ function rWL(filter){
     return '<div class="wl-row'+on+'" onclick="sSym(\''+s+'\')">'+
       '<div class="wl-name-col"><div class="wl-sym">'+s+'</div><div class="wl-name">'+info.n+'</div><div class="wl-sector">'+info.s+'</div></div>'+
       '<div class="wl-vals">'+
-        '<div class="wl-price '+(p.c>=0?'g':'r')+'">'+p.p+' ₽</div>'+
+        '<div class="wl-price '+(p.c>=0?'g':'r')+'">'+fmtP(s,p.p)+' ₽</div>'+
         '<div class="wl-chg '+(p.c>=0?'g':'r')+'">'+(p.c>=0?'+':'')+p.c.toFixed(2)+'%</div>'+
       '</div>'+
       '<button class="wl-an" onclick="event.stopPropagation();showAn(\''+s+'\')">AN</button>'+
@@ -3000,7 +3000,7 @@ function updCH(){
   var en=document.getElementById('ch-name');if(en)en.textContent=((ST[curSym]&&ST[curSym].n)||'').slice(0,18);
   if(p){
     var ep=document.getElementById('ch-price');
-    if(ep){ep.textContent=p.p+' ₽';ep.className='ch-price '+(p.c>=0?'g':'r');}
+    if(ep){ep.textContent=fmtP(curSym,p.p)+' ₽';ep.className='ch-price '+(p.c>=0?'g':'r');}
     var ec=document.getElementById('ch-chg');
     if(ec){ec.textContent=(p.c>=0?'▲ +':'▼ ')+p.c.toFixed(2)+'%';ec.className='ch-chg '+(p.c>=0?'chup':'chdn');}
   }
@@ -4753,10 +4753,10 @@ function renderSignalCard(sym, data, containerEl){
 
     // ── Price levels ──
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">'+
-      _priceCell('ВХОД','var(--label2)',entry.toFixed(2),'₽','',false)+
-      _priceCell('СТОП','var(--ios-red)',stop.toFixed(2),'₽','-'+stopPct+'%',false)+
-      _priceCell('ЦЕЛЬ 1','var(--ios-green)',tg1.toFixed(2),'₽','+'+tg1Pct+'%',false)+
-      _priceCell('ЦЕЛЬ 2','var(--ios-orange)',tg2.toFixed(2),'₽','+'+tg2Pct+'%',true)+
+      _priceCell('ВХОД','var(--label2)',fmtP(sym,entry),'₽','',false)+
+      _priceCell('СТОП','var(--ios-red)',fmtP(sym,stop),'₽','-'+stopPct+'%',false)+
+      _priceCell('ЦЕЛЬ 1','var(--ios-green)',fmtP(sym,tg1),'₽','+'+tg1Pct+'%',false)+
+      _priceCell('ЦЕЛЬ 2','var(--ios-orange)',fmtP(sym,tg2),'₽','+'+tg2Pct+'%',true)+
     '</div>'+
 
     // ── R:R + Horizon ──
@@ -7509,7 +7509,7 @@ function openAlertModal(sym){
   document.getElementById('al-price-above').value = price?(price*1.02).toFixed(2):'';
   document.getElementById('al-price-below').value = price?(price*0.98).toFixed(2):'';
   document.getElementById('al-pct').value         = '2';
-  document.getElementById('al-cur-price').textContent = price?price+'₽':'—';
+  document.getElementById('al-cur-price').textContent = price?fmtP(sym,price)+'₽':'—';
 
   renderAlertsModal();
   modal.classList.remove('hidden');
@@ -8285,7 +8285,7 @@ function renderBacktestResults(r){
           return '<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.03);font-size:9px">'+
             '<span style="color:var(--dim);font-family:var(--mono);width:42px">'+dt+'</span>'+
             '<span style="font-family:var(--mono);font-weight:700;padding:1px 5px;background:'+(t.dir==='LONG'?'rgba(48,209,88,.1)':'rgba(255,69,58,.1)')+';color:'+dc+'">'+t.dir+'</span>'+
-            '<span style="font-family:var(--mono);color:var(--dim)">@'+t.entry.toFixed(2)+'₽</span>'+
+            '<span style="font-family:var(--mono);color:var(--dim)">@'+fmtP(t.sym||curSym,t.entry)+'₽</span>'+
             '<span style="font-family:var(--mono);font-size:8px;color:var(--dim)">'+t.daysHeld+' дн.</span>'+
             '<span style="font-size:8px;color:var(--dim)">'+t.reason+'</span>'+
             '<span style="flex:1"></span>'+
@@ -8552,6 +8552,22 @@ function calcAO(highs, lows){
 }
 
 // ── SMA helper ───────────────────────────────────
+// ── fmtP(sym, price) — форматирование цены по DECIMALS из MOEX ISS ──
+// Из PDF v1.4 стр.7: DECIMALS — знаков после запятой для данного инструмента
+// Примеры: SBER=2 (324.99₽), GAZP=2 (170.50₽), FEES=4 (0.0812₽)
+function getDec(sym){
+  var mf = moexFundamentals && moexFundamentals[sym];
+  if(mf && mf.decimals >= 0) return mf.decimals;
+  var st = ST && ST[sym];
+  if(st && st.dec >= 0) return st.dec;
+  return 2; // дефолт 2 знака
+}
+function fmtP(sym, price){
+  if(!price && price !== 0) return '—';
+  var dec = getDec(sym);
+  return parseFloat(price).toFixed(dec);
+}
+
 function calcSMA(data, period){
   var result=[];
   for(var i=0;i<data.length;i++){
@@ -10920,7 +10936,7 @@ function renderPfJournal(){
     return '<div class="mkt-row">'+
       '<span class="mkt-sym" style="color:'+col+'">'+t.sym+'</span>'+
       '<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.2);color:'+col+';margin-right:4px;font-family:var(--mono);font-weight:700">'+t.direction+'</span>'+
-      '<span class="mkt-name">'+t.sym+(t.entry?' · вход '+t.entry.toFixed(2)+'₽':'')+'</span>'+
+      '<span class="mkt-name">'+t.sym+(t.entry?' · вход '+fmtP(t.sym,t.entry)+'₽':'')+'</span>'+
       '<span class="mkt-px" style="color:'+pnlCol+'">'+pnl+'</span>'+
     '</div>';
   }).join('');
@@ -11664,18 +11680,21 @@ var PB = {
     }
 
     var pos = {
-      id:       'pb_'+Date.now()+'_'+sym,
-      sym:      sym,
-      qty:      qty,
-      entry:    entry,
-      stop:     stop,
-      tgt:      tgt,
-      volRub:   volRub,
-      commission: commission,
-      openedAt: new Date().toISOString(),
-      sector:   sector,
-      votes:    res.longVotes+'/'+res.total,
-      conf:     res.avgConf
+      id:             'pb_'+Date.now()+'_'+sym,
+      sym:            sym,
+      qty:            qty,
+      entry:          entry,
+      stop:           stop,           // текущий стоп (обновляется trailing)
+      initStop:       stop,           // начальный стоп (фиксированный)
+      tgt:            tgt,
+      volRub:         volRub,
+      commission:     commission,
+      openedAt:       new Date().toISOString(),
+      sector:         sector,
+      votes:          res.longVotes+'/'+res.total,
+      conf:           res.avgConf,
+      highSinceEntry: entry,          // максимум цены с момента открытия
+      trailingActive: false           // trailing включается после +1 ATR
     };
     PB.positions.push(pos);
 
@@ -11716,9 +11735,29 @@ var PB = {
       var p = prices[pos.sym];
       if(!p || !p.p) return;
       var cur = p.p;
+      var atr = PB.getATR(pos.sym);
 
+      // ── Trailing Stop (StockSharp Algo.Strategies паттерн) ──────────────
+      // Активируется когда цена прошла +1 ATR от входа (позиция в прибыли)
+      if(cur > pos.highSinceEntry){
+        pos.highSinceEntry = cur; // обновляем максимум
+
+        // Включаем trailing после +1 ATR прибыли
+        if(!pos.trailingActive && cur >= pos.entry + atr){
+          pos.trailingActive = true;
+        }
+      }
+      if(pos.trailingActive){
+        // Trailing stop = max(highSinceEntry - 1.5*ATR, initStop)
+        var trailStop = parseFloat((pos.highSinceEntry - atr * PB.STOP_ATR).toFixed(2));
+        if(trailStop > pos.stop){
+          pos.stop = trailStop; // подтягиваем стоп вверх
+        }
+      }
+
+      // ── Проверка выходов ──────────────────────────────────────────────
       if(cur <= pos.stop){
-        PB.closePosition(pos.id, 'stop_loss');
+        PB.closePosition(pos.id, pos.trailingActive ? 'trailing_stop' : 'stop_loss');
       } else if(cur >= pos.tgt){
         PB.closePosition(pos.id, 'take_profit');
       }
@@ -11753,10 +11792,11 @@ var PB = {
 
     PB.pushEquityPoint();
 
-    var icon = reason==='take_profit'?'✅':reason==='stop_loss'?'🛑':reason==='day_stop'?'⛔':'■';
+    var icon = reason==='take_profit'?'✅':reason==='trailing_stop'?'🔒':reason==='stop_loss'?'🛑':reason==='day_stop'?'⛔':'■';
+    var trailInfo = reason==='trailing_stop' ? ' [trail:'+pos.highSinceEntry+'₽]' : '';
     PB.addLog(icon+' ЗАКРЫТ '+pos.sym+' @ '+closePrice+'₽ | '+
       (netPnlRub>=0?'+':'')+netPnlRub.toFixed(0)+'₽ ('+
-      (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%) ['+reason+']',
+      (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%) ['+reason+']'+trailInfo,
       netPnlRub>=0?'close':'closeloss');
 
     PB.save();
@@ -12012,14 +12052,21 @@ var PB = {
           var slDist  = cur > 0 ? ((cur - pos.stop) / cur * 100).toFixed(1) : '0';
           var tgDist  = cur > 0 ? ((pos.tgt - cur)  / cur * 100).toFixed(1) : '0';
           var daysOpen= pos.openedAt ? Math.round((Date.now()-new Date(pos.openedAt).getTime())/86400000) : 0;
+          // Trailing stop индикатор
+          var trailBadge = pos.trailingActive
+            ? '<span style="font-size:8px;color:#00ffa3;margin-left:4px;background:rgba(0,255,163,.12);padding:1px 4px;border-radius:3px">🔒trail</span>'
+            : '';
+          var stopLabel = pos.trailingActive
+            ? 'trail:'+pos.stop+' (high:'+pos.highSinceEntry+')'
+            : 'стоп:'+pos.stop;
           return '<div class="pb-pos-row">'+
-            '<span class="pb-pos-sym">'+pos.sym+'</span>'+
+            '<span class="pb-pos-sym">'+pos.sym+trailBadge+'</span>'+
             '<div class="pb-pos-meta">'+
-              '<div style="font-size:11px;color:var(--txt2)">'+pos.qty+'шт × '+cur.toFixed(2)+'₽'+
+              '<div style="font-size:11px;color:var(--txt2)">'+pos.qty+'шт × '+fmtP(pos.sym,cur)+'₽'+
                 (daysOpen>0?' · '+daysOpen+'д':'')+
               '</div>'+
               '<div style="font-size:9px;color:var(--txt3)">'+
-                'вх:'+pos.entry+' · стоп:'+pos.stop+' (−'+slDist+'%) · цель:'+pos.tgt+' (+'+tgDist+'%)'+
+                'вх:'+pos.entry+' · '+stopLabel+' (−'+slDist+'%) · цель:'+pos.tgt+' (+'+tgDist+'%)'+
               '</div>'+
             '</div>'+
             '<span class="pb-pos-pnl" style="color:'+pnlCol+'">'+
